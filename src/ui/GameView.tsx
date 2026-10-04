@@ -56,7 +56,14 @@ export function GameView({ onExit }: Props) {
   }, [act])
 
   return (
-    <section className="mx-auto flex min-h-dvh w-full max-w-6xl flex-col justify-center px-3 py-3 sm:px-6">
+    <section
+      className="mx-auto flex min-h-dvh w-full max-w-6xl flex-col justify-center px-3 py-3 sm:px-6"
+      onPointerDown={(event) => {
+        if ((event.target as Element).closest('button, a')) return
+        event.preventDefault()
+        act()
+      }}
+    >
       <header className="mb-3 grid grid-cols-[auto_1fr_auto] items-center gap-3">
         <button onClick={onExit} className="rounded-full border border-cream/20 px-4 py-2 text-sm font-bold hover:border-cream/60">← Menu</button>
         <div className="flex items-center justify-center gap-4 font-black tabular-nums sm:gap-8">
@@ -72,7 +79,6 @@ export function GameView({ onExit }: Props) {
         role="button"
         tabIndex={0}
         aria-label={`Action contextuelle : ${snapshot.cue}`}
-        onPointerDown={(event) => { event.preventDefault(); act() }}
       >
         <canvas ref={canvasRef} className="game-canvas aspect-16/9 w-full rounded-xl bg-ink" aria-label="Terrain de baseball" />
 
