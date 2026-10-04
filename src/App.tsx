@@ -5,7 +5,15 @@ import { RomWorkspace } from './ui/RomWorkspace'
 export default function App() {
   if (new URLSearchParams(window.location.search).has('romlab')) return <RomWorkspace />
   const [screen, setScreen] = useState<'menu' | 'game'>('menu')
-  if (screen === 'game') return <main className="noise min-h-dvh"><GameView onExit={() => setScreen('menu')} /></main>
+  const startGame = () => {
+    if (window.matchMedia('(pointer: coarse)').matches) void document.documentElement.requestFullscreen?.().catch(() => {})
+    setScreen('game')
+  }
+  const leaveGame = () => {
+    if (document.fullscreenElement) void document.exitFullscreen().catch(() => {})
+    setScreen('menu')
+  }
+  if (screen === 'game') return <main><GameView onExit={leaveGame} /></main>
 
   return (
     <main className="noise relative min-h-dvh overflow-hidden px-5 py-10 sm:py-16">
@@ -19,7 +27,7 @@ export default function App() {
           <h1 className="pixel-shadow font-display text-6xl leading-[.88] tracking-[-.07em] text-cream sm:text-8xl">NEON<br />SLUGGER</h1>
           <p className="mt-7 max-w-xl text-lg leading-relaxed text-cream/70">Un baseball arcade mobile en mouvement permanent. Tu ne diriges rien : un toucher au bon moment suffit pour frapper, accélérer ou glisser.</p>
           <div className="mt-9 flex flex-wrap gap-3">
-            <button onClick={() => setScreen('game')} className="rounded-full bg-coral px-8 py-4 font-black uppercase tracking-wider text-ink shadow-[0_8px_0_#8e203d] transition hover:-translate-y-1 hover:shadow-[0_12px_0_#8e203d] active:translate-y-1 active:shadow-none">Jouer la manche</button>
+            <button onClick={startGame} className="rounded-full bg-coral px-8 py-4 font-black uppercase tracking-wider text-ink shadow-[0_8px_0_#8e203d] transition hover:-translate-y-1 hover:shadow-[0_12px_0_#8e203d] active:translate-y-1 active:shadow-none">Jouer la manche</button>
             <a href="#architecture" className="rounded-full border border-cream/25 px-7 py-4 font-bold text-cream hover:border-teal hover:text-teal">Architecture</a>
           </div>
         </div>

@@ -1,6 +1,6 @@
 # Neon Slugger
 
-Prototype de baseball arcade mobile à une seule commande. Le personnage agit et court automatiquement ; le toucher de l'écran devient une frappe, une accélération ou une glissade selon la phase de jeu.
+Jeu de baseball arcade mobile à une seule commande. Le personnage agit et court automatiquement ; le toucher de l'écran devient une frappe, une accélération ou une glissade selon la phase de jeu.
 
 Le laboratoire privé `?romlab=1` sert à analyser et reconstruire les animations de la ROM localement. La ROM et les ressources extraites ne sont jamais intégrées au dépôt public.
 
@@ -10,6 +10,7 @@ Le laboratoire privé `?romlab=1` sert à analyser et reconstruire les animation
 - Vite 8
 - Tailwind CSS 4
 - Canvas 2D avec boucle fixe à 60 Hz
+- stade original en couches et atlas pixel art de 12 poses par tenue
 - manifeste PWA et service worker statique pour l'installation et le cache hors ligne
 - Vitest pour les règles du moteur
 
@@ -36,7 +37,7 @@ npm run build
 | Proximité d'une base | Glisser |
 | Écran de résultat | Continuer ou rejouer |
 
-Le joueur touche n'importe où dans le terrain. Au clavier, Espace, Entrée ou J déclenchent la même action ; Échap met en pause.
+Le joueur touche n'importe où sur l'écran de jeu. Au clavier, Espace, Entrée ou J déclenchent la même action ; Échap met en pause. L'affichage occupe tout l'écran et adapte son cadrage au portrait et au paysage.
 
 ## GitHub Pages
 
@@ -49,7 +50,7 @@ Le joueur touche n'importe où dans le terrain. Au clavier, Espace, Entrée ou J
 ## Architecture
 
 ```text
-src/game/ Moteur, règles, timing et rendu Canvas
+src/game/ Moteur, règles, atlas original, animations et rendu Canvas
 src/ui/   HUD React et surface tactile unique
 src/rom/  Analyse locale de la ROM sélectionnée par l'utilisateur
 docs/     Notes d'analyse et feuille de route

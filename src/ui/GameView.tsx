@@ -10,11 +10,20 @@ const initialSnapshot: BaseballSnapshot = {
   bases: [false, false, false], cue: 'JOUE', message: '', grade: null,
 }
 
+const cueText: Record<BaseballSnapshot['cue'], string> = {
+  JOUE: 'TOUCHE POUR JOUER',
+  ATTENDS: 'GARDE LE RYTHME',
+  FRAPPE: 'FRAPPE !',
+  ACCÉLÈRE: 'SPRINT !',
+  GLISSE: 'GLISSE !',
+  REPRENDS: 'REPRENDRE',
+  REJOUE: 'NOUVELLE MANCHE',
+}
+
 export function GameView({ onExit }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const engineRef = useRef<BaseballEngine | null>(null)
   const [snapshot, setSnapshot] = useState<BaseballSnapshot>(initialSnapshot)
-
   const act = useCallback(() => engineRef.current?.action(), [])
 
   useEffect(() => {
@@ -55,64 +64,57 @@ export function GameView({ onExit }: Props) {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [act])
 
+  const hot = snapshot.cue === 'FRAPPE' || snapshot.cue === 'GLISSE'
+  const finish = snapshot.phase === 'gameover'
+
   return (
     <section
-      className="mx-auto flex min-h-dvh w-full max-w-6xl flex-col justify-center px-3 py-3 sm:px-6"
+      className="game-screen"
+      aria-label="Partie de baseball à une commande"
       onPointerDown={(event) => {
         if ((event.target as Element).closest('button, a')) return
         event.preventDefault()
         act()
       }}
     >
-      <header className="mb-3 grid grid-cols-[auto_1fr_auto] items-center gap-3">
-        <button onClick={onExit} className="rounded-full border border-cream/20 px-4 py-2 text-sm font-bold hover:border-cream/60">← Menu</button>
-        <div className="flex items-center justify-center gap-4 font-black tabular-nums sm:gap-8">
-          <span className="text-teal">SCORE {snapshot.score}</span>
-          <span className="hidden text-gold sm:inline">COUPS {snapshot.hits}</span>
-          <span className="text-coral">RETRAITS {snapshot.outs}/3</span>
+      <canvas ref={canvasRef} className="game-screen__canvas" aria-label="Stade de baseball pixel art animé" />
+      <div className="game-screen__scanlines" aria-hidden="true" />
+
+      <header className="game-hud" aria-label="Score de la manche">
+        <button className="hud-icon" onClick={onExit} aria-label="Revenir au menu">‹</button>
+        <div className="hud-score">
+          <span className="hud-score__label">NEON LEAGUE</span>
+          <span className="hud-score__value">{String(snapshot.score).padStart(2, '0')}</span>
+          <span className="hud-score__label">POINTS</span>
         </div>
-        <button onClick={() => engineRef.current?.togglePause()} className="rounded-full border border-cream/20 px-4 py-2 text-sm font-bold hover:border-cream/60">Pause</button>
+        <div className="hud-plate" aria-label={`Retraits ${snapshot.outs} sur 3, prises ${snapshot.strikes} sur 3`}>
+          <div className="hud-plate__row"><span>OUT</span>{[0, 1, 2].map(index => <i key={index} className={index < snapshot.outs ? 'is-out' : ''} />)}</div>
+          <div className="hud-plate__row"><span>STR</span>{[0, 1, 2].map(index => <i key={index} className={index < snapshot.strikes ? 'is-strike' : ''} />)}</div>
+        </div>
+        <button className="hud-icon hud-icon--pause" onClick={() => engineRef.current?.togglePause()} aria-label="Pause">Ⅱ</button>
       </header>
 
-      <div
-        className="panel one-touch relative cursor-pointer overflow-hidden rounded-[1.6rem] p-2 outline-none focus-visible:ring-2 focus-visible:ring-gold sm:p-4"
-        role="button"
-        tabIndex={0}
-        aria-label={`Action contextuelle : ${snapshot.cue}`}
-      >
-        <canvas ref={canvasRef} className="game-canvas aspect-16/9 w-full rounded-xl bg-ink" aria-label="Terrain de baseball" />
-
-        <div className="pointer-events-none absolute left-5 top-5 flex items-center gap-2 rounded-full bg-ink/80 px-3 py-2 text-xs font-black backdrop-blur-sm sm:left-8 sm:top-8">
-          <span className="text-cream/55">STRIKES</span>
-          {[0, 1, 2].map((index) => <span key={index} className={`h-2.5 w-2.5 rounded-full ${index < snapshot.strikes ? 'bg-gold' : 'bg-cream/15'}`} />)}
-        </div>
-
-        <div className="pointer-events-none absolute right-5 top-5 grid h-12 w-12 rotate-45 grid-cols-2 gap-1 sm:right-8 sm:top-8">
-          {snapshot.bases.map((occupied, index) => <span key={index} className={`${index === 2 ? 'col-start-1' : ''} rounded-sm border border-cream/50 ${occupied ? 'bg-gold' : 'bg-ink/70'}`} />)}
-        </div>
-
-        <div className="pointer-events-none absolute inset-x-0 bottom-5 flex justify-center sm:bottom-8">
-          <div className={`action-cue rounded-full border px-7 py-3 text-center font-black uppercase tracking-[.18em] backdrop-blur-sm ${snapshot.cue === 'FRAPPE' || snapshot.cue === 'GLISSE' ? 'border-gold bg-gold text-ink' : 'border-cream/20 bg-ink/85 text-cream'}`}>
-            {snapshot.cue === 'ATTENDS' ? '•••' : snapshot.cue}
-          </div>
-        </div>
-
-        {snapshot.message && <div className="pointer-events-none absolute left-1/2 top-5 -translate-x-1/2 rounded-full bg-ink/80 px-5 py-2 text-center text-xs font-black uppercase tracking-wider text-gold backdrop-blur-sm sm:top-8">{snapshot.message}</div>}
-
-        {snapshot.phase === 'gameover' && (
-          <div className="pointer-events-none absolute inset-2 grid place-items-center rounded-xl bg-ink/80 backdrop-blur-sm sm:inset-4">
-            <div className="text-center">
-              <p className="font-display text-4xl text-cream sm:text-6xl">MANCHE TERMINÉE</p>
-              <p className="mt-3 text-xl font-black text-teal">{snapshot.score} POINT{snapshot.score === 1 ? '' : 'S'}</p>
-              <p className="mt-6 text-sm font-bold uppercase tracking-[.2em] text-gold">Touche pour rejouer</p>
-            </div>
-          </div>
-        )}
+      <div className="game-message" key={snapshot.message} aria-live="polite">{snapshot.message}</div>
+      <div className="base-indicator" aria-label={`Bases occupées : ${snapshot.bases.map((occupied, index) => occupied ? index + 1 : '').filter(Boolean).join(', ') || 'aucune'}`}>
+        <span className={snapshot.bases[1] ? 'occupied' : ''} />
+        <span className={snapshot.bases[2] ? 'occupied' : ''} />
+        <span className={snapshot.bases[0] ? 'occupied' : ''} />
       </div>
 
-      <p className="mt-3 text-center text-xs font-bold uppercase tracking-[.16em] text-cream/55">
-        Touche n’importe où · Espace ou Entrée · une commande, une action contextuelle
-      </p>
+      <div className={`touch-prompt ${hot ? 'touch-prompt--hot' : ''} ${finish ? 'touch-prompt--finish' : ''}`} aria-live="polite">
+        <span className="touch-prompt__spark" aria-hidden="true">✦</span>
+        <span>{cueText[snapshot.cue]}</span>
+        <span className="touch-prompt__spark" aria-hidden="true">✦</span>
+      </div>
+
+      {finish && (
+        <div className="end-card" aria-live="polite">
+          <span className="end-card__eyebrow">FIN DE MANCHE</span>
+          <strong>{snapshot.score}</strong>
+          <span className="end-card__eyebrow">POINT{snapshot.score === 1 ? '' : 'S'} · {snapshot.hits} COUP{snapshot.hits === 1 ? '' : 'S'}</span>
+          <span className="end-card__hint">TOUCHE POUR REJOUER</span>
+        </div>
+      )}
     </section>
   )
 }

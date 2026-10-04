@@ -4,8 +4,9 @@
   "description": "Un baseball arcade à une seule commande, rapide et installable.",
   "theme_color": "#07111f",
   "background_color": "#07111f",
-  "display": "standalone",
-  "orientation": "landscape",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
   "start_url": "./",
   "scope": "./",
   "icons": [

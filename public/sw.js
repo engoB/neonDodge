@@ -1,4 +1,4 @@
-const CACHE = 'neon-slugger-v3'
+const CACHE = 'neon-slugger-v4'
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png']
 
 self.addEventListener('install', (event) => {
