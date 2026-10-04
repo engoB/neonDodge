@@ -1,6 +1,8 @@
-# Neon Dodge
+# Neon Slugger
 
-Réécriture web originale d'un jeu de dodgeball arcade. Le projet n'émule aucune ROM et n'intègre aucun contenu de jeu commercial.
+Prototype de baseball arcade mobile à une seule commande. Le personnage agit et court automatiquement ; le toucher de l'écran devient une frappe, une accélération ou une glissade selon la phase de jeu.
+
+Le laboratoire privé `?romlab=1` sert à analyser et reconstruire les animations de la ROM localement. La ROM et les ressources extraites ne sont jamais intégrées au dépôt public.
 
 ## Stack
 
@@ -25,17 +27,16 @@ npm test
 npm run build
 ```
 
-## Contrôles
+## Commande unique
 
-| Action | Clavier |
+| Contexte | Action déclenchée |
 | --- | --- |
-| Déplacement | Flèches ou ZQSD |
-| Tir | J ou Espace |
-| Interception | K ou Maj gauche |
-| Passe | L ou P |
-| Pause | Échap |
+| Lancer en approche | Frapper |
+| Course entre deux bases | Accélérer |
+| Proximité d'une base | Glisser |
+| Écran de résultat | Continuer ou rejouer |
 
-Les contrôles tactiles apparaissent sur petit écran.
+Le joueur touche n'importe où dans le terrain. Au clavier, Espace, Entrée ou J déclenchent la même action ; Échap met en pause.
 
 ## GitHub Pages
 
@@ -48,15 +49,14 @@ Les contrôles tactiles apparaissent sur petit écran.
 ## Architecture
 
 ```text
-src/game/      Moteur, règles, physique et rendu Canvas
-src/ui/        HUD et contrôles React
-src/hooks/     Adaptateurs d'entrée
-public/assets/ Ressources originales
-docs/          Notes d'analyse et feuille de route
+src/game/ Moteur, règles, timing et rendu Canvas
+src/ui/   HUD React et surface tactile unique
+src/rom/  Analyse locale de la ROM sélectionnée par l'utilisateur
+docs/     Notes d'analyse et feuille de route
 ```
 
 La logique métier ne dépend pas de React. Une future version peut remplacer Canvas 2D par PixiJS ou WebGL sans réécrire les règles de match.
 
 ## Droits
 
-Le code et les ressources de ce dépôt sont des créations originales de démonstration. La ROM analysée n'est ni copiée, ni chargée, ni distribuée par l'application.
+Le code public et les graphismes temporaires du terrain sont originaux. La ROM analysée n'est ni copiée ni distribuée par l'application ; son chargement éventuel reste local au navigateur.

@@ -37,4 +37,33 @@ button { font: inherit; }
 
 .pixel-shadow { text-shadow: 4px 4px 0 #ff4f64, 8px 8px 0 #0a2438; }
 .game-canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
-.control-button { touch-action: none; user-select: none; -webkit-user-select: none; }
+.one-touch { touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.action-cue { min-width: 9rem; box-shadow: 0 8px 30px rgb(0 0 0 / .3); }
+.baseball-hero {
+  position: relative;
+  width: min(17rem, 70vw);
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 8px solid #e8dcb8;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 34% 28%, #fffdf1 0 14%, #fff0c7 42%, #d7c394 100%);
+  box-shadow: 0 28px 35px rgb(0 0 0 / .45), inset -22px -26px 35px rgb(92 58 40 / .2);
+}
+.baseball-hero::before,
+.baseball-hero::after {
+  content: "";
+  position: absolute;
+  top: -8%;
+  width: 62%;
+  height: 116%;
+  border: 5px dashed #d94255;
+  border-radius: 50%;
+}
+.baseball-hero::before { left: -40%; }
+.baseball-hero::after { right: -40%; }
+.checkerboard {
+  background-color: #252c36;
+  background-image: linear-gradient(45deg, #2f3742 25%, transparent 25%), linear-gradient(-45deg, #2f3742 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #2f3742 75%), linear-gradient(-45deg, transparent 75%, #2f3742 75%);
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  background-size: 16px 16px;
+}

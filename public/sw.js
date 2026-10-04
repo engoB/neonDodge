@@ -1,5 +1,5 @@
-const CACHE = 'neon-dodge-v1'
-const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './assets/arena-atlas.png', './assets/ball-icon-source.png']
+const CACHE = 'neon-slugger-v2'
+const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()))

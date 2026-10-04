@@ -1,7 +1,7 @@
 {
-  "name": "Neon Dodge",
-  "short_name": "Neon Dodge",
-  "description": "Un jeu de dodgeball original, rapide et installable.",
+  "name": "Neon Slugger",
+  "short_name": "Slugger",
+  "description": "Un baseball arcade à une seule commande, rapide et installable.",
   "theme_color": "#07111f",
   "background_color": "#07111f",
   "display": "standalone",
