@@ -9,8 +9,8 @@ export const BASES: readonly Vec2[] = [
   { x: 89, y: 159 },
   HOME,
 ]
-export const PITCH_DURATION = 1.12
-export const CONTACT_TIME = .82
+export const PITCH_DURATION = 1.32
+export const CONTACT_TIME = .98
 export const RUN_SPEED = .6
 
 export const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))
@@ -39,7 +39,7 @@ export function actionCue(phase: GamePhase, pitchClock: number, runnerProgress: 
   if (phase === 'gameover') return 'TERMINÉ'
   if (phase === 'walkup' || phase === 'call' || phase === 'inning_break') return 'CONTINUE'
   if (phase === 'ready' || phase === 'contact' || phase === 'fielding') return 'ATTENDS'
-  if (phase === 'pitching') return Math.abs(pitchClock - CONTACT_TIME) < .2 ? 'FRAPPE' : 'ATTENDS'
+  if (phase === 'pitching') return Math.abs(pitchClock - CONTACT_TIME) < .23 ? 'FRAPPE' : 'ATTENDS'
   const distanceToBase = Math.ceil(runnerProgress) - runnerProgress
   if (distanceToBase > 0 && distanceToBase < .25) return 'GLISSE'
   return dashCooldown <= 0 ? 'ACCÉLÈRE' : 'ATTENDS'

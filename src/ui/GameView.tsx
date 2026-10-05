@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { GameAudio } from '../game/audio'
 import { BaseballEngine } from '../game/engine'
 import { BaseballRenderer } from '../game/renderer'
+import { CONTACT_TIME, PITCH_DURATION } from '../game/rules'
 import type { BaseballSnapshot, MatchConfig } from '../game/types'
 
 interface Props {
@@ -19,6 +20,8 @@ const cueText: Record<BaseballSnapshot['cue'], string> = {
   REPRENDS: 'REPRENDRE',
   TERMINÉ: 'MATCH TERMINÉ',
 }
+const timingLeft = (CONTACT_TIME / PITCH_DURATION) * 100
+const timingWidth = (error: number) => (error / PITCH_DURATION) * 100
 
 export function GameView({ config, onExit, onComplete }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -108,7 +111,7 @@ export function GameView({ config, onExit, onComplete }: Props) {
 
       <header className="game-hud" aria-label="Tableau de score">
         <button className="hud-icon" onClick={onExit} aria-label="Revenir au menu">‹</button>
-        <div className="scoreboard">
+        <div className={`scoreboard ${snapshot.phase === 'call' && snapshot.runsThisPlay ? 'scoreboard--scored' : ''}`}>
           <div className="scoreboard__team"><span>NEO</span><strong>{snapshot.score}</strong></div>
           <div className="scoreboard__inning"><small>{snapshot.playLabel}</small><b>{snapshot.inning}/{snapshot.maxInnings}</b></div>
           <div className="scoreboard__team scoreboard__team--rival" style={{ color: snapshot.opponent.accent }}><span>{snapshot.opponent.shortName}</span><strong>{snapshot.rivalScore}</strong></div>
@@ -123,6 +126,28 @@ export function GameView({ config, onExit, onComplete }: Props) {
       {!cinematic && snapshot.phase !== 'gameover' && (
         <div className="game-message" key={snapshot.message} aria-live="polite">
           <strong>{snapshot.message}</strong><small>{snapshot.subMessage}</small>
+        </div>
+      )}
+
+      {(snapshot.phase === 'ready' || snapshot.phase === 'pitching') && (
+        <div className={`timing-meter ${snapshot.slowMotion ? 'timing-meter--focus' : ''}`} aria-label="Barre de timing de frappe">
+          <div className="timing-meter__heading"><span>VISÉE DE FRAPPE</span><b>{snapshot.slowMotion ? 'FOCUS ×0,58' : 'ATTENDS LE CONTACT'}</b></div>
+          <div className="timing-meter__track">
+            <i className="timing-meter__zone timing-meter__zone--foul" style={{ left: `${timingLeft - timingWidth(.22)}%`, width: `${timingWidth(.44)}%` }} />
+            <i className="timing-meter__zone timing-meter__zone--good" style={{ left: `${timingLeft - timingWidth(.14)}%`, width: `${timingWidth(.28)}%` }} />
+            <i className="timing-meter__zone timing-meter__zone--perfect" style={{ left: `${timingLeft - timingWidth(.058)}%`, width: `${timingWidth(.116)}%` }} />
+            <i className="timing-meter__target" style={{ left: `${timingLeft}%` }} />
+            <b className="timing-meter__marker" style={{ left: `${snapshot.pitchProgress * 100}%` }} />
+          </div>
+          <div className="timing-meter__legend"><span>TÔT</span><strong>✦ PARFAIT ✦</strong><span>TARD</span></div>
+        </div>
+      )}
+
+      {snapshot.phase === 'call' && snapshot.runsThisPlay > 0 && (
+        <div className="run-banner" key={`${snapshot.inning}-${snapshot.score}`} aria-live="assertive">
+          <span>NEON SPARKS MARQUENT !</span>
+          <strong>+{snapshot.runsThisPlay} POINT{snapshot.runsThisPlay > 1 ? 'S' : ''}</strong>
+          <small>{snapshot.scoringRunners.length === 1 ? 'UN COUREUR FRANCHIT LE MARBRE' : `${snapshot.scoringRunners.length} COUREURS FRANCHISSENT LE MARBRE`}</small>
         </div>
       )}
 

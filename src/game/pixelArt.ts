@@ -1,4 +1,4 @@
-/** Original 32×40 pixel characters. Every pose is painted once into an atlas. */
+/** Original 32×40 pixel characters. Each identity keeps its own pose bank. */
 export type CharacterPose =
   | 'idle' | 'ready' | 'windup' | 'pitch' | 'batReady' | 'swingA'
   | 'swingB' | 'swingC' | 'runA' | 'runB' | 'runC' | 'runD' | 'slide' | 'catch' | 'cheer'
@@ -11,6 +11,12 @@ const POSES: CharacterPose[] = [
 ]
 const TEAMS: Uniform[] = ['home', 'hounds', 'comets', 'vipers', 'kings', 'runner']
 const W = 32, H = 40
+const STYLES = [
+  { skin: '#f6b67c', shade: '#c97768', hair: '#183d60' },
+  { skin: '#a86c55', shade: '#744356', hair: '#302c40' },
+  { skin: '#f1c89d', shade: '#bd8a75', hair: '#594153' },
+  { skin: '#74526a', shade: '#53364f', hair: '#382d50' },
+] as const
 
 const COLORS: Record<Uniform, { shirt: string; light: string; dark: string; cap: string; trim: string }> = {
   home: { shirt: '#16c5c9', light: '#78f7e4', dark: '#087c90', cap: '#0a617e', trim: '#ffe179' },
@@ -23,9 +29,10 @@ const COLORS: Record<Uniform, { shirt: string; light: string; dark: string; cap:
 
 type Point = [number, number]
 
-function paint(ctx: CanvasRenderingContext2D, team: Uniform, pose: CharacterPose) {
+function paint(ctx: CanvasRenderingContext2D, team: Uniform, pose: CharacterPose, variant: number) {
   const color = COLORS[team]
-  const ink = '#263047', skin = '#f6b67c', shade = '#c97768'
+  const ink = '#263047'
+  const { skin, shade, hair } = STYLES[variant]
   const block = (x: number, y: number, w: number, h: number, fill: string) => {
     ctx.fillStyle = fill; ctx.fillRect(x, y, w, h)
   }
@@ -42,6 +49,8 @@ function paint(ctx: CanvasRenderingContext2D, team: Uniform, pose: CharacterPose
     block(4, 29, 9, 2, color.light)
     block(22, 26, 7, 7, skin)
     block(21, 24, 9, 3, color.cap)
+    if (variant === 0) block(19, 27, 5, 5, hair)
+    if (variant === 3) block(24, 31, 5, 2, hair)
     block(28, 30, 3, 2, ink)
     block(1, 35, 12, 3, '#f7e8bd')
     block(15, 35, 8, 3, '#f7e8bd')
@@ -106,12 +115,34 @@ function paint(ctx: CanvasRenderingContext2D, team: Uniform, pose: CharacterPose
   block(11 + bodyShift, 15, 3, 3, shade)
   block(21 + bodyShift, 14, 3, 2, shade)
   block(19 + bodyShift, 12, 2, 2, ink)
-  block(11 + bodyShift, 6, 12, 6, ink)
+  block(11 + bodyShift, 6, 12, 6, hair)
   block(12 + bodyShift, 7, 11, 4, color.cap)
   block(13 + bodyShift, 7, 7, 1, color.light)
   block(19 + bodyShift, 10, 8, 2, ink)
   block(20 + bodyShift, 10, 7, 1, color.trim)
   block(12 + bodyShift, 18, 3, 2, '#fff4cc')
+
+  // Accessories are part of every pose, so the player never changes identity mid-run.
+  if (variant === 0) {
+    block(8 + bodyShift, 10, 3, 8, hair)
+    block(6 + bodyShift, 14, 3, 7, hair)
+    block(7 + bodyShift, 20, 3, 2, color.light)
+  } else if (variant === 1) {
+    block(19 + bodyShift, 16, 5, 2, hair)
+    block(21 + bodyShift, 18, 2, 2, hair)
+    block(8 + bodyShift, 19, 2, 9, color.dark)
+    block(22 + bodyShift, 19, 2, 8, color.dark)
+  } else if (variant === 2) {
+    block(15 + bodyShift, 12, 4, 1, '#fff4d9')
+    block(18 + bodyShift, 11, 5, 3, ink)
+    block(19 + bodyShift, 12, 2, 1, '#b8e6e4')
+    block(12 + bodyShift, 7, 3, 2, hair)
+  } else {
+    block(17 + bodyShift, 17, 7, 2, hair)
+    block(19 + bodyShift, 19, 4, 2, hair)
+    block(12 + bodyShift, 8, 10, 1, color.trim)
+    block(10 + bodyShift, 20, 2, 2, color.trim)
+  }
 
   if (pose === 'batReady' || pose === 'swingA' || pose === 'swingB' || pose === 'swingC') {
     const tip: Point = pose === 'batReady' ? [28, 1] : pose === 'swingA' ? [3, 8] : pose === 'swingB' ? [29, 25] : [24, 34]
@@ -131,15 +162,15 @@ export class PixelCharacters {
   constructor() {
     this.atlas = document.createElement('canvas')
     this.atlas.width = POSES.length * W
-    this.atlas.height = TEAMS.length * H
+    this.atlas.height = TEAMS.length * STYLES.length * H
     const ctx = this.atlas.getContext('2d')!
     ctx.imageSmoothingEnabled = false
-    TEAMS.forEach((team, row) => POSES.forEach((pose, column) => {
+    TEAMS.forEach((team, teamIndex) => STYLES.forEach((_, variant) => POSES.forEach((pose, column) => {
       ctx.save()
-      ctx.translate(column * W, row * H)
-      paint(ctx, team, pose)
+      ctx.translate(column * W, (teamIndex * STYLES.length + variant) * H)
+      paint(ctx, team, pose, variant)
       ctx.restore()
-    }))
+    })))
   }
 
   draw(ctx: CanvasRenderingContext2D, x: number, y: number, team: Uniform, pose: CharacterPose, flip = false, scale = 1, variant = 0) {
@@ -148,23 +179,9 @@ export class PixelCharacters {
     if (flip) ctx.scale(-1, 1)
     ctx.scale(scale, scale)
     ctx.drawImage(
-      this.atlas, POSES.indexOf(pose) * W, TEAMS.indexOf(team) * H, W, H,
+      this.atlas, POSES.indexOf(pose) * W, (TEAMS.indexOf(team) * STYLES.length + variant % STYLES.length) * H, W, H,
       -16, -35, W, H,
     )
-    // Four readable silhouettes, reusing the same timed pose atlas like a GBA palette/profile bank.
-    if (variant % 4 === 0) {
-      ctx.fillStyle = team === 'home' ? '#083f63' : '#2c263d'
-      ctx.fillRect(-10, -30, 5, 3); ctx.fillRect(-12, -27, 4, 3)
-    } else if (variant % 4 === 1) {
-      ctx.fillStyle = '#3d2430'; ctx.fillRect(2, -20, 6, 2); ctx.fillRect(5, -18, 3, 2)
-      ctx.fillStyle = '#f3e5c6'; ctx.fillRect(-1, -7, 2, 3)
-    } else if (variant % 4 === 2) {
-      ctx.strokeStyle = '#f7e8bd'; ctx.lineWidth = 1
-      ctx.strokeRect(0, -25, 4, 3); ctx.strokeRect(5, -25, 4, 3); ctx.fillStyle = '#f7e8bd'; ctx.fillRect(4, -24, 1, 1)
-    } else {
-      ctx.fillStyle = '#402c3d'; ctx.fillRect(-4, -19, 10, 3); ctx.fillRect(-2, -16, 8, 2)
-      ctx.fillStyle = '#ffe179'; ctx.fillRect(-5, -30, 13, 1)
-    }
     ctx.restore()
   }
 }

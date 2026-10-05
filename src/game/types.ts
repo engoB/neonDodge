@@ -52,6 +52,11 @@ export interface BaseballSnapshot {
   outs: number
   strikes: number
   bases: [boolean, boolean, boolean]
+  baseRunners: [number | null, number | null, number | null]
+  scoringRunners: number[]
+  runsThisPlay: number
+  pitchProgress: number
+  slowMotion: boolean
   cue: ActionCue
   message: string
   subMessage: string

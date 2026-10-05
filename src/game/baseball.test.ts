@@ -26,12 +26,15 @@ describe('one-touch baseball rules', () => {
     game.pitchClock = CONTACT_TIME
     game.action()
     expect(game.phase).toBe('contact')
-    for (let frame = 0; frame < 70 && game.phase !== 'running'; frame++) game.update(1 / 60)
+    for (let frame = 0; frame < 90 && game.phase !== 'running'; frame++) game.update(1 / 60)
     expect(game.phase).toBe('running')
     expect(game.targetBases).toBe(4)
     for (let frame = 0; frame < 700 && game.phase === 'running'; frame++) game.update(1 / 60)
     expect(game.phase).toBe('call')
     expect(game.score).toBe(1)
+    expect(game.runsThisPlay).toBe(1)
+    expect(game.scoringRunners).toEqual([0])
+    expect(game.snapshot().baseRunners).toEqual([null, null, null])
   })
 
   it('keeps ball flight continuous across contact, fielding and running', () => {
@@ -70,6 +73,7 @@ describe('one-touch baseball rules', () => {
     game.action()
     expect(game.phase).toBe('call')
     expect(game.outs).toBe(3)
+    game.update(.51)
     game.action()
     expect(game.phase).toBe('inning_break')
     game.action()
@@ -80,6 +84,38 @@ describe('one-touch baseball rules', () => {
   it('loads occupied bases and scores forced runners', () => {
     expect(advanceBases([true, true, true], 1)).toEqual({ bases: [true, true, true], runs: 1 })
     expect(advanceBases([true, false, true], 2)).toEqual({ bases: [false, true, true], runs: 1 })
+  })
+
+  it('preserves each player identity while advancing bases and scoring', () => {
+    const game = engine()
+    game.baseRunners = [0, 2, 1]
+    game.bases = [true, true, true]
+    game.batterIndex = 3
+    game.phase = 'running'
+    game.targetBases = 1
+    game.runnerProgress = .99
+    game.fieldDeadline = 10
+    game.update(.05)
+    expect(game.baseRunners).toEqual([3, 0, 2])
+    expect(game.scoringRunners).toEqual([1])
+    expect(game.score).toBe(1)
+    game.update(.2)
+    game.action()
+    expect(game.phase).toBe('call')
+  })
+
+  it('slows the pitch at the focus window while keeping a playable perfect frame', () => {
+    const game = engine()
+    game.action()
+    game.action()
+    game.pitchClock = CONTACT_TIME - .2
+    game.update(.1)
+    expect(game.slowMotion).toBe(true)
+    expect(game.pitchClock).toBeCloseTo(CONTACT_TIME - .2 + .058)
+    expect(game.snapshot().pitchProgress).toBeGreaterThan(.6)
+    game.pitchClock = CONTACT_TIME
+    game.action()
+    expect(game.grade).toBe('perfect')
   })
 
   it('keeps the runner on the four-segment diamond path', () => {

@@ -1,5 +1,5 @@
 import { ROSTER } from './league'
-import { actionCue, advanceBases, CONTACT_TIME, gradeSwing, PITCH_DURATION, RUN_SPEED } from './rules'
+import { actionCue, CONTACT_TIME, gradeSwing, PITCH_DURATION, RUN_SPEED } from './rules'
 import type { BaseballSnapshot, GamePhase, HitGrade, MatchConfig } from './types'
 
 export class BaseballEngine {
@@ -9,6 +9,7 @@ export class BaseballEngine {
   pitchClock = 0
   pitchSerial = 0
   pitchCurve = 0
+  slowMotion = false
   runnerProgress = 0
   targetBases = 0
   fieldDeadline = 0
@@ -27,6 +28,9 @@ export class BaseballEngine {
   maxInnings: number
   batterIndex = 0
   bases: [boolean, boolean, boolean] = [false, false, false]
+  baseRunners: [number | null, number | null, number | null] = [null, null, null]
+  scoringRunners: number[] = []
+  runsThisPlay = 0
   grade: HitGrade = null
   message = 'MIKA FLUX ENTRE EN JEU'
   subMessage = 'Voltigeuse · N° 7 · Spécialité vitesse'
@@ -45,6 +49,7 @@ export class BaseballEngine {
     this.pitchClock = 0
     this.pitchSerial = 0
     this.pitchCurve = 0
+    this.slowMotion = false
     this.runnerProgress = 0
     this.targetBases = 0
     this.fieldDeadline = 0
@@ -63,6 +68,9 @@ export class BaseballEngine {
     this.maxInnings = this.config.maxInnings
     this.batterIndex = 0
     this.bases = [false, false, false]
+    this.baseRunners = [null, null, null]
+    this.scoringRunners = []
+    this.runsThisPlay = 0
     this.grade = null
     this.won = null
     this.playLabel = 'BAS DE LA 1re'
@@ -80,17 +88,18 @@ export class BaseballEngine {
     if (this.phase === 'walkup' && this.phaseClock >= 1.6) this.enterReady()
     else if (this.phase === 'ready' && this.phaseClock >= .9) this.startPitch()
     else if (this.phase === 'pitching') {
-      this.pitchClock += dt
+      this.slowMotion = this.pitchClock >= CONTACT_TIME - .23 && this.pitchClock < CONTACT_TIME + .11
+      this.pitchClock += dt * (this.slowMotion ? .58 : 1)
       if (this.pitchClock >= PITCH_DURATION) this.resolveStrike('PRISE ! TU AS LAISSÉ PASSER')
     } else if (this.phase === 'contact') {
       this.contactClock += dt
-      this.ballFlight = Math.min(.58, (this.contactClock / .44) * .58)
-      if (this.contactClock >= .44) this.startFielding()
+      this.ballFlight = Math.min(.58, (Math.max(0, this.contactClock - .08) / .5) * .58)
+      if (this.contactClock >= .58) this.startFielding()
     } else if (this.phase === 'fielding') {
       this.ballFlight = Math.min(.74, .58 + (this.phaseClock / .62) * .16)
       if (this.phaseClock >= .62) this.startRunning()
     } else if (this.phase === 'running') this.updateRunner(dt)
-    else if (this.phase === 'call' && this.phaseClock >= 1.35) this.afterCall()
+    else if (this.phase === 'call' && this.phaseClock >= (this.runsThisPlay ? 2.45 : 1.65)) this.afterCall()
     else if (this.phase === 'inning_break' && this.phaseClock >= 2.35) this.advanceInning()
   }
 
@@ -117,7 +126,7 @@ export class BaseballEngine {
       return
     }
     if (this.phase === 'call') {
-      this.afterCall()
+      if (this.phaseClock >= (this.runsThisPlay ? 1.3 : .5)) this.afterCall()
       return
     }
     if (this.phase === 'inning_break') this.advanceInning()
@@ -152,15 +161,19 @@ export class BaseballEngine {
     this.phase = 'pitching'
     this.phaseClock = 0
     this.pitchClock = 0
+    this.slowMotion = false
     this.pitchSerial++
     const difficulty = this.config.opponent.difficulty
     this.pitchCurve = (((this.pitchSerial * 47 + difficulty * 13) % 7) - 3) * (3 + difficulty)
     this.grade = null
+    this.runsThisPlay = 0
+    this.scoringRunners = []
     this.message = this.pitchSerial % 3 === 0 ? 'BALLE COURBE… LIS LA TRAJECTOIRE' : 'LE LANCER PART !'
     this.subMessage = 'Observe la balle, puis touche au contact'
   }
 
   private swing() {
+    this.slowMotion = false
     this.swingClock = .28
     const grade = gradeSwing(this.pitchClock)
     this.grade = grade
@@ -248,13 +261,26 @@ export class BaseballEngine {
   }
 
   private resolveSafe() {
-    const result = advanceBases(this.bases, this.targetBases)
-    this.bases = result.bases
-    this.score += result.runs
+    const next: [number | null, number | null, number | null] = [null, null, null]
+    const scoring: number[] = []
+    for (let index = 2; index >= 0; index--) {
+      const runner = this.baseRunners[index]
+      if (runner === null) continue
+      const destination = index + this.targetBases
+      if (destination >= 3) scoring.push(runner)
+      else next[destination] = runner
+    }
+    if (this.targetBases >= 4) scoring.push(this.batterIndex)
+    else next[this.targetBases - 1] = this.batterIndex
+    this.baseRunners = next
+    this.bases = next.map((runner) => runner !== null) as [boolean, boolean, boolean]
+    this.scoringRunners = scoring
+    this.runsThisPlay = scoring.length
+    this.score += this.runsThisPlay
     this.phase = 'call'
     this.phaseClock = 0
     this.message = this.targetBases === 4 ? 'HOME RUN !' : 'SAFE !'
-    this.subMessage = result.runs ? `${result.runs} point${result.runs > 1 ? 's' : ''} pour les Neon Sparks` : `${this.targetBases === 1 ? 'Simple' : this.targetBases === 2 ? 'Double' : 'Triple'} réussi`
+    this.subMessage = this.runsThisPlay ? `${this.runsThisPlay} point${this.runsThisPlay > 1 ? 's' : ''} pour les Neon Sparks` : `${this.targetBases === 1 ? 'Simple' : this.targetBases === 2 ? 'Double' : 'Triple'} réussi`
   }
 
   private resolveOut(message: string) {
@@ -287,6 +313,8 @@ export class BaseballEngine {
     this.runnerProgress = 0
     this.targetBases = 0
     this.grade = null
+    this.runsThisPlay = 0
+    this.scoringRunners = []
     this.phase = 'walkup'
     this.phaseClock = 0
     this.setWalkupMessage()
@@ -320,6 +348,9 @@ export class BaseballEngine {
     this.outs = 0
     this.strikes = 0
     this.bases = [false, false, false]
+    this.baseRunners = [null, null, null]
+    this.scoringRunners = []
+    this.runsThisPlay = 0
     this.runnerProgress = 0
     this.targetBases = 0
     this.batterIndex = (this.batterIndex + 1) % ROSTER.length
@@ -350,6 +381,11 @@ export class BaseballEngine {
       outs: this.outs,
       strikes: this.strikes,
       bases: [...this.bases] as [boolean, boolean, boolean],
+      baseRunners: [...this.baseRunners] as [number | null, number | null, number | null],
+      scoringRunners: [...this.scoringRunners],
+      runsThisPlay: this.runsThisPlay,
+      pitchProgress: Math.min(1, this.pitchClock / PITCH_DURATION),
+      slowMotion: this.slowMotion,
       cue: actionCue(this.phase, this.pitchClock, this.runnerProgress, this.dashCooldown),
       message: this.message,
       subMessage: this.subMessage,

@@ -7,6 +7,7 @@ const COLORS = {
   ink: '#162a39', cream: '#fff1c9', grass: '#218f63', grassDark: '#197854',
   clay: '#bd764b', chalk: '#f8e6bd', gold: '#ffe077', aqua: '#4ce9dc',
 }
+const PLAYER_ACCENTS = ['#59eadb', '#ff977b', '#a8d4ff', '#e6a4ff']
 
 function seeded(number: number) {
   const value = Math.sin(number * 127.1 + 78.233) * 43758.5453
@@ -55,6 +56,7 @@ export class BaseballRenderer {
     this.drawFielders(engine)
     this.drawPitcher(engine)
     if (engine.phase === 'running') this.drawRunner(engine)
+    else if (engine.phase === 'call' && engine.scoringRunners.length) this.drawScoringCelebration(engine)
     else this.drawBatter(engine)
     this.drawBall(engine)
     this.drawEffects(engine)
@@ -193,7 +195,8 @@ export class BaseballRenderer {
       ctx.fillStyle = COLORS.cream; ctx.fillRect(-5, -5, 10, 10)
       ctx.fillStyle = '#fffdf0'; ctx.fillRect(-4, -4, 6, 6)
       ctx.restore()
-      if (engine.bases[index - 1]) this.drawCharacter(base.x, base.y - 6, 'runner', 'ready', index === 3, .72, (engine.batterIndex + index) % 4)
+      const runner = engine.baseRunners[index - 1]
+      if (runner !== null) this.drawCharacter(base.x, base.y - 6, 'home', 'ready', index === 3, .82, runner)
     }
     ctx.fillStyle = '#774d3c'
     ctx.fillRect(231, 231, 18, 10)
@@ -282,6 +285,19 @@ export class BaseballRenderer {
     }
   }
 
+  private drawScoringCelebration(engine: BaseballEngine) {
+    const ctx = this.ctx
+    const runners = engine.scoringRunners
+    runners.forEach((runner, index) => {
+      const spread = index - (runners.length - 1) / 2
+      const x = HOME.x + spread * 32
+      const y = HOME.y - 7 - Math.abs(Math.sin(engine.phaseClock * 7 + index * 1.3)) * 4
+      this.drawCharacter(x, y, 'home', 'cheer', index % 2 === 0, index === runners.length - 1 ? 1.15 : .95, runner)
+      ctx.fillStyle = PLAYER_ACCENTS[runner % 4]
+      ctx.fillRect(Math.round(x - 2), Math.round(y - 47 - Math.sin(engine.phaseClock * 5 + index) * 3), 4, 4)
+    })
+  }
+
   private opponentUniform(engine: BaseballEngine): Uniform {
     const id = engine.config.opponent.id
     return id === 'comets' || id === 'vipers' || id === 'kings' ? id : 'hounds'
@@ -354,12 +370,12 @@ export class BaseballRenderer {
 
   private drawEffects(engine: BaseballEngine) {
     const ctx = this.ctx
-    if (engine.phase === 'contact' && engine.phaseClock < .44) {
-      const progress = engine.phaseClock / .44
+    if (engine.phase === 'contact' && engine.phaseClock < .58) {
+      const progress = engine.phaseClock / .58
       const strength = engine.grade === 'perfect' ? 1 : .6
       ctx.save()
       ctx.globalAlpha = (1 - progress) * strength
-      ctx.strokeStyle = '#fff3a0'; ctx.lineWidth = 2
+      ctx.strokeStyle = PLAYER_ACCENTS[engine.batterIndex % 4]; ctx.lineWidth = 2
       for (let ray = 0; ray < 12; ray++) {
         const angle = ray * Math.PI / 6
         const start = 11 + progress * 15
@@ -371,11 +387,11 @@ export class BaseballRenderer {
       }
       ctx.restore()
     }
-    if (engine.phase === 'call' && engine.grade === 'perfect') {
+    if (engine.phase === 'call' && engine.runsThisPlay > 0) {
       for (let i = 0; i < 18; i++) {
         const x = seeded(i * 11 + engine.pitchSerial) * 460 + 10
         const y = 50 + seeded(i * 29) * 170 + engine.phaseClock * 22
-        ctx.fillStyle = i % 2 ? '#ffe27e' : '#70f5df'
+        ctx.fillStyle = i % 2 ? '#ffe27e' : PLAYER_ACCENTS[engine.scoringRunners[i % engine.scoringRunners.length] % 4]
         ctx.fillRect(Math.floor(x), Math.floor(y % 270), 3, 5)
       }
     }
@@ -407,7 +423,10 @@ export class BaseballRenderer {
     let desiredX = WORLD.width / 2
     let desiredY = WORLD.height / 2
     if (!portrait) {
-      if (engine.phase === 'ready' || engine.phase === 'pitching') { desiredZoom = 1.13; desiredY = 176 }
+      if (engine.phase === 'ready' || engine.phase === 'pitching') {
+        desiredZoom = engine.slowMotion ? 1.29 : 1.13
+        desiredY = engine.slowMotion ? 199 : 176
+      }
       else if (engine.phase === 'contact') { desiredZoom = 1.22; desiredY = 202 }
       else if (engine.phase === 'fielding') { desiredZoom = 1.03; desiredY = 135 }
       else if (engine.phase === 'running') {
@@ -415,9 +434,12 @@ export class BaseballRenderer {
         desiredZoom = 1.09
         desiredX = lerp(240, runner.x, .34)
         desiredY = lerp(144, runner.y, .34)
-      } else if (engine.phase === 'call') { desiredZoom = 1.08; desiredY = 165 }
+      } else if (engine.phase === 'call') {
+        desiredZoom = engine.runsThisPlay ? 1.24 : 1.08
+        desiredY = engine.runsThisPlay ? 211 : 165
+      }
     }
-    this.cameraZoom = lerp(this.cameraZoom, desiredZoom, .075)
+    this.cameraZoom = lerp(this.cameraZoom, desiredZoom, engine.slowMotion ? .11 : .075)
     this.cameraX = lerp(this.cameraX, desiredX, .08)
     this.cameraY = lerp(this.cameraY, desiredY, .08)
 
