@@ -1,5 +1,5 @@
 import type { BaseballEngine } from './engine'
-import { PixelCharacters, type CharacterPose } from './pixelArt'
+import { PixelCharacters, type CharacterPose, type Uniform } from './pixelArt'
 import { BASES, clamp, CONTACT_TIME, HOME, lerp, PITCH_DURATION, pointOnBasePath, WORLD } from './rules'
 
 const COLORS = {
@@ -195,10 +195,11 @@ export class BaseballRenderer {
     ]
     positions.forEach((position, index) => {
       const bob = Math.floor(Math.sin(engine.phaseClock * 3 + index) * 1.2)
-      const pose: CharacterPose = engine.phase === 'running' && (index + engine.pitchSerial) % 3 === 0
+      const activeDefense = engine.phase === 'fielding' || engine.phase === 'running'
+      const pose: CharacterPose = activeDefense && (index + engine.pitchSerial) % 3 === 0
         ? (Math.floor(engine.phaseClock * 9) % 2 ? 'runA' : 'runB')
         : Math.floor(engine.phaseClock * 2 + index) % 7 === 0 ? 'catch' : 'ready'
-      this.drawCharacter(position.x, position.y + bob, 'away', pose, index % 2 === 0, position.scale)
+      this.drawCharacter(position.x, position.y + bob, this.opponentUniform(engine), pose, index % 2 === 0, position.scale)
     })
   }
 
@@ -207,7 +208,7 @@ export class BaseballRenderer {
     const pose: CharacterPose = engine.phase === 'pitching'
       ? clock < .25 ? 'windup' : clock < .49 ? 'pitch' : 'ready'
       : 'idle'
-    this.drawCharacter(240, 143, 'away', pose, true, 1)
+    this.drawCharacter(240, 143, this.opponentUniform(engine), pose, true, 1)
   }
 
   private drawBatter(engine: BaseballEngine) {
@@ -253,7 +254,12 @@ export class BaseballRenderer {
     }
   }
 
-  private drawCharacter(x: number, y: number, uniform: 'home' | 'away' | 'runner', pose: CharacterPose, flip = false, scale = 1) {
+  private opponentUniform(engine: BaseballEngine): Uniform {
+    const id = engine.config.opponent.id
+    return id === 'comets' || id === 'vipers' || id === 'kings' ? id : 'hounds'
+  }
+
+  private drawCharacter(x: number, y: number, uniform: Uniform, pose: CharacterPose, flip = false, scale = 1) {
     const ctx = this.ctx
     ctx.fillStyle = 'rgb(8 25 28 / .34)'
     ctx.beginPath(); ctx.ellipse(x, y + 3, 11 * scale, 3 * scale, 0, 0, Math.PI * 2); ctx.fill()
@@ -261,7 +267,7 @@ export class BaseballRenderer {
   }
 
   private drawBall(engine: BaseballEngine) {
-    if (engine.phase !== 'pitching' && engine.phase !== 'running') return
+    if (!['pitching', 'contact', 'fielding', 'running'].includes(engine.phase)) return
     let x = 240, y = 142, height = 0
     if (engine.phase === 'pitching') {
       const progress = clamp(engine.pitchClock / PITCH_DURATION, 0, 1)
@@ -270,7 +276,9 @@ export class BaseballRenderer {
       y = lerp(143, 224, eased)
       height = Math.sin(progress * Math.PI) * 8
     } else {
-      const progress = clamp(engine.phaseClock / engine.fieldDeadline, 0, 1)
+      const progress = engine.phase === 'contact' || engine.phase === 'fielding'
+        ? clamp(engine.ballFlight, 0, 1)
+        : clamp(.72 + (engine.phaseClock / Math.max(engine.fieldDeadline, .1)) * .28, 0, 1)
       const side = ((engine.pitchSerial * 71) % 260) - 130
       const landing = { x: 240 + side, y: 48 + (engine.pitchSerial % 3) * 18 }
       const destination = BASES[Math.min(4, engine.targetBases)]
@@ -289,7 +297,7 @@ export class BaseballRenderer {
     const ctx = this.ctx
     ctx.fillStyle = 'rgb(4 25 25 / .4)'
     ctx.beginPath(); ctx.ellipse(x, y + 3, 6, 2, 0, 0, Math.PI * 2); ctx.fill()
-    if (engine.phase === 'running') {
+    if (engine.phase !== 'pitching') {
       for (let trail = 1; trail < 5; trail++) {
         ctx.fillStyle = trail % 2 ? '#f9d885' : '#fff4cf'
         ctx.globalAlpha = .43 - trail * .08
@@ -304,8 +312,8 @@ export class BaseballRenderer {
 
   private drawEffects(engine: BaseballEngine) {
     const ctx = this.ctx
-    if (engine.phase === 'running' && engine.phaseClock < .32) {
-      const progress = engine.phaseClock / .32
+    if (engine.phase === 'contact' && engine.phaseClock < .44) {
+      const progress = engine.phaseClock / .44
       const strength = engine.grade === 'perfect' ? 1 : .6
       ctx.save()
       ctx.globalAlpha = (1 - progress) * strength
@@ -321,7 +329,7 @@ export class BaseballRenderer {
       }
       ctx.restore()
     }
-    if (engine.phase === 'result' && engine.grade === 'perfect') {
+    if (engine.phase === 'call' && engine.grade === 'perfect') {
       for (let i = 0; i < 18; i++) {
         const x = seeded(i * 11 + engine.pitchSerial) * 460 + 10
         const y = 50 + seeded(i * 29) * 170 + engine.phaseClock * 22
@@ -373,7 +381,7 @@ export class BaseballRenderer {
       ctx.fillStyle = '#276052'; ctx.fillRect(0, top + targetHeight, width, 8 * dpr)
     }
 
-    const shake = engine.phase === 'running' && engine.phaseClock < .16 && engine.grade === 'perfect'
+    const shake = engine.phase === 'contact' && engine.phaseClock < .2 && engine.grade === 'perfect'
       ? Math.round(Math.sin(engine.phaseClock * 130) * 3 * dpr) : 0
     ctx.drawImage(this.scene, left + shake, top, targetWidth, targetHeight)
     if (portrait) {

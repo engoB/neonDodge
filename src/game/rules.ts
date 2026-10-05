@@ -9,9 +9,9 @@ export const BASES: readonly Vec2[] = [
   { x: 132, y: 169 },
   HOME,
 ]
-export const PITCH_DURATION = 1.05
-export const CONTACT_TIME = .78
-export const RUN_SPEED = .62
+export const PITCH_DURATION = 1.12
+export const CONTACT_TIME = .82
+export const RUN_SPEED = .6
 
 export const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))
 export const lerp = (a: number, b: number, amount: number) => a + (b - a) * amount
@@ -28,19 +28,20 @@ export function pointOnBasePath(progress: number): Vec2 {
 
 export function gradeSwing(pitchClock: number): Exclude<HitGrade, null> {
   const error = Math.abs(pitchClock - CONTACT_TIME)
-  if (error <= .055) return 'perfect'
-  if (error <= .13) return 'good'
-  if (error <= .2) return 'foul'
+  if (error <= .058) return 'perfect'
+  if (error <= .14) return 'good'
+  if (error <= .22) return 'foul'
   return 'miss'
 }
 
 export function actionCue(phase: GamePhase, pitchClock: number, runnerProgress: number, dashCooldown: number): ActionCue {
   if (phase === 'paused') return 'REPRENDS'
-  if (phase === 'gameover') return 'REJOUE'
-  if (phase === 'ready' || phase === 'result') return 'JOUE'
-  if (phase === 'pitching') return Math.abs(pitchClock - CONTACT_TIME) < .19 ? 'FRAPPE' : 'ATTENDS'
+  if (phase === 'gameover') return 'TERMINÉ'
+  if (phase === 'walkup' || phase === 'call' || phase === 'inning_break') return 'CONTINUE'
+  if (phase === 'ready' || phase === 'contact' || phase === 'fielding') return 'ATTENDS'
+  if (phase === 'pitching') return Math.abs(pitchClock - CONTACT_TIME) < .2 ? 'FRAPPE' : 'ATTENDS'
   const distanceToBase = Math.ceil(runnerProgress) - runnerProgress
-  if (distanceToBase > 0 && distanceToBase < .26) return 'GLISSE'
+  if (distanceToBase > 0 && distanceToBase < .25) return 'GLISSE'
   return dashCooldown <= 0 ? 'ACCÉLÈRE' : 'ATTENDS'
 }
 

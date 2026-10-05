@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { BaseballEngine } from './engine'
+import { matchConfig } from './league'
 import { actionCue, advanceBases, CONTACT_TIME, gradeSwing, pointOnBasePath } from './rules'
+
+const engine = () => new BaseballEngine(matchConfig('story', 0))
 
 describe('one-touch baseball rules', () => {
   it('grades a swing from its distance to the contact frame', () => {
     expect(gradeSwing(CONTACT_TIME)).toBe('perfect')
     expect(gradeSwing(CONTACT_TIME + .1)).toBe('good')
-    expect(gradeSwing(CONTACT_TIME + .17)).toBe('foul')
+    expect(gradeSwing(CONTACT_TIME + .18)).toBe('foul')
     expect(gradeSwing(0)).toBe('miss')
   })
 
@@ -16,43 +19,47 @@ describe('one-touch baseball rules', () => {
     expect(actionCue('running', 0, .8, 0)).toBe('GLISSE')
   })
 
-  it('starts a home run on a perfectly timed touch', () => {
-    const engine = new BaseballEngine()
-    engine.action()
-    engine.pitchClock = CONTACT_TIME
-    engine.action()
-    expect(engine.phase).toBe('running')
-    expect(engine.grade).toBe('perfect')
-    expect(engine.targetBases).toBe(4)
-    for (let frame = 0; frame < 500 && engine.phase === 'running'; frame++) engine.update(1 / 60)
-    expect(engine.phase).toBe('result')
-    expect(engine.score).toBe(1)
-    expect(engine.outs).toBe(0)
+  it('stages a perfect hit through contact, fielding and running', () => {
+    const game = engine()
+    game.action()
+    game.action()
+    game.pitchClock = CONTACT_TIME
+    game.action()
+    expect(game.phase).toBe('contact')
+    for (let frame = 0; frame < 70 && game.phase !== 'running'; frame++) game.update(1 / 60)
+    expect(game.phase).toBe('running')
+    expect(game.targetBases).toBe(4)
+    for (let frame = 0; frame < 700 && game.phase === 'running'; frame++) game.update(1 / 60)
+    expect(game.phase).toBe('call')
+    expect(game.score).toBe(1)
   })
 
   it('maps touches during auto-run to dash and then slide', () => {
-    const engine = new BaseballEngine()
-    engine.action()
-    engine.pitchClock = CONTACT_TIME + .03
-    engine.action()
-    engine.runnerProgress = .2
-    engine.action()
-    expect(engine.dashClock).toBe(.3)
-    engine.runnerProgress = .8
-    engine.action()
-    expect(engine.slideClock).toBe(.42)
+    const game = engine()
+    game.phase = 'running'
+    game.targetBases = 1
+    game.runnerProgress = .2
+    game.action()
+    expect(game.dashClock).toBe(.34)
+    game.runnerProgress = .8
+    game.action()
+    expect(game.slideClock).toBe(.46)
   })
 
-  it('records an out after three missed pitches', () => {
-    const engine = new BaseballEngine()
-    for (let strike = 0; strike < 3; strike++) {
-      if (engine.phase === 'result') engine.action()
-      if (engine.phase === 'ready') engine.action()
-      engine.pitchClock = 0
-      engine.action()
-    }
-    expect(engine.outs).toBe(1)
-    expect(engine.strikes).toBe(0)
+  it('enters a real inning break after three outs', () => {
+    const game = engine()
+    game.outs = 2
+    game.phase = 'pitching'
+    game.strikes = 2
+    game.pitchClock = 0
+    game.action()
+    expect(game.phase).toBe('call')
+    expect(game.outs).toBe(3)
+    game.action()
+    expect(game.phase).toBe('inning_break')
+    game.action()
+    expect(game.inning).toBe(2)
+    expect(game.outs).toBe(0)
   })
 
   it('loads occupied bases and scores forced runners', () => {

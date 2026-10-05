@@ -3,18 +3,21 @@ export type CharacterPose =
   | 'idle' | 'ready' | 'windup' | 'pitch' | 'batReady' | 'swingA'
   | 'swingB' | 'runA' | 'runB' | 'slide' | 'catch' | 'cheer'
 
-export type Uniform = 'home' | 'away' | 'runner'
+export type Uniform = 'home' | 'hounds' | 'comets' | 'vipers' | 'kings' | 'runner'
 
 const POSES: CharacterPose[] = [
   'idle', 'ready', 'windup', 'pitch', 'batReady', 'swingA',
   'swingB', 'runA', 'runB', 'slide', 'catch', 'cheer',
 ]
-const TEAMS: Uniform[] = ['home', 'away', 'runner']
+const TEAMS: Uniform[] = ['home', 'hounds', 'comets', 'vipers', 'kings', 'runner']
 const W = 32, H = 40
 
 const COLORS: Record<Uniform, { shirt: string; light: string; dark: string; cap: string; trim: string }> = {
   home: { shirt: '#16c5c9', light: '#78f7e4', dark: '#087c90', cap: '#0a617e', trim: '#ffe179' },
-  away: { shirt: '#ee5069', light: '#ff9b83', dark: '#a42b51', cap: '#8f2a57', trim: '#fff0ae' },
+  hounds: { shirt: '#ee5069', light: '#ff9b83', dark: '#a42b51', cap: '#8f2a57', trim: '#fff0ae' },
+  comets: { shirt: '#eebc45', light: '#ffe8a0', dark: '#a96b2e', cap: '#3c455f', trim: '#fff7d0' },
+  vipers: { shirt: '#9b5cdb', light: '#d9abff', dark: '#5a358e', cap: '#34244f', trim: '#75f0dd' },
+  kings: { shirt: '#de4777', light: '#ff96b1', dark: '#842a55', cap: '#392c54', trim: '#ffe076' },
   runner: { shirt: '#ffba49', light: '#ffe392', dark: '#bd723a', cap: '#5a5078', trim: '#fff4c9' },
 }
 
