@@ -1,13 +1,13 @@
 /** Original 32×40 pixel characters. Every pose is painted once into an atlas. */
 export type CharacterPose =
   | 'idle' | 'ready' | 'windup' | 'pitch' | 'batReady' | 'swingA'
-  | 'swingB' | 'runA' | 'runB' | 'slide' | 'catch' | 'cheer'
+  | 'swingB' | 'swingC' | 'runA' | 'runB' | 'runC' | 'runD' | 'slide' | 'catch' | 'cheer'
 
 export type Uniform = 'home' | 'hounds' | 'comets' | 'vipers' | 'kings' | 'runner'
 
 const POSES: CharacterPose[] = [
   'idle', 'ready', 'windup', 'pitch', 'batReady', 'swingA',
-  'swingB', 'runA', 'runB', 'slide', 'catch', 'cheer',
+  'swingB', 'swingC', 'runA', 'runB', 'runC', 'runD', 'slide', 'catch', 'cheer',
 ]
 const TEAMS: Uniform[] = ['home', 'hounds', 'comets', 'vipers', 'kings', 'runner']
 const W = 32, H = 40
@@ -48,13 +48,17 @@ function paint(ctx: CanvasRenderingContext2D, team: Uniform, pose: CharacterPose
     return
   }
 
-  const running = pose === 'runA' || pose === 'runB'
+  const running = pose === 'runA' || pose === 'runB' || pose === 'runC' || pose === 'runD'
   const leaning = running || pose === 'pitch'
   const bodyShift = leaning ? 1 : 0
   const legs: [Point, Point] = pose === 'runA'
     ? [[8, 37], [25, 32]]
+    : pose === 'runC'
+      ? [[10, 37], [23, 34]]
     : pose === 'runB'
       ? [[22, 37], [6, 32]]
+      : pose === 'runD'
+        ? [[20, 37], [9, 34]]
       : pose === 'windup'
         ? [[11, 37], [24, 27]]
         : pose === 'pitch'
@@ -72,12 +76,14 @@ function paint(ctx: CanvasRenderingContext2D, team: Uniform, pose: CharacterPose
   let backHand: Point = [7, 27]
   let frontHand: Point = [26, 26]
   if (pose === 'runA') { backHand = [8, 18]; frontHand = [23, 31] }
+  if (pose === 'runC') { backHand = [7, 22]; frontHand = [25, 27] }
   if (pose === 'runB') { backHand = [7, 30]; frontHand = [27, 18] }
+  if (pose === 'runD') { backHand = [9, 27]; frontHand = [26, 22] }
   if (pose === 'windup') { backHand = [7, 8]; frontHand = [24, 24] }
   if (pose === 'pitch') { backHand = [4, 19]; frontHand = [29, 13] }
   if (pose === 'catch') { backHand = [6, 11]; frontHand = [25, 10] }
   if (pose === 'cheer') { backHand = [5, 7]; frontHand = [27, 7] }
-  if (pose === 'batReady' || pose === 'swingA' || pose === 'swingB') {
+  if (pose === 'batReady' || pose === 'swingA' || pose === 'swingB' || pose === 'swingC') {
     backHand = [18, 22]; frontHand = [23, 20]
   }
 
@@ -107,8 +113,8 @@ function paint(ctx: CanvasRenderingContext2D, team: Uniform, pose: CharacterPose
   block(20 + bodyShift, 10, 7, 1, color.trim)
   block(12 + bodyShift, 18, 3, 2, '#fff4cc')
 
-  if (pose === 'batReady' || pose === 'swingA' || pose === 'swingB') {
-    const tip: Point = pose === 'batReady' ? [28, 1] : pose === 'swingA' ? [3, 8] : [29, 25]
+  if (pose === 'batReady' || pose === 'swingA' || pose === 'swingB' || pose === 'swingC') {
+    const tip: Point = pose === 'batReady' ? [28, 1] : pose === 'swingA' ? [3, 8] : pose === 'swingB' ? [29, 25] : [24, 34]
     segment(frontHand, tip, '#d39448', 3)
     block(tip[0] - 2, tip[1] - 2, 4, 4, '#f9df82')
   }
@@ -136,14 +142,29 @@ export class PixelCharacters {
     }))
   }
 
-  draw(ctx: CanvasRenderingContext2D, x: number, y: number, team: Uniform, pose: CharacterPose, flip = false, scale = 1) {
+  draw(ctx: CanvasRenderingContext2D, x: number, y: number, team: Uniform, pose: CharacterPose, flip = false, scale = 1, variant = 0) {
     ctx.save()
     ctx.translate(Math.round(x), Math.round(y))
     if (flip) ctx.scale(-1, 1)
+    ctx.scale(scale, scale)
     ctx.drawImage(
       this.atlas, POSES.indexOf(pose) * W, TEAMS.indexOf(team) * H, W, H,
-      -16 * scale, -35 * scale, W * scale, H * scale,
+      -16, -35, W, H,
     )
+    // Four readable silhouettes, reusing the same timed pose atlas like a GBA palette/profile bank.
+    if (variant % 4 === 0) {
+      ctx.fillStyle = team === 'home' ? '#083f63' : '#2c263d'
+      ctx.fillRect(-10, -30, 5, 3); ctx.fillRect(-12, -27, 4, 3)
+    } else if (variant % 4 === 1) {
+      ctx.fillStyle = '#3d2430'; ctx.fillRect(2, -20, 6, 2); ctx.fillRect(5, -18, 3, 2)
+      ctx.fillStyle = '#f3e5c6'; ctx.fillRect(-1, -7, 2, 3)
+    } else if (variant % 4 === 2) {
+      ctx.strokeStyle = '#f7e8bd'; ctx.lineWidth = 1
+      ctx.strokeRect(0, -25, 4, 3); ctx.strokeRect(5, -25, 4, 3); ctx.fillStyle = '#f7e8bd'; ctx.fillRect(4, -24, 1, 1)
+    } else {
+      ctx.fillStyle = '#402c3d'; ctx.fillRect(-4, -19, 10, 3); ctx.fillRect(-2, -16, 8, 2)
+      ctx.fillStyle = '#ffe179'; ctx.fillRect(-5, -30, 13, 1)
+    }
     ctx.restore()
   }
 }

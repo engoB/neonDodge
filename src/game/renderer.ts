@@ -18,6 +18,11 @@ export class BaseballRenderer {
   private readonly scene: HTMLCanvasElement
   private readonly field: HTMLCanvasElement
   private readonly characters = new PixelCharacters()
+  private cameraZoom = 1
+  private cameraX = WORLD.width / 2
+  private cameraY = WORLD.height / 2
+  private ballTrail: { x: number; y: number; height: number }[] = []
+  private ballTrailPhase = ''
 
   constructor(private canvas: HTMLCanvasElement) {
     this.output = canvas.getContext('2d', { alpha: false })!
@@ -178,7 +183,7 @@ export class BaseballRenderer {
       ctx.fillStyle = COLORS.cream; ctx.fillRect(-5, -5, 10, 10)
       ctx.fillStyle = '#fffdf0'; ctx.fillRect(-4, -4, 6, 6)
       ctx.restore()
-      if (engine.bases[index - 1]) this.drawCharacter(base.x, base.y - 6, 'runner', 'ready', index === 3, .72)
+      if (engine.bases[index - 1]) this.drawCharacter(base.x, base.y - 6, 'runner', 'ready', index === 3, .72, (engine.batterIndex + index) % 4)
     }
     ctx.fillStyle = '#774d3c'
     ctx.fillRect(231, 231, 18, 10)
@@ -193,13 +198,24 @@ export class BaseballRenderer {
       { x: 83, y: 91, scale: .66 }, { x: 394, y: 91, scale: .66 },
       { x: 240, y: 68, scale: .66 },
     ]
+    const activeDefense = engine.phase === 'fielding' || engine.phase === 'running'
+    const landing = {
+      x: 240 + ((engine.pitchSerial * 71) % 260) - 130,
+      y: 48 + (engine.pitchSerial % 3) * 18,
+    }
+    const chaser = engine.pitchSerial % positions.length
     positions.forEach((position, index) => {
       const bob = Math.floor(Math.sin(engine.phaseClock * 3 + index) * 1.2)
-      const activeDefense = engine.phase === 'fielding' || engine.phase === 'running'
+      const runFrames: CharacterPose[] = ['runA', 'runC', 'runB', 'runD']
       const pose: CharacterPose = activeDefense && (index + engine.pitchSerial) % 3 === 0
-        ? (Math.floor(engine.phaseClock * 9) % 2 ? 'runA' : 'runB')
+        ? runFrames[Math.floor(engine.phaseClock * 11 + index) % runFrames.length]
         : Math.floor(engine.phaseClock * 2 + index) % 7 === 0 ? 'catch' : 'ready'
-      this.drawCharacter(position.x, position.y + bob, this.opponentUniform(engine), pose, index % 2 === 0, position.scale)
+      const chase = activeDefense && index === chaser ? clamp((engine.ballFlight - .4) / .34, 0, 1) * .82 : 0
+      const cover = activeDefense && index === (chaser + 2) % positions.length ? clamp((engine.ballFlight - .55) / .4, 0, 1) * .22 : 0
+      const destination = BASES[Math.min(3, Math.max(1, engine.targetBases))]
+      const x = chase ? lerp(position.x, landing.x, chase) : cover ? lerp(position.x, destination.x, cover) : position.x
+      const y = chase ? lerp(position.y, landing.y + 5, chase) : cover ? lerp(position.y, destination.y, cover) : position.y
+      this.drawCharacter(x, y + bob, this.opponentUniform(engine), pose, x > position.x, position.scale, index % 4)
     })
   }
 
@@ -208,14 +224,15 @@ export class BaseballRenderer {
     const pose: CharacterPose = engine.phase === 'pitching'
       ? clock < .25 ? 'windup' : clock < .49 ? 'pitch' : 'ready'
       : 'idle'
-    this.drawCharacter(240, 143, this.opponentUniform(engine), pose, true, 1)
+    this.drawCharacter(240, 143, this.opponentUniform(engine), pose, true, 1, engine.config.opponent.difficulty % 4)
   }
 
   private drawBatter(engine: BaseballEngine) {
     const ctx = this.ctx
-    const pose: CharacterPose = engine.swingClock > .12 ? 'swingA'
-      : engine.swingClock > 0 ? 'swingB' : 'batReady'
-    this.drawCharacter(216, 224, 'home', pose, false, 1.1)
+    const pose: CharacterPose = engine.swingClock > .19 ? 'swingA'
+      : engine.swingClock > .1 ? 'swingB'
+        : engine.swingClock > 0 ? 'swingC' : 'batReady'
+    this.drawCharacter(216, 224, 'home', pose, false, 1.16, engine.batterIndex % 4)
     if (engine.phase !== 'pitching') return
     const distance = Math.abs(engine.pitchClock - CONTACT_TIME)
     if (distance > .19) return
@@ -236,18 +253,19 @@ export class BaseballRenderer {
     const ctx = this.ctx
     const point = pointOnBasePath(engine.runnerProgress)
     const next = pointOnBasePath(Math.min(engine.targetBases, engine.runnerProgress + .06))
+    const runFrames: CharacterPose[] = ['runA', 'runC', 'runB', 'runD']
     const pose: CharacterPose = engine.slideClock > 0 ? 'slide'
-      : Math.floor(engine.phaseClock * (engine.dashClock > 0 ? 17 : 11)) % 2 ? 'runA' : 'runB'
+      : runFrames[Math.floor(engine.phaseClock * (engine.dashClock > 0 ? 18 : 12)) % runFrames.length]
     if (engine.dashClock > 0 || engine.slideClock > 0) {
       for (let i = 0; i < 4; i++) {
         const dx = (point.x - next.x) * (i + 1) * 4
         const dy = (point.y - next.y) * (i + 1) * 4
         ctx.globalAlpha = .26 - i * .05
-        this.characters.draw(ctx, point.x + dx, point.y - 7 + dy, 'home', pose, next.x < point.x, 1.05)
+        this.characters.draw(ctx, point.x + dx, point.y - 7 + dy, 'home', pose, next.x < point.x, 1.08, engine.batterIndex % 4)
       }
       ctx.globalAlpha = 1
     }
-    this.drawCharacter(point.x, point.y - 7, 'home', pose, next.x < point.x, 1.05)
+    this.drawCharacter(point.x, point.y - 7, 'home', pose, next.x < point.x, 1.08, engine.batterIndex % 4)
     if (engine.slideClock > 0) for (let i = 0; i < 5; i++) {
       ctx.fillStyle = i % 2 ? '#e6af79' : '#fff0b5'
       ctx.fillRect(Math.round(point.x - 15 - i * 4), Math.round(point.y + 2 + Math.sin(i * 8) * 3), 3, 3)
@@ -259,11 +277,11 @@ export class BaseballRenderer {
     return id === 'comets' || id === 'vipers' || id === 'kings' ? id : 'hounds'
   }
 
-  private drawCharacter(x: number, y: number, uniform: Uniform, pose: CharacterPose, flip = false, scale = 1) {
+  private drawCharacter(x: number, y: number, uniform: Uniform, pose: CharacterPose, flip = false, scale = 1, variant = 0) {
     const ctx = this.ctx
     ctx.fillStyle = 'rgb(8 25 28 / .34)'
     ctx.beginPath(); ctx.ellipse(x, y + 3, 11 * scale, 3 * scale, 0, 0, Math.PI * 2); ctx.fill()
-    this.characters.draw(ctx, x, y, uniform, pose, flip, scale)
+    this.characters.draw(ctx, x, y, uniform, pose, flip, scale, variant)
   }
 
   private drawBall(engine: BaseballEngine) {
@@ -276,38 +294,52 @@ export class BaseballRenderer {
       y = lerp(143, 224, eased)
       height = Math.sin(progress * Math.PI) * 8
     } else {
-      const progress = engine.phase === 'contact' || engine.phase === 'fielding'
-        ? clamp(engine.ballFlight, 0, 1)
-        : clamp(.72 + (engine.phaseClock / Math.max(engine.fieldDeadline, .1)) * .28, 0, 1)
+      const progress = clamp(engine.ballFlight, 0, 1)
       const side = ((engine.pitchSerial * 71) % 260) - 130
       const landing = { x: 240 + side, y: 48 + (engine.pitchSerial % 3) * 18 }
       const destination = BASES[Math.min(4, engine.targetBases)]
-      if (progress < .56) {
-        const local = progress / .56
-        x = lerp(HOME.x, landing.x, local)
-        y = lerp(HOME.y - 12, landing.y, local)
-        height = Math.sin(local * Math.PI) * 72
+      if (progress < .62) {
+        const local = progress / .62
+        const eased = 1 - Math.pow(1 - local, 2.4)
+        x = lerp(HOME.x, landing.x, eased)
+        y = lerp(HOME.y - 12, landing.y, eased)
+        height = Math.sin(local * Math.PI) * 76 + local * 7
+      } else if (progress < .74) {
+        const local = (progress - .62) / .12
+        x = landing.x + Math.sin(local * Math.PI * 3) * (1 - local) * 3
+        y = landing.y + local * 3
+        height = (1 - local) * 7 + Math.abs(Math.sin(local * Math.PI * 2)) * 3
       } else {
-        const local = (progress - .56) / .44
-        x = lerp(landing.x, destination.x, local)
-        y = lerp(landing.y, destination.y, local)
-        height = Math.sin(local * Math.PI) * 18
+        const local = (progress - .74) / .26
+        const eased = local * local * (3 - 2 * local)
+        x = lerp(landing.x, destination.x, eased)
+        y = lerp(landing.y + 3, destination.y, eased)
+        height = Math.sin(local * Math.PI) * 24
       }
     }
     const ctx = this.ctx
+    const trailPhase = `${engine.pitchSerial}:${engine.phase}`
+    if (trailPhase !== this.ballTrailPhase) {
+      this.ballTrail = []
+      this.ballTrailPhase = trailPhase
+    }
+    this.ballTrail.push({ x, y, height })
+    if (this.ballTrail.length > 12) this.ballTrail.shift()
+
     ctx.fillStyle = 'rgb(4 25 25 / .4)'
     ctx.beginPath(); ctx.ellipse(x, y + 3, 6, 2, 0, 0, Math.PI * 2); ctx.fill()
-    if (engine.phase !== 'pitching') {
-      for (let trail = 1; trail < 5; trail++) {
-        ctx.fillStyle = trail % 2 ? '#f9d885' : '#fff4cf'
-        ctx.globalAlpha = .43 - trail * .08
-        ctx.fillRect(Math.round(x - (trail * 4)), Math.round(y - height + trail * 2), 3, 3)
-      }
-      ctx.globalAlpha = 1
+    for (let index = Math.max(0, this.ballTrail.length - 10); index < this.ballTrail.length - 2; index += 2) {
+      const point = this.ballTrail[index]
+      const age = (index + 2) / this.ballTrail.length
+      ctx.globalAlpha = age * .32
+      ctx.fillStyle = engine.phase === 'pitching' ? '#d9f4ec' : '#ffe09a'
+      ctx.beginPath(); ctx.arc(point.x, point.y - point.height, 1.4 + age, 0, Math.PI * 2); ctx.fill()
     }
-    ctx.fillStyle = '#27313d'; ctx.fillRect(Math.round(x - 4), Math.round(y - height - 4), 8, 8)
-    ctx.fillStyle = '#fff9e4'; ctx.fillRect(Math.round(x - 3), Math.round(y - height - 3), 6, 6)
-    ctx.fillStyle = '#e05d69'; ctx.fillRect(Math.round(x), Math.round(y - height - 2), 1, 4)
+    ctx.globalAlpha = 1
+    ctx.fillStyle = '#202a36'; ctx.beginPath(); ctx.arc(x, y - height, 4.3, 0, Math.PI * 2); ctx.fill()
+    ctx.fillStyle = '#fff9e4'; ctx.beginPath(); ctx.arc(x, y - height, 3.3, 0, Math.PI * 2); ctx.fill()
+    ctx.strokeStyle = '#e05d69'; ctx.lineWidth = 1
+    ctx.beginPath(); ctx.arc(x - 1, y - height, 1.8, -1.2, 1.2); ctx.stroke()
   }
 
   private drawEffects(engine: BaseballEngine) {
@@ -350,7 +382,8 @@ export class BaseballRenderer {
   private present(engine: BaseballEngine) {
     const cssWidth = Math.max(1, this.canvas.clientWidth)
     const cssHeight = Math.max(1, this.canvas.clientHeight)
-    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    // The scene is intentionally rendered at GBA-like resolution; a large DPR only burns fill-rate.
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
     const width = Math.round(cssWidth * dpr), height = Math.round(cssHeight * dpr)
     if (this.canvas.width !== width || this.canvas.height !== height) {
       this.canvas.width = width; this.canvas.height = height
@@ -360,11 +393,30 @@ export class BaseballRenderer {
     ctx.fillStyle = '#0b2335'; ctx.fillRect(0, 0, width, height)
 
     const portrait = height > width * 1.1
+    let desiredZoom = 1
+    let desiredX = WORLD.width / 2
+    let desiredY = WORLD.height / 2
+    if (!portrait) {
+      if (engine.phase === 'ready' || engine.phase === 'pitching') { desiredZoom = 1.13; desiredY = 176 }
+      else if (engine.phase === 'contact') { desiredZoom = 1.22; desiredY = 202 }
+      else if (engine.phase === 'fielding') { desiredZoom = 1.03; desiredY = 135 }
+      else if (engine.phase === 'running') {
+        const runner = pointOnBasePath(engine.runnerProgress)
+        desiredZoom = 1.09
+        desiredX = lerp(240, runner.x, .34)
+        desiredY = lerp(144, runner.y, .34)
+      } else if (engine.phase === 'call') { desiredZoom = 1.08; desiredY = 165 }
+    }
+    this.cameraZoom = lerp(this.cameraZoom, desiredZoom, .075)
+    this.cameraX = lerp(this.cameraX, desiredX, .08)
+    this.cameraY = lerp(this.cameraY, desiredY, .08)
+
     const scale = portrait ? Math.min(width / 278, height / 350) : Math.max(width / WORLD.width, height / WORLD.height)
-    const targetWidth = Math.round(WORLD.width * scale)
-    const targetHeight = Math.round(WORLD.height * scale)
-    const left = Math.round((width - targetWidth) / 2)
-    const top = Math.round((height - targetHeight) / 2 + (portrait ? height * .025 : 0))
+    const zoom = portrait ? 1 : this.cameraZoom
+    const targetWidth = Math.round(WORLD.width * scale * zoom)
+    const targetHeight = Math.round(WORLD.height * scale * zoom)
+    const left = portrait ? Math.round((width - targetWidth) / 2) : Math.round(width / 2 - this.cameraX * scale * zoom)
+    const top = portrait ? Math.round((height - targetHeight) / 2 + height * .025) : Math.round(height / 2 - this.cameraY * scale * zoom)
 
     if (portrait) {
       ctx.fillStyle = '#122f43'; ctx.fillRect(0, 0, width, Math.max(0, top))

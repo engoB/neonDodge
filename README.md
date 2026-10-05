@@ -38,6 +38,8 @@ npm run build
 - quatre batteurs Neon aux aptitudes différentes ;
 - quatre équipes rivales, couleurs, difficultés et lancers courbes propres ;
 - pauses de mise en scène entre batteurs et entre manches.
+- caméra dynamique pendant le lancer, l'impact et la course ;
+- trajectoire de balle continue, défenseurs en poursuite, effets sonores synthétisés et vibration mobile.
 
 ## Commande unique
 

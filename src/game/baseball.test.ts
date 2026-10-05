@@ -34,6 +34,21 @@ describe('one-touch baseball rules', () => {
     expect(game.score).toBe(1)
   })
 
+  it('keeps ball flight continuous across contact, fielding and running', () => {
+    const game = engine()
+    game.action()
+    game.action()
+    game.pitchClock = CONTACT_TIME
+    game.action()
+    const samples: number[] = []
+    for (let frame = 0; frame < 90 && ['contact', 'fielding', 'running'].includes(game.phase); frame++) {
+      game.update(1 / 60)
+      samples.push(game.ballFlight)
+    }
+    expect(samples.length).toBeGreaterThan(50)
+    for (let index = 1; index < samples.length; index++) expect(samples[index]).toBeGreaterThanOrEqual(samples[index - 1])
+  })
+
   it('maps touches during auto-run to dash and then slide', () => {
     const game = engine()
     game.phase = 'running'

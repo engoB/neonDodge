@@ -84,10 +84,10 @@ export class BaseballEngine {
       if (this.pitchClock >= PITCH_DURATION) this.resolveStrike('PRISE ! TU AS LAISSÉ PASSER')
     } else if (this.phase === 'contact') {
       this.contactClock += dt
-      this.ballFlight = Math.min(1, this.contactClock / .44)
+      this.ballFlight = Math.min(.58, (this.contactClock / .44) * .58)
       if (this.contactClock >= .44) this.startFielding()
     } else if (this.phase === 'fielding') {
-      this.ballFlight = Math.min(1, .65 + this.phaseClock / .65)
+      this.ballFlight = Math.min(.74, .58 + (this.phaseClock / .62) * .16)
       if (this.phaseClock >= .62) this.startRunning()
     } else if (this.phase === 'running') this.updateRunner(dt)
     else if (this.phase === 'call' && this.phaseClock >= 1.35) this.afterCall()
@@ -201,6 +201,7 @@ export class BaseballEngine {
   private startFielding() {
     this.phase = 'fielding'
     this.phaseClock = 0
+    this.ballFlight = .58
     this.message = this.targetBases >= 3 ? 'AU FOND DU CHAMP !' : 'LA DÉFENSE POURSUIT LA BALLE'
     this.subMessage = 'Prépare la course'
   }
@@ -208,6 +209,7 @@ export class BaseballEngine {
   private startRunning() {
     this.phase = 'running'
     this.phaseClock = 0
+    this.ballFlight = .74
     this.message = this.targetBases === 4 ? 'FAIS LE TOUR DES BASES !' : `VISE ${this.targetBases === 1 ? 'LA PREMIÈRE' : this.targetBases === 2 ? 'LA DEUXIÈME' : 'LA TROISIÈME'} !`
     this.subMessage = 'Touche en ligne droite pour accélérer, près de la base pour glisser'
   }
@@ -233,6 +235,7 @@ export class BaseballEngine {
     const speedBonus = batter.skill === 'speed' ? .08 : 0
     const speed = RUN_SPEED + speedBonus + (this.dashClock > 0 ? .5 : 0) + (this.slideClock > 0 ? .12 : 0)
     this.runnerProgress += speed * dt
+    this.ballFlight = Math.min(1, .74 + (this.phaseClock / Math.max(this.fieldDeadline, .1)) * .26)
     if (this.runnerProgress >= this.targetBases) {
       this.runnerProgress = this.targetBases
       this.resolveSafe()

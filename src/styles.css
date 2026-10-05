@@ -74,7 +74,7 @@ button { font: inherit; }
 
 .game-screen { position:fixed; inset:0; width:100vw; height:100dvh; overflow:hidden; background:#0b2335; cursor:pointer; touch-action:manipulation; user-select:none; isolation:isolate; }
 .game-screen__canvas,.game-screen__scanlines { position:absolute; inset:0; width:100%; height:100%; }
-.game-screen__canvas { display:block; image-rendering:pixelated; }
+.game-screen__canvas { display:block; image-rendering:pixelated; transform:translateZ(0); will-change:transform; }
 .game-screen__scanlines { z-index:1; pointer-events:none; opacity:.13; background:repeating-linear-gradient(to bottom,transparent 0 3px,rgb(3 11 19/.3) 3px 4px); box-shadow:inset 0 0 95px rgb(1 12 25/.5); }
 .game-hud { position:absolute; z-index:5; inset:0 0 auto; min-height:72px; padding:calc(env(safe-area-inset-top) + 9px) calc(env(safe-area-inset-right) + 12px) 9px calc(env(safe-area-inset-left) + 12px); display:flex; align-items:center; gap:12px; background:linear-gradient(to bottom,rgb(4 17 31/.96),rgb(4 17 31/.72) 75%,transparent); font-family:ui-monospace,monospace; }
 .hud-icon { width:42px; height:38px; flex:0 0 42px; border:2px solid #88a7a0; background:#173948; box-shadow:inset -3px -3px #102b3b,3px 3px #071522; color:#fff1c9; font-size:25px; font-weight:900; cursor:pointer; }

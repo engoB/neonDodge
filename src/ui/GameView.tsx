@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { GameAudio } from '../game/audio'
 import { BaseballEngine } from '../game/engine'
 import { BaseballRenderer } from '../game/renderer'
 import type { BaseballSnapshot, MatchConfig } from '../game/types'
@@ -22,8 +23,16 @@ const cueText: Record<BaseballSnapshot['cue'], string> = {
 export function GameView({ config, onExit, onComplete }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const engineRef = useRef<BaseballEngine | null>(null)
+  const audioRef = useRef<GameAudio | null>(null)
+  const lastSoundRef = useRef('')
   const [snapshot, setSnapshot] = useState<BaseballSnapshot>(() => new BaseballEngine(config).snapshot())
   const act = useCallback(() => engineRef.current?.action(), [])
+
+  useEffect(() => {
+    const audio = new GameAudio()
+    audioRef.current = audio
+    return () => audio.close()
+  }, [])
 
   useEffect(() => {
     if (!canvasRef.current) return
@@ -63,6 +72,22 @@ export function GameView({ config, onExit, onComplete }: Props) {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [act])
 
+  useEffect(() => {
+    const key = `${snapshot.phase}:${snapshot.message}`
+    if (key === lastSoundRef.current) return
+    lastSoundRef.current = key
+    const audio = audioRef.current
+    if (snapshot.phase === 'pitching') audio?.pitch()
+    else if (snapshot.phase === 'contact') {
+      audio?.hit(snapshot.grade === 'perfect')
+      navigator.vibrate?.(snapshot.grade === 'perfect' ? [18, 20, 28] : 18)
+    } else if (snapshot.phase === 'call') {
+      const success = snapshot.message.includes('SAFE') || snapshot.message.includes('HOME RUN')
+      audio?.call(success)
+      if (!success) navigator.vibrate?.(22)
+    } else if (snapshot.phase === 'inning_break') audio?.inning()
+  }, [snapshot.phase, snapshot.message, snapshot.grade])
+
   const hot = snapshot.cue === 'FRAPPE' || snapshot.cue === 'GLISSE' || snapshot.cue === 'ACCÉLÈRE'
   const cinematic = snapshot.phase === 'walkup' || snapshot.phase === 'inning_break'
 
@@ -73,6 +98,8 @@ export function GameView({ config, onExit, onComplete }: Props) {
       onPointerDown={(event) => {
         if ((event.target as Element).closest('button, a')) return
         event.preventDefault()
+        audioRef.current?.unlock()
+        if (engineRef.current?.phase === 'pitching') audioRef.current?.swing()
         act()
       }}
     >
