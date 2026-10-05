@@ -1,6 +1,7 @@
 import type { BaseballEngine } from './engine'
 import { PixelCharacters, type CharacterPose, type Uniform } from './pixelArt'
 import { BASES, clamp, CONTACT_TIME, HOME, lerp, PITCH_DURATION, pointOnBasePath, WORLD } from './rules'
+import stadiumUrl from '../assets/stadium-gameplay-v1.webp'
 
 const COLORS = {
   ink: '#162a39', cream: '#fff1c9', grass: '#218f63', grassDark: '#197854',
@@ -34,7 +35,16 @@ export class BaseballRenderer {
     this.field = document.createElement('canvas')
     this.field.width = WORLD.width
     this.field.height = WORLD.height
-    this.paintStadium(this.field.getContext('2d', { alpha: false })!)
+    const fieldContext = this.field.getContext('2d', { alpha: false })!
+    this.paintStadium(fieldContext)
+    const stadium = new Image()
+    stadium.decoding = 'async'
+    stadium.onload = () => {
+      fieldContext.imageSmoothingEnabled = true
+      fieldContext.drawImage(stadium, 0, 0, WORLD.width, WORLD.height)
+      fieldContext.imageSmoothingEnabled = false
+    }
+    stadium.src = stadiumUrl
   }
 
   render(engine: BaseballEngine) {
@@ -193,15 +203,15 @@ export class BaseballRenderer {
 
   private drawFielders(engine: BaseballEngine) {
     const positions = [
-      { x: 347, y: 151, scale: .8 }, { x: 135, y: 151, scale: .8 },
-      { x: 193, y: 112, scale: .72 }, { x: 288, y: 111, scale: .72 },
-      { x: 83, y: 91, scale: .66 }, { x: 394, y: 91, scale: .66 },
-      { x: 240, y: 68, scale: .66 },
+      { x: 370, y: 151, scale: .8 }, { x: 111, y: 151, scale: .8 },
+      { x: 190, y: 128, scale: .72 }, { x: 291, y: 128, scale: .72 },
+      { x: 78, y: 98, scale: .66 }, { x: 402, y: 98, scale: .66 },
+      { x: 240, y: 84, scale: .66 },
     ]
     const activeDefense = engine.phase === 'fielding' || engine.phase === 'running'
     const landing = {
       x: 240 + ((engine.pitchSerial * 71) % 260) - 130,
-      y: 48 + (engine.pitchSerial % 3) * 18,
+      y: 92 + (engine.pitchSerial % 3) * 12,
     }
     const chaser = engine.pitchSerial % positions.length
     positions.forEach((position, index) => {
@@ -224,7 +234,7 @@ export class BaseballRenderer {
     const pose: CharacterPose = engine.phase === 'pitching'
       ? clock < .25 ? 'windup' : clock < .49 ? 'pitch' : 'ready'
       : 'idle'
-    this.drawCharacter(240, 143, this.opponentUniform(engine), pose, true, 1, engine.config.opponent.difficulty % 4)
+    this.drawCharacter(240, 164, this.opponentUniform(engine), pose, true, 1, engine.config.opponent.difficulty % 4)
   }
 
   private drawBatter(engine: BaseballEngine) {
@@ -232,7 +242,7 @@ export class BaseballRenderer {
     const pose: CharacterPose = engine.swingClock > .19 ? 'swingA'
       : engine.swingClock > .1 ? 'swingB'
         : engine.swingClock > 0 ? 'swingC' : 'batReady'
-    this.drawCharacter(216, 224, 'home', pose, false, 1.16, engine.batterIndex % 4)
+    this.drawCharacter(216, 246, 'home', pose, false, 1.16, engine.batterIndex % 4)
     if (engine.phase !== 'pitching') return
     const distance = Math.abs(engine.pitchClock - CONTACT_TIME)
     if (distance > .19) return
@@ -240,12 +250,12 @@ export class BaseballRenderer {
     ctx.strokeStyle = distance < .06 ? '#fff4a6' : '#ffc95e'
     ctx.lineWidth = 2
     ctx.setLineDash([4, 3])
-    ctx.beginPath(); ctx.arc(240, 218, radius, 0, Math.PI * 2); ctx.stroke()
+      ctx.beginPath(); ctx.arc(240, 232, radius, 0, Math.PI * 2); ctx.stroke()
     ctx.setLineDash([])
     for (let i = 0; i < 4; i++) {
       const angle = i * Math.PI / 2 + engine.pitchClock * 3
       ctx.fillStyle = '#fff8d0'
-      ctx.fillRect(Math.round(240 + Math.cos(angle) * (radius + 5)), Math.round(218 + Math.sin(angle) * (radius + 5)), 2, 2)
+      ctx.fillRect(Math.round(240 + Math.cos(angle) * (radius + 5)), Math.round(232 + Math.sin(angle) * (radius + 5)), 2, 2)
     }
   }
 
@@ -286,17 +296,17 @@ export class BaseballRenderer {
 
   private drawBall(engine: BaseballEngine) {
     if (!['pitching', 'contact', 'fielding', 'running'].includes(engine.phase)) return
-    let x = 240, y = 142, height = 0
+    let x = 240, y = 163, height = 0
     if (engine.phase === 'pitching') {
       const progress = clamp(engine.pitchClock / PITCH_DURATION, 0, 1)
       const eased = progress * progress * (3 - 2 * progress)
       x = 240 + Math.sin(progress * Math.PI) * engine.pitchCurve
-      y = lerp(143, 224, eased)
+      y = lerp(164, 238, eased)
       height = Math.sin(progress * Math.PI) * 8
     } else {
       const progress = clamp(engine.ballFlight, 0, 1)
       const side = ((engine.pitchSerial * 71) % 260) - 130
-      const landing = { x: 240 + side, y: 48 + (engine.pitchSerial % 3) * 18 }
+      const landing = { x: 240 + side, y: 92 + (engine.pitchSerial % 3) * 12 }
       const destination = BASES[Math.min(4, engine.targetBases)]
       if (progress < .62) {
         const local = progress / .62
@@ -355,8 +365,8 @@ export class BaseballRenderer {
         const start = 11 + progress * 15
         const end = start + 8 + strength * 5
         ctx.beginPath()
-        ctx.moveTo(240 + Math.cos(angle) * start, 218 + Math.sin(angle) * start)
-        ctx.lineTo(240 + Math.cos(angle) * end, 218 + Math.sin(angle) * end)
+        ctx.moveTo(240 + Math.cos(angle) * start, 232 + Math.sin(angle) * start)
+        ctx.lineTo(240 + Math.cos(angle) * end, 232 + Math.sin(angle) * end)
         ctx.stroke()
       }
       ctx.restore()

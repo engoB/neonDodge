@@ -11,7 +11,7 @@ Le laboratoire privé `?romlab=1` sert à analyser et reconstruire les animation
 - Tailwind CSS 4
 - Canvas 2D avec boucle fixe à 60 Hz
 - stade original en couches, six palettes d'équipe et atlas pixel art de 12 poses par tenue
-- illustration de championnat originale et quatre capitaines rivaux
+- illustration de championnat, stade nocturne détaillé et quatre capitaines rivaux, entièrement originaux
 - modes Histoire, Arcade et Entraînement
 - manifeste PWA et service worker statique pour l'installation et le cache hors ligne
 - Vitest pour les règles du moteur

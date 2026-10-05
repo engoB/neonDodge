@@ -1,12 +1,12 @@
 import type { ActionCue, GamePhase, HitGrade, Vec2 } from './types'
 
 export const WORLD = { width: 480, height: 270 } as const
-export const HOME: Vec2 = { x: 240, y: 236 }
+export const HOME: Vec2 = { x: 240, y: 240 }
 export const BASES: readonly Vec2[] = [
   HOME,
-  { x: 348, y: 169 },
-  { x: 240, y: 91 },
-  { x: 132, y: 169 },
+  { x: 391, y: 159 },
+  { x: 240, y: 134 },
+  { x: 89, y: 159 },
   HOME,
 ]
 export const PITCH_DURATION = 1.12

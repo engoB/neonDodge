@@ -83,7 +83,7 @@ describe('one-touch baseball rules', () => {
   })
 
   it('keeps the runner on the four-segment diamond path', () => {
-    expect(pointOnBasePath(0)).toEqual({ x: 240, y: 236 })
-    expect(pointOnBasePath(4)).toEqual({ x: 240, y: 236 })
+    expect(pointOnBasePath(0)).toEqual({ x: 240, y: 240 })
+    expect(pointOnBasePath(4)).toEqual({ x: 240, y: 240 })
   })
 })
