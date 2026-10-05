@@ -314,11 +314,12 @@ export class BaseballRenderer {
     if (!['pitching', 'contact', 'fielding', 'running'].includes(engine.phase)) return
     let x = 240, y = 163, height = 0
     if (engine.phase === 'pitching') {
-      const progress = clamp(engine.pitchClock / PITCH_DURATION, 0, 1)
-      const eased = progress * progress * (3 - 2 * progress)
-      x = 240 + Math.sin(progress * Math.PI) * engine.pitchCurve
-      y = lerp(164, 238, eased)
-      height = Math.sin(progress * Math.PI) * 8
+      const progress = engine.pitchClock / CONTACT_TIME
+      const approach = clamp(progress, 0, 1)
+      const eased = approach * approach * (3 - 2 * approach)
+      x = 240 + Math.sin(approach * Math.PI) * engine.pitchCurve
+      y = lerp(164, 236, eased) + Math.max(0, progress - 1) * 27
+      height = Math.sin(approach * Math.PI) * 8
     } else {
       const progress = clamp(engine.ballFlight, 0, 1)
       const side = ((engine.pitchSerial * 71) % 260) - 130

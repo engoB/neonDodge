@@ -284,6 +284,7 @@ export class BaseballEngine {
   }
 
   private resolveOut(message: string) {
+    this.slowMotion = false
     this.outs++
     this.phase = 'call'
     this.phaseClock = 0
@@ -292,6 +293,7 @@ export class BaseballEngine {
   }
 
   private resolveStrike(message: string) {
+    this.slowMotion = false
     this.strikes++
     this.phaseClock = 0
     if (this.strikes >= 3) {
