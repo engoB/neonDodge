@@ -1,76 +1,48 @@
-# Neon Slugger
+<h1 align="center">Dodge Rush</h1>
+<p align="center"><b>La balle au prisonnier qui se joue d’un seul doigt.</b><br>Un jeu de course automatique : on saute, on attrape la balle au vol, on la renvoie, et on garde l’élan pour déclencher un super tir.</p>
+<p align="center"><a href="https://engob.github.io/neonDodge/"><b>▶ Jouer</b></a> · <sub>Statut : <b>En ligne</b></sub></p>
 
-Jeu de baseball arcade mobile à une seule commande. Le personnage agit et court automatiquement ; le toucher de l'écran devient une frappe, une accélération ou une glissade selon la phase de jeu. Une partie enchaîne désormais présentation des batteurs, lancers, impacts, défense, courses, appels, changements de côté et plusieurs manches.
+> **Pensé pour le téléphone.** Le jeu s’ouvre dans le navigateur, sans installation, en portrait comme en paysage. Sur ordinateur : barre d’espace (ou flèche du haut).
 
-Le laboratoire privé `?romlab=1` sert à analyser et reconstruire les animations de la ROM localement. La ROM et les ressources extraites ne sont jamais intégrées au dépôt public.
+---
 
-## Stack
+### Comment on joue
 
-- React 19 + TypeScript
-- Vite 8
-- Tailwind CSS 4
-- Canvas 2D avec boucle fixe à 60 Hz
-- stade original en couches, six palettes d'équipe et atlas pixel art de 12 poses par tenue
-- illustration de championnat, stade nocturne détaillé et quatre capitaines rivaux, entièrement originaux
-- modes Histoire, Arcade et Entraînement
-- manifeste PWA et service worker statique pour l'installation et le cache hors ligne
-- Vitest pour les règles du moteur
+Une seule commande : **toucher l’écran**. Ce qu’elle fait dépend du moment.
 
-## Développement
+| Situation | Toucher… |
+|---|---|
+| Rien en approche | **saute** (doigt maintenu : saut plus haut) |
+| Une balle arrive | **l’attrape** si on touche juste avant l’impact (« PARFAIT » à 3 images du contact) |
+| Balle en main | **tire** sur l’adversaire placé devant, dans un cône de 45° |
+| Balle en main, en courant au sol | la jauge se remplit en 24 images : le tir suivant est un **SUPER TIR** (traverse tout, 6 fois plus de dégâts) |
+
+Les petits obstacles et les adversaires se franchissent tout seuls ; on peut aussi retomber sur un adversaire pour le mettre KO. Les balles au ras du sol et les boules de feu ne s’attrapent pas : il faut sauter.
+
+### Contenu
+
+- 4 mondes × 3 niveaux (Gymnase, Toits, Plage, Stade néon), un capitaine en fin de monde
+- 3 balles d’or cachées par niveau, record par niveau, progression sauvegardée sur l’appareil
+- Course sans fin, de plus en plus difficile, qui traverse les 4 mondes
+- Musique et sons synthétisés à la volée, vibrations sur téléphone
+
+### Comment c’est fait
+
+React + Vite + Tailwind CSS pour l’interface, moteur maison en JavaScript sur un `<canvas>` (simulation à pas fixe de 60 images/s, séparée du rendu). Tous les personnages et décors sont dessinés par le code ; aucun fichier image ni son n’est chargé.
+
+Les réglages (vitesses, gravité, fenêtre de rattrapage, élan du super tir, comportement des adversaires) sont regroupés dans [`src/game/constants.js`](src/game/constants.js). Ce sont des valeurs de jeu mesurées puis ajustées pour le tactile ; le code, les personnages, les graphismes et les sons sont entièrement originaux.
+
+**Outils** &nbsp; `React` `Vite` `Tailwind CSS` `Canvas` `Web Audio`
 
 ```bash
 npm install
-npm run dev
+npm run dev      # développement
+npm test         # tests : génération des niveaux + un robot termine chacun des 12 niveaux
+npm run build    # version publiable dans dist/
 ```
 
-Vérification complète :
+Le site se déploie tout seul sur GitHub Pages à chaque envoi sur `main` (`.github/workflows/deploy.yml`) ; dans les réglages du dépôt, *Pages → Source* doit être sur **GitHub Actions**.
 
-```bash
-npm test
-npm run build
-```
+### Mentions
 
-## Contenu de jeu
-
-- Histoire en quatre chapitres avec progression locale sauvegardée ;
-- Arcade en cinq manches avec adversaire renforcé ;
-- Entraînement sans score adverse ;
-- quatre batteurs Neon aux aptitudes différentes ;
-- quatre équipes rivales, couleurs, difficultés et lancers courbes propres ;
-- pauses de mise en scène entre batteurs et entre manches.
-- caméra dynamique pendant le lancer, l'impact et la course ;
-- trajectoire de balle continue, défenseurs en poursuite, effets sonores synthétisés et vibration mobile.
-
-## Commande unique
-
-| Contexte | Action déclenchée |
-| --- | --- |
-| Lancer en approche | Frapper |
-| Course entre deux bases | Accélérer |
-| Proximité d'une base | Glisser |
-| Présentation, appel ou intermanche | Continuer |
-
-Le joueur touche n'importe où sur l'écran de jeu. Au clavier, Espace, Entrée ou J déclenchent la même action ; Échap met en pause. L'affichage occupe tout l'écran et adapte son cadrage au portrait et au paysage.
-
-## GitHub Pages
-
-1. Créer un dépôt GitHub et pousser ce dossier sur la branche `main`.
-2. Dans **Settings → Pages**, choisir **GitHub Actions** comme source.
-3. Le workflow `.github/workflows/deploy.yml` teste, compile et publie automatiquement le site.
-
-`base: './'` rend le build compatible avec un domaine utilisateur comme avec un sous-chemin de projet.
-
-## Architecture
-
-```text
-src/game/ Moteur, règles, atlas original, animations et rendu Canvas
-src/ui/   HUD React et surface tactile unique
-src/rom/  Analyse locale de la ROM sélectionnée par l'utilisateur
-docs/     Notes d'analyse et feuille de route
-```
-
-La logique métier ne dépend pas de React. Une future version peut remplacer Canvas 2D par PixiJS ou WebGL sans réécrire les règles de match.
-
-## Droits
-
-Le code public, les personnages, l'illustration et le terrain sont originaux. La ROM a servi à mesurer la structure du jeu source : quinze profils, 136 poses par profil, 60 états, palettes alternatives, séquences temporisées et assemblage de sprites. Ces principes structurent la réécriture sans publier la ROM ou ses ressources commerciales ; son chargement éventuel reste local au navigateur.
+Jeu original, sans lien avec un éditeur ou une licence existante. Aucune donnée collectée : pas de compte, pas de publicité, pas de suivi. La progression reste dans le navigateur.

@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Bungee", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Rubik", ui-sans-serif, system-ui, sans-serif;
+  --color-ink: #120a2e;
+  --color-night: #1b1530;
+  --color-sun: #fde047;
+  --color-flame: #f97316;
+  --color-aqua: #22d3ee;
+  --animate-bob: bob 2.4s ease-in-out infinite;
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  --animate-pop: pop 0.35s cubic-bezier(.2,1.6,.4,1) both;
+  @keyframes pop {
+    from { transform: scale(0.6); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  background: #120a2e;
+  color: #fff;
+  overscroll-behavior: none;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.game-surface {
+  touch-action: none;
+}
+
+.text-outline {
+  text-shadow: 0 3px 0 #1b1530, 2px 0 0 #1b1530, -2px 0 0 #1b1530, 0 -2px 0 #1b1530;
+}
