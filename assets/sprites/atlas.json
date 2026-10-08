@@ -1,47 +1,90 @@
 {
-  "frameW": 64,
-  "frameH": 64,
-  "frames": 8,
-  "fps": 12,
-  "poses": [
-    "idle",
-    "walk",
-    "run",
-    "hold",
-    "windup",
-    "throw",
-    "catch",
-    "jump",
-    "fall",
-    "hurt",
-    "ko",
-    "taunt",
-    "cheer"
-  ],
+  "frameW": 160,
+  "frameH": 128,
+  "columns": 4,
+  "rows": 4,
+  "cels": 16,
+  "standingHeight": 96,
+  "baseline": 112,
+  "sequences": {
+    "idle": [
+      0,
+      1
+    ],
+    "walk": [
+      2,
+      3,
+      4,
+      5
+    ],
+    "run": [
+      2,
+      3,
+      4,
+      5
+    ],
+    "hold": [
+      6
+    ],
+    "windup": [
+      7
+    ],
+    "throw": [
+      8,
+      9
+    ],
+    "catch": [
+      10,
+      11
+    ],
+    "jump": [
+      12
+    ],
+    "fall": [
+      12
+    ],
+    "hurt": [
+      13
+    ],
+    "ko": [
+      14
+    ],
+    "taunt": [
+      15
+    ],
+    "cheer": [
+      15
+    ]
+  },
+  "fps": {
+    "idle": 3,
+    "walk": 7,
+    "run": 12
+  },
   "captains": [
     {
-      "id": "neons",
+      "id": "riko",
       "team": "Neon Foxes",
       "name": "Riko",
-      "filename": "neons-captain.png"
+      "filename": "riko.png"
     },
     {
-      "id": "chaussettes",
+      "id": "gaspard",
       "team": "Red Bats",
       "name": "Gaspard",
-      "filename": "chaussettes-captain.png"
+      "filename": "gaspard.png"
     },
     {
-      "id": "corbeaux",
+      "id": "iris",
       "team": "Gold Owls",
       "name": "Iris",
-      "filename": "corbeaux-captain.png"
+      "filename": "iris.png"
     },
     {
-      "id": "eclairs",
+      "id": "vega",
       "team": "Violet Phantoms",
       "name": "Vega",
-      "filename": "eclairs-captain.png"
+      "filename": "vega.png"
     }
   ]
 }

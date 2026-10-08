@@ -16,7 +16,7 @@ Le moteur était déjà séparé du rendu, avec simulation à 60 Hz, équipes à
 
 ## Direction artistique et expérience
 
-Accueil illustré, quatre capitaines avec une importance visuelle comparable et une distribution mixte. L’illustration finale remplace les premières variantes. Les gants sont ramenés à des proportions naturelles. Le sprite de réception possède un seul gant, sur la main tendue. Les sprites incluent casquettes ou casques, uniformes, ceintures, numéros, crampons et gants. Quatre stades originaux possèdent chacun leur palette, des gradins, une ville et des projecteurs. Les marques de baseball sont décoratives ; les règles et les collisions restent celles du dodgeball.
+Accueil illustré, quatre capitaines avec une importance visuelle comparable et une distribution mixte. L’illustration finale remplace les premières variantes. Les gants sont ramenés à des proportions naturelles. Le sprite de réception possède un seul gant, sur la main tendue. Les sprites bitmap incluent casquettes ou casques, uniformes, ceintures, crampons et gants. Quatre silhouettes distinctes sont habillées aux couleurs de chaque équipe par palettes. Un panorama détaillé remplace le décor géométrique, décliné dans les quatre ambiances de stade. Les marques de baseball sont décoratives ; les règles et les collisions restent celles du dodgeball.
 
 Les menus ont une hiérarchie claire : coupe, club, règles, réglages. Les joueurs ont des statistiques consultables et des démonstrations d’animation. Les indications en match changent avec la possession et le timing. La zone de jeu dispose d’une place réservée entre le score et les commandes ; le portrait suit la balle et montre une minimap, le paysage montre toute la largeur du terrain. La mise en page inclut des règles pour petits téléphones, faible hauteur et zones de sécurité.
 
@@ -25,6 +25,13 @@ Les menus ont une hiérarchie claire : coupe, club, règles, réglages. Les joue
 - Tests automatiques du moteur, de la progression, des sauvegardes, des sprites et des quatre stades en portrait / paysage.
 - Compilation Vite de production avec assets relatifs, sans récupération de polices externes.
 - Inspection visuelle des atlas et des rendus du moteur.
-- Limite : aucune session navigateur complète n’a pu être validée dans cet environnement. Le serveur Vite fonctionne en local, mais le navigateur distant ne peut pas le joindre et bloque les URLs de fichiers. Les rendus Canvas ne valident pas le comportement des boîtes CSS, les dialogues natifs ou les particularités tactiles d’un appareil réel.
+- Suite Playwright : 42 scénarios, six formats / moteurs Chromium et WebKit, captures et traces de navigation conservées en CI. Vérification des limites du terrain, du HUD et des commandes, de la rotation, des dialogues, du clavier, de l’annulation du pointeur et des passes.
+- Limite : les émulations navigateur et les rendus Canvas ne valident pas les safe areas matérielles, les particularités de Safari iOS sur appareil ou les vibrations. Un tournoi sur téléphone reste nécessaire avant sortie.
 
 Avant sortie : jouer au moins un tournoi complet sur téléphone, faire pivoter pendant une possession, vérifier l’ouverture / fermeture des dialogues au clavier, le passage en arrière-plan, le bouton Passe, le glissement, la réception d’un tir signature, les safe areas et l’installation du manifeste. L’application ne promet pas de mode hors ligne : le service worker historique reste un script de nettoyage et aucune mise en cache PWA n’a été ajoutée.
+
+## Nouvelle passe graphique
+
+Les anciens personnages procéduraux ont été remplacés par quatre atlas de 16 cels en pixel art détaillé, adaptés à la référence du projet : Riko, Gaspard, Iris, Vega. Même hauteur, deux hommes et deux femmes, gants compacts. Les silhouettes sont extraites globalement pour conserver les bras étendus sans ramener un fragment du sprite voisin. Les portraits attendent le chargement des images et le décompte du match commence seulement quand les assets sont disponibles. Les animations de lancer et réception suivent leur progression réelle. Le terrain a davantage de profondeur pour espacer les personnages, et une texture de gazon / terre.
+
+La reprise au clavier rend le focus au bouton d’action ; Échap reste disponible dans les résultats ; les clics secondaires ne déclenchent pas un lancer. Le HUD, le terrain et le panneau de commandes occupent leurs hauteurs réelles en flex plutôt que des marges fixes. La PR reste en brouillon pour revue visuelle.

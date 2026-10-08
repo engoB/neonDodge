@@ -5,7 +5,7 @@ import { SCENES } from './scenery.js'
 
 export const VIEW_H = 270
 const FLOOR_Y = 150 // y écran du fond du terrain (profondeur 0)
-const DEPTH_K = 0.66 // écrasement de la profondeur
+const DEPTH_K = 0.9 // more room between the chunky arcade silhouettes
 const SHEAR = 0.2 // décalage horizontal selon la profondeur (perspective)
 
 export const toScreen = (x, y, z = 0) => [x + (y - C.DEPTH / 2) * SHEAR, FLOOR_Y + y * DEPTH_K - z]
@@ -42,7 +42,7 @@ function line(ctx, x0, y0, x1, y1) {
 export function drawMatch(m, ctx, scale, dpr, viewH, t) {
   const arena = m.rival.arena
   const fl = FLOORS[arena]
-  const offY = (viewH - VIEW_H) * 0.55
+  const offY = (viewH - VIEW_H) * 0.85
   const sh = !m.reducedMotion && m.shake ? (Math.sin(t * 90) * m.shake) / 2 : 0
   ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0)
   ctx.translate(0, offY)
@@ -64,6 +64,19 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
     ctx.fillStyle = '#ffffff09'
     ctx.fill()
   }
+  // Stable short grass strokes, clipped to the playable perspective quadrilateral.
+  ctx.save()
+  quad(ctx, 0, 0, C.COURT_W, C.DEPTH)
+  ctx.clip()
+  for (let gx = 2; gx < C.COURT_W; gx += 8) {
+    for (let gy = 3; gy < C.DEPTH; gy += 9) {
+      const n = (gx * 23 + gy * 41) % 19
+      const [sx, sy] = toScreen(gx + (n % 5), gy)
+      ctx.fillStyle = n % 3 === 0 ? '#92b58430' : '#092f3328'
+      ctx.fillRect(Math.round(sx), Math.round(sy), 2, 1)
+    }
+  }
+  ctx.restore()
   for (const center of [C.MID / 2, C.MID * 1.5]) {
     ctx.beginPath()
     for (const [i, [dx, dy]] of [
@@ -79,6 +92,15 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
     ctx.closePath()
     ctx.fillStyle = fl.dirt
     ctx.fill()
+    ctx.save()
+    ctx.clip()
+    for (let dx = -68; dx <= 68; dx += 8)
+      for (let dy = -36; dy <= 36; dy += 7) {
+        const [tx, ty] = toScreen(center + dx, C.DEPTH / 2 + dy)
+        ctx.fillStyle = (dx + dy) % 3 ? '#ffe4b824' : '#6a3d352b'
+        ctx.fillRect(Math.round(tx + (dy % 4)), Math.round(ty), 2, 1)
+      }
+    ctx.restore()
     ctx.strokeStyle = '#e8c6a880'
     ctx.lineWidth = 1
     ctx.stroke()
@@ -132,7 +154,7 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
     const [sx, sy] = toScreen(p.x, p.y)
     ctx.fillStyle = 'rgba(0,0,0,0.22)'
     ctx.beginPath()
-    ctx.ellipse(sx, sy, 9, 3, 0, 0, Math.PI * 2)
+    ctx.ellipse(sx, sy, 12, 3.5, 0, 0, Math.PI * 2)
     ctx.fill()
   }
   const b = m.ball
@@ -205,6 +227,7 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
       facing: p.facing,
       pose,
       t: p.anim,
+      progress: p.state === 'throw' ? (14 - p.t) / 14 : p.state === 'catch' ? (12 - p.t) / 12 : undefined,
       kit: p.kit,
       ball:
         holder === p

@@ -1824,3 +1824,55 @@ kbd {
     font-size: 9px;
   }
 }
+
+/* Let the actual HUD and controls reserve their space, including wrapped labels. */
+.game-surface {
+  display: flex;
+  flex-direction: column;
+}
+.match-hud {
+  position: relative;
+  inset: auto;
+  order: 1;
+  flex: none;
+  padding-bottom: 12px;
+}
+.match-arena {
+  position: relative;
+  inset: auto;
+  order: 2;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+.match-arena canvas {
+  position: absolute;
+  inset: 0;
+}
+.match-deck {
+  position: relative;
+  inset: auto;
+  order: 3;
+  flex: none;
+}
+.action-pad:disabled {
+  opacity: 0.45;
+}
+@media (orientation: landscape) and (max-height: 530px) {
+  .match-hud {
+    padding-bottom: 6px;
+  }
+}
+
+.arena-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 20px;
+  text-align: center;
+  background: #0c2230;
+  color: var(--mint);
+  font-family: var(--display);
+  font-size: 24px;
+}

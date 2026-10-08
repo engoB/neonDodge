@@ -1,5 +1,4 @@
-// Original baseball sprites, drawn on a pixel grid. 13 poses, eight animation cels.
-const OUT = '#07131f'
+// Bitmap cels: the same atlas drives portraits and live gameplay.
 export const ANIMATION_POSES = [
   'idle',
   'walk',
@@ -15,48 +14,115 @@ export const ANIMATION_POSES = [
   'taunt',
   'cheer',
 ]
-const POSES = {
-  run: (ph) => [Math.sin(ph) * 1.05, -Math.sin(ph) * 1.05, -Math.sin(ph), Math.sin(ph)],
-  walk: (ph) => [Math.sin(ph) * 0.45, -Math.sin(ph) * 0.45, -Math.sin(ph) * 0.4, Math.sin(ph) * 0.4],
-  hold: (ph) => [Math.sin(ph) * 0.5, -Math.sin(ph) * 0.5, 1.1, 0.8],
-  idle: (ph) => [0.14, -0.14, 0.24 + Math.sin(ph / 3) * 0.06, -0.35],
-  windup: (ph) => [0.55, -0.3, -2.3 + Math.sin(ph / 4) * 0.12, 0.9],
-  throw: (ph) => [0.65, -0.6, 1.65 + Math.sin(ph) * 0.3, -0.8],
-  catch: (ph) => [0.35 + Math.sin(ph) * 0.1, -0.4, 1.35 + Math.sin(ph) * 0.12, 1.3],
-  jump: (ph) => [1.0 + Math.sin(ph) * 0.12, -0.6, 2.5, -0.6],
-  fall: (ph) => [0.6, -0.2, 1.8 + Math.sin(ph) * 0.1, 1.1],
-  hurt: (ph) => [-0.6, 0.4, 2.5 + Math.sin(ph) * 0.12, 2.2],
-  ko: (ph) => [Math.sin(ph) * 0.9, -Math.sin(ph) * 0.9, 2.5, 2.3],
-  cheer: (ph) => [0.2, -0.2, 2.8 + Math.sin(ph) * 0.15, 2.8 - Math.sin(ph) * 0.15],
-  taunt: (ph) => [0.12, -0.12, 2.5 + Math.sin(ph) * 0.3, -0.3],
+export const FRAME_SEQUENCES = {
+  idle: [0, 1],
+  walk: [2, 3, 4, 5],
+  run: [2, 3, 4, 5],
+  hold: [6],
+  windup: [7],
+  throw: [8, 9],
+  catch: [10, 11],
+  jump: [12],
+  fall: [12],
+  hurt: [13],
+  ko: [14],
+  taunt: [15],
+  cheer: [15],
 }
-function rect(ctx, x, y, w, h, color) {
-  ctx.fillStyle = color
-  ctx.fillRect(Math.round(x), Math.round(y), w, h)
+export const ASSET_URLS = {
+  riko: new URL('../../assets/sprites/riko.png', import.meta.url),
+  gaspard: new URL('../../assets/sprites/gaspard.png', import.meta.url),
+  iris: new URL('../../assets/sprites/iris.png', import.meta.url),
+  vega: new URL('../../assets/sprites/vega.png', import.meta.url),
+  baseball: new URL('../../assets/sprites/baseball.png', import.meta.url),
+  stadium: new URL('../../assets/stadium-panorama.webp', import.meta.url),
 }
-function limb(ctx, x, y, angle, len, width, color) {
-  const ex = Math.round(x + Math.sin(angle) * len),
-    ey = Math.round(y + Math.cos(angle) * len)
-  ctx.strokeStyle = OUT
-  ctx.lineWidth = width + 2
-  ctx.beginPath()
-  ctx.moveTo(x, y)
-  ctx.lineTo(ex, ey)
-  ctx.stroke()
-  ctx.strokeStyle = color
-  ctx.lineWidth = width
-  ctx.stroke()
-  return [ex, ey]
+const images = new Map()
+const variants = new Map()
+let createSurface
+let loading
+const browserLoader = (url) =>
+  new Promise((resolve, reject) => {
+    const image = new Image()
+    image.onload = () => resolve(image)
+    image.onerror = () => reject(new Error('Impossible de charger ' + url.pathname))
+    image.src = url.href
+  })
+export function preloadSprites(loader = browserLoader, canvasFactory) {
+  createSurface =
+    canvasFactory ||
+    ((w, h) => {
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      return canvas
+    })
+  if (!loading) {
+    loading = Promise.all(
+      Object.entries(ASSET_URLS).map(async ([id, url]) => {
+        images.set(id, await loader(url))
+      }),
+    ).catch((error) => {
+      loading = null
+      throw error
+    })
+  }
+  return loading
 }
-function glove(ctx, x, y, open = false) {
-  // Compact palm, four finger channels and separate thumb.
-  rect(ctx, x - 4, y - 5, 8, 9, OUT)
-  rect(ctx, x - 3, y - 4, 6, 7, '#9b5b30')
-  rect(ctx, x - 2, y - 3, 4, 4, '#c68a4a')
-  rect(ctx, x - 5, y - 1, 2, 5, '#b8783c')
-  for (let i = 0; i < 3; i++) rect(ctx, x - 2 + i * 2, y - 4, 1, 3, '#633922')
-  rect(ctx, x - 2, y + 2, 4, 1, '#f2be76')
-  if (open) rect(ctx, x - 1, y - 1, 2, 3, '#5b3525')
+export const getSpriteAsset = (id) => images.get(id)
+
+// Classic arcade palette swaps at runtime. Only the jersey/cap color ramp is
+// remapped; skin, leather, cream pants and the dark outlines retain their colors.
+function teamAtlas(kit) {
+  const source = images.get(kit.spriteId || 'riko')
+  if (!source || kit.nativePalette) return source
+  const key = kit.spriteId + ':' + kit.jersey
+  if (variants.has(key)) return variants.get(key)
+  const canvas = createSurface(source.width, source.height)
+  const ctx = canvas.getContext('2d')
+  ctx.drawImage(source, 0, 0)
+  const pixels = ctx.getImageData(0, 0, source.width, source.height)
+  const ramp = { riko: [155, 205], gaspard: [345, 14], iris: [36, 65], vega: [250, 310] }[kit.spriteId]
+  const target = kit.jersey
+    .slice(1)
+    .match(/../g)
+    .map((v) => parseInt(v, 16) / 255)
+  const targetHsl = rgbToHsl(...target)
+  for (let i = 0; i < pixels.data.length; i += 4) {
+    if (!pixels.data[i + 3]) continue
+    const [h, s, l] = rgbToHsl(pixels.data[i] / 255, pixels.data[i + 1] / 255, pixels.data[i + 2] / 255)
+    const within = ramp[0] > ramp[1] ? h >= ramp[0] || h <= ramp[1] : h >= ramp[0] && h <= ramp[1]
+    if (!within || s < 0.35 || l < 0.12 || l > 0.85) continue
+    const rgb = hslToRgb(targetHsl[0], Math.min(0.95, s * 0.75 + targetHsl[1] * 0.25), l)
+    for (let c = 0; c < 3; c++) pixels.data[i + c] = Math.round(rgb[c] * 255)
+  }
+  ctx.putImageData(pixels, 0, 0)
+  variants.set(key, canvas)
+  return canvas
+}
+function rgbToHsl(r, g, b) {
+  const max = Math.max(r, g, b),
+    min = Math.min(r, g, b),
+    d = max - min,
+    l = (max + min) / 2
+  if (!d) return [0, 0, l]
+  let h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4
+  return [h * 60, d / (1 - Math.abs(2 * l - 1)), l]
+}
+function hslToRgb(h, s, l) {
+  const a = s * Math.min(l, 1 - l)
+  return [0, 8, 4].map((n) => {
+    const k = (n + h / 30) % 12
+    return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))
+  })
+}
+
+export function animationFrame(pose, t = 0, progress) {
+  const frames = FRAME_SEQUENCES[pose] || FRAME_SEQUENCES.idle
+  if (progress !== undefined && ['throw', 'catch'].includes(pose))
+    return frames[Math.min(frames.length - 1, Math.floor(Math.max(0, progress) * frames.length))]
+  const fps = pose === 'idle' ? 3 : pose === 'walk' ? 7 : 12
+  return frames[Math.floor(Math.max(0, t) * fps) % frames.length]
 }
 export function drawAthlete(ctx, o) {
   const {
@@ -65,6 +131,7 @@ export function drawAthlete(ctx, o) {
     facing = 1,
     pose = 'idle',
     t = 0,
+    progress,
     kit,
     rot = 0,
     alpha = 1,
@@ -73,114 +140,30 @@ export function drawAthlete(ctx, o) {
     flash = false,
     glow = null,
   } = o
+  const image = teamAtlas(kit)
+  if (!image) return
+  const frame = animationFrame(pose, t, progress)
   ctx.save()
-  ctx.globalAlpha = alpha
+  ctx.imageSmoothingEnabled = false
+  ctx.globalAlpha *= alpha * (flash ? 0.35 : 1)
   ctx.translate(Math.round(x), Math.round(y))
   ctx.scale(facing * size, size)
-  if (rot) {
-    ctx.translate(0, -18)
+  if (rot && pose !== 'ko') {
+    ctx.translate(0, -24)
     ctx.rotate(rot)
-    ctx.translate(0, 18)
+    ctx.translate(0, 24)
   }
-  ctx.lineCap = 'square'
-  ctx.lineJoin = 'miter'
-  const cel = Math.floor(t * 12) % 8,
-    ph = (cel / 8) * Math.PI * 2
-  const [la, lb, aa, ab] = (POSES[pose] || POSES.idle)(ph)
-  const bob = ['run', 'walk', 'hold'].includes(pose)
-    ? -Math.round(Math.abs(Math.sin(ph)) * 2)
-    : pose === 'idle'
-      ? Math.round(Math.sin(t * 3))
-      : 0
   if (glow) {
-    ctx.fillStyle = glow + '28'
-    ctx.beginPath()
-    ctx.ellipse(0, -22, 17, 26, 0, 0, Math.PI * 2)
-    ctx.fill()
-    rect(ctx, -16, -17, 2, 9, glow)
-    rect(ctx, 15, -31, 2, 9, glow)
+    ctx.shadowColor = glow
+    ctx.shadowBlur = 9
   }
-  ctx.translate(0, bob)
-  const skin = flash ? '#ffffff' : kit.skin,
-    jersey = flash ? '#ffffff' : kit.jersey,
-    pants = flash ? '#ffffff' : kit.pants || '#e8e8d3'
-  const back = limb(ctx, -3, -24, ab, 11, 4, skin)
-  const backFoot = limb(ctx, -3, -13, lb, 12, 5, pants)
-  rect(ctx, backFoot[0] - 3, backFoot[1] - 2, 8, 4, OUT)
-  rect(ctx, backFoot[0] - 2, backFoot[1] - 1, 6, 2, kit.jersey)
-  rect(ctx, -8, -29, 16, 18, OUT)
-  rect(ctx, -7, -28, 14, 15, jersey)
-  rect(ctx, -6, -27, 3, 6, kit.trim)
-  rect(ctx, 4, -27, 3, 6, kit.trim)
-  rect(ctx, -1, -27, 1, 12, '#ffffff55')
-  rect(ctx, -6, -13, 12, 4, pants)
-  rect(ctx, -7, -14, 14, 2, OUT)
-  rect(ctx, -1, -14, 3, 2, '#d5a457')
-  // Jersey number and piping.
-  const digits = [
-    '010110010010111',
-    '111001111100111',
-    '111001111001111',
-    '101101111001001',
-    '111100111001111',
-    '111100111101111',
-    '111001010010010',
-  ]
-  const glyph = digits[((kit.number || 1) - 1) % 7]
-  for (let i = 0; i < glyph.length; i++)
-    if (glyph[i] === '1')
-      rect(ctx, facing < 0 ? 3 - (i % 3) : 1 + (i % 3), -23 + Math.floor(i / 3), 1, 1, kit.trim)
-  const frontFoot = limb(ctx, 3, -12, la, 12, 5, pants)
-  rect(ctx, frontFoot[0] - 2, frontFoot[1] - 5, 4, 3, kit.jersey)
-  rect(ctx, frontFoot[0] - 3, frontFoot[1] - 2, 9, 4, OUT)
-  rect(ctx, frontFoot[0] - 2, frontFoot[1] - 1, 7, 2, kit.trim)
-  rect(ctx, -7, -42, 16, 14, OUT)
-  rect(ctx, -6, -41, 14, 12, skin)
-  rect(ctx, 6, -35, 3, 4, skin)
-  rect(ctx, -5, -37, 3, 8, kit.hair)
-  rect(ctx, -4, -31, 2, 3, kit.hair)
-  // Cap/helmet: brim points in the player's facing direction.
-  rect(ctx, -7, -46, 14, 2, OUT)
-  rect(ctx, -8, -44, 17, 6, OUT)
-  rect(ctx, -7, -44, 15, 5, kit.band)
-  rect(ctx, -5, -45, 11, 2, kit.band)
-  rect(ctx, -3, -43, 3, 3, kit.trim)
-  rect(ctx, 3, -38, 9, 2, OUT)
-  rect(ctx, 3, -39, 9, 2, kit.band)
-  if (kit.helmet) {
-    rect(ctx, -7, -38, 3, 7, kit.band)
-    rect(ctx, -6, -35, 2, 2, kit.trim)
-  }
-  if (kit.style === 3) {
-    rect(ctx, -8, -35, 2, 8, kit.hair)
-    rect(ctx, -10, -29, 3, 3, kit.hair)
-  }
-  if (['hurt', 'ko'].includes(pose)) {
-    rect(ctx, 3, -34, 3, 1, OUT)
-    rect(ctx, 4, -35, 1, 3, OUT)
-  } else {
-    rect(ctx, 3, -34, 3, 2, '#fff8e8')
-    rect(ctx, 5, -34, 1, 2, OUT)
-    rect(ctx, 3, -36, 4, 1, OUT)
-  }
-  if (kit.glasses) {
-    rect(ctx, 2, -35, 5, 4, OUT)
-    rect(ctx, 3, -34, 3, 2, '#b2e9eb')
-    rect(ctx, 5, -34, 1, 2, OUT)
-  }
-  if (kit.beard) {
-    rect(ctx, 0, -30, 6, 2, kit.hair)
-    rect(ctx, 1, -31, 5, 1, kit.hair)
-  } else rect(ctx, 4, -29, 3, 1, '#ad604d')
-  if (pose !== 'catch') glove(ctx, back[0], back[1])
-  const front = limb(ctx, 3, -24, aa, 11, 4, skin)
-  rect(ctx, front[0] - 2, front[1] - 2, 4, 4, skin)
-  // A reception leads with the glove; a pitch leads with the bare ball hand.
-  if (pose === 'catch') glove(ctx, front[0] + 1, front[1], true)
-  if (ball) drawBall(ctx, { x: front[0] + 2, y: front[1] - 1, kind: ball, r: 3.5, spin: t * 4 })
-  if (pose === 'cheer') {
-    rect(ctx, 14, -43, 2, 3, '#f9d57c')
-    rect(ctx, -15, -37, 2, 2, '#5de7cd')
+  // 160×128 cells preserve complete reaching arms; body 96px, feet at y=112.
+  const bob = ['cheer', 'taunt'].includes(pose) ? -Math.abs(Math.sin(t * 7)) * 2 : 0
+  ctx.drawImage(image, (frame % 4) * 160, Math.floor(frame / 4) * 128, 160, 128, -40, -56 + bob, 80, 64)
+  ctx.shadowBlur = 0
+  if (ball && ![6, 7, 11].includes(frame)) {
+    const hand = [2, 3, 4, 5].includes(frame) ? [-18, -29] : frame === 12 ? [-11, -39] : [9, -23]
+    drawBall(ctx, { x: hand[0], y: hand[1], r: 3.5, kind: ball, spin: t * 4 })
   }
   ctx.restore()
 }
@@ -189,37 +172,17 @@ export function rr(ctx, x, y, w, h, r) {
   ctx.roundRect(x, y, w, h, r)
 }
 export function drawBall(ctx, b) {
+  const image = images.get('baseball')
+  if (!image) return
   const r = b.r ?? 5
   ctx.save()
+  ctx.imageSmoothingEnabled = false
   ctx.translate(Math.round(b.x), Math.round(b.y))
+  ctx.rotate(b.spin ?? 0)
   if (['super', 'fire'].includes(b.kind)) {
     ctx.shadowColor = b.kind === 'fire' ? '#ff596d' : '#5de7cd'
-    ctx.shadowBlur = 12
+    ctx.shadowBlur = 10
   }
-  ctx.fillStyle = OUT
-  ctx.beginPath()
-  ctx.arc(0, 0, r + 1, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.shadowBlur = 0
-  ctx.fillStyle = '#f8f2db'
-  ctx.beginPath()
-  ctx.arc(0, 0, r, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.rotate(b.spin ?? 0)
-  ctx.strokeStyle = '#d95457'
-  ctx.lineWidth = 0.8
-  for (const side of [-1, 1]) {
-    ctx.beginPath()
-    ctx.moveTo(side * r * 0.5, -r * 0.8)
-    ctx.quadraticCurveTo(side * r * 0.1, 0, side * r * 0.5, r * 0.8)
-    ctx.stroke()
-    for (let i = -1; i <= 1; i++) {
-      ctx.beginPath()
-      ctx.moveTo(side * r * 0.2 - r * 0.18, i * r * 0.45)
-      ctx.lineTo(side * r * 0.2 + r * 0.18, i * r * 0.45 + r * 0.12)
-      ctx.stroke()
-    }
-  }
-  rect(ctx, -r * 0.5, -r * 0.5, Math.max(1, r * 0.35), 1, '#ffffff')
+  ctx.drawImage(image, -r - 1, -r - 1, (r + 1) * 2, (r + 1) * 2)
   ctx.restore()
 }

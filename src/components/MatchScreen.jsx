@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Match } from '../game/match.js'
 import { drawMatch, VIEW_H } from '../game/render.js'
+import { preloadSprites } from '../game/sprites.js'
 import { PLAYER_TEAM } from '../game/teams.js'
 import { unlockAudio, startMusic, stopMusic } from '../game/audio.js'
 
@@ -46,11 +47,13 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
     arenaRef = useRef(null),
     matchRef = useRef(null),
     pointer = useRef(null),
-    pauseRef = useRef(null)
+    pauseRef = useRef(null),
+    actionRef = useRef(null)
   const [hud, setHud] = useState(null),
     [paused, setPaused] = useState(false),
     [attempt, setAttempt] = useState(0),
     [pressing, setPressing] = useState(false)
+  const [assetStatus, setAssetStatus] = useState('loading')
   function clearInput() {
     pointer.current = null
     matchRef.current?.cancelInput()
@@ -98,6 +101,20 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
       last = performance.now(),
       acc = 0
     const start = last
+    let ready = false,
+      disposed = false
+    setAssetStatus('loading')
+    preloadSprites()
+      .then(() => {
+        if (disposed) return
+        ready = true
+        last = performance.now()
+        setAssetStatus('ready')
+        if (settings.music && m.state !== 'paused') startMusic(ARENA_MUSIC[rival.arena])
+      })
+      .catch(() => {
+        if (!disposed) setAssetStatus('error')
+      })
     const resize = () => {
       const w = arena.clientWidth,
         h = arena.clientHeight
@@ -116,6 +133,11 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
     const ro = new ResizeObserver(resize)
     ro.observe(arena)
     const loop = (now) => {
+      if (!ready) {
+        last = now
+        raf = requestAnimationFrame(loop)
+        return
+      }
       acc += Math.min(0.1, (now - last) / 1000)
       last = now
       while (acc >= 1 / 60) {
@@ -126,7 +148,6 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
-    if (settings.music) startMusic(ARENA_MUSIC[rival.arena])
     const hidden = () => {
       if (document.hidden) pause()
     }
@@ -136,6 +157,7 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
     const key = (e) => {
       if (e.repeat) return
       if (e.code === 'Escape' && e.type === 'keydown') {
+        if (!['intro', 'play', 'paused'].includes(m.state)) return
         e.preventDefault()
         togglePause()
         return
@@ -169,6 +191,7 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
     window.addEventListener('keydown', key)
     window.addEventListener('keyup', key)
     return () => {
+      disposed = true
       cancelAnimationFrame(raf)
       ro.disconnect()
       m.cancelInput()
@@ -184,11 +207,15 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
   }, [attempt])
   useEffect(() => {
     if (paused) pauseRef.current?.showModal()
-    else pauseRef.current?.close()
+    else {
+      pauseRef.current?.close()
+      if (matchRef.current?.state === 'play') actionRef.current?.focus({ preventScroll: true })
+    }
   }, [paused])
   const down = (e) => {
     if (e.target.closest('button') && e.currentTarget.dataset.gameAction !== 'true') return
-    if (matchRef.current?.state !== 'play' || pointer.current !== null || !e.isPrimary) return
+    if (matchRef.current?.state !== 'play' || pointer.current !== null || !e.isPrimary || e.button !== 0)
+      return
     e.preventDefault()
     e.stopPropagation()
     unlockAudio()
@@ -220,17 +247,20 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
   const holding = hud?.holding,
     ready = hud?.superReady || hud?.armed,
     late = hud?.chargeLate && !hud?.armed
-  const title = holding
-    ? hud.armed
-      ? 'PASSE SIGNATURE REÇUE'
-      : late
-        ? 'FENÊTRE DÉPASSÉE'
-        : ready
-          ? 'SIGNATURE · RELÂCHEZ !'
-          : 'PRENEZ VOTRE ÉLAN'
-    : hud?.threat !== null
-      ? 'LA BALLE ARRIVE'
-      : 'GARDEZ L’ŒIL SUR LA BALLE'
+  const title =
+    hud?.state === 'intro'
+      ? 'LE MATCH VA COMMENCER'
+      : holding
+        ? hud.armed
+          ? 'PASSE SIGNATURE REÇUE'
+          : late
+            ? 'FENÊTRE DÉPASSÉE'
+            : ready
+              ? 'SIGNATURE · RELÂCHEZ !'
+              : 'PRENEZ VOTRE ÉLAN'
+        : hud?.threat !== null
+          ? 'LA BALLE ARRIVE'
+          : 'GARDEZ L’ŒIL SUR LA BALLE'
   return (
     <div
       className="game-surface"
@@ -243,6 +273,16 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
     >
       <div ref={arenaRef} className="match-arena">
         <canvas ref={canvasRef} aria-label="Match de baseball dodgeball, contrôles ci-dessous" />
+        {assetStatus !== 'ready' && (
+          <div className="arena-loading" role="status">
+            <strong>{assetStatus === 'error' ? 'LE STADE ATTEND' : 'ENTRÉE AU STADE…'}</strong>
+            {assetStatus === 'error' && (
+              <button className="button primary" onClick={() => setAttempt((a) => a + 1)}>
+                Réessayer
+              </button>
+            )}
+          </div>
+        )}
       </div>
       {hud && (
         <>
@@ -266,7 +306,7 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
           </span>
         </>
       )}
-      {hud?.state === 'play' && (
+      {hud && ['intro', 'play'].includes(hud.state) && (
         <div className="match-deck">
           <div className="context-copy">
             <div className="eyebrow">
@@ -293,6 +333,8 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
           </div>
           <MiniMap hud={hud} />
           <button
+            ref={actionRef}
+            disabled={hud.state !== 'play'}
             className={`action-pad ${pressing ? 'pressing' : ''}`}
             data-game-action="true"
             onPointerDown={down}
@@ -317,7 +359,7 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
           </button>
           <button
             className="pass-button"
-            disabled={!holding}
+            disabled={!holding || hud.state !== 'play'}
             onClick={() => {
               unlockAudio()
               matchRef.current?.swipeUp()

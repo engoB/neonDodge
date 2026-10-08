@@ -1,39 +1,59 @@
-import { createCanvas } from '@napi-rs/canvas'
+// Export review images from the very same bitmaps and renderer used in the game.
+import { createCanvas, loadImage } from '@napi-rs/canvas'
 import { mkdir, writeFile } from 'node:fs/promises'
-import { drawAthlete, ANIMATION_POSES } from '../src/game/sprites.js'
-import { CAPTAINS, rosterKit } from '../src/game/teams.js'
-
-const frameW = 64,
-  frameH = 64,
-  frames = 8
-await mkdir('assets/sprites', { recursive: true })
-const manifest = { frameW, frameH, frames, fps: 12, poses: ANIMATION_POSES, captains: [] }
-for (const team of CAPTAINS) {
-  const canvas = createCanvas(frameW * frames, frameH * ANIMATION_POSES.length)
-  const ctx = canvas.getContext('2d')
-  for (const [row, pose] of ANIMATION_POSES.entries())
-    for (let frame = 0; frame < frames; frame++) {
-      drawAthlete(ctx, {
-        x: frame * frameW + frameW / 2,
-        y: row * frameH + 55,
-        kit: rosterKit(team, 0),
-        pose,
-        t: frame / 12,
-        ball: ['hold', 'windup'].includes(pose) ? 'player' : null,
-      })
-    }
-  const filename = `${team.id}-captain.png`
-  await writeFile(`assets/sprites/${filename}`, canvas.toBuffer('image/png'))
-  manifest.captains.push({ id: team.id, team: team.name, name: team.players[0].name, filename })
+import { fileURLToPath } from 'node:url'
+import { drawAthlete, preloadSprites, ANIMATION_POSES, FRAME_SEQUENCES } from '../src/game/sprites.js'
+import { CAPTAINS, rosterKit, RIVALS } from '../src/game/teams.js'
+import { Match } from '../src/game/match.js'
+import { drawMatch } from '../src/game/render.js'
+await preloadSprites((url) => loadImage(fileURLToPath(url)), createCanvas)
+await mkdir('docs/previews', { recursive: true })
+const manifest = {
+  frameW: 160,
+  frameH: 128,
+  columns: 4,
+  rows: 4,
+  cels: 16,
+  standingHeight: 96,
+  baseline: 112,
+  sequences: FRAME_SEQUENCES,
+  fps: { idle: 3, walk: 7, run: 12 },
+  captains: CAPTAINS.map((team) => ({
+    id: rosterKit(team, 0).spriteId,
+    team: team.name,
+    name: team.players[0].name,
+    filename: rosterKit(team, 0).spriteId + '.png',
+  })),
 }
 await writeFile('assets/sprites/atlas.json', JSON.stringify(manifest, null, 2) + '\n')
-console.log('Four captain atlases exported: 13 poses × 8 frames, 64 × 64 px, transparent background.')
-
-// Reproducible views of the renderer; these do not pretend to be browser screenshots.
-const { Match } = await import('../src/game/match.js')
-const { RIVALS } = await import('../src/game/teams.js')
-const { drawMatch } = await import('../src/game/render.js')
-await mkdir('docs/previews', { recursive: true })
+const poses = ['idle', 'run', 'throw', 'catch']
+const sheet = createCanvas(960, 660),
+  ctx = sheet.getContext('2d')
+ctx.fillStyle = '#091c29'
+ctx.fillRect(0, 0, 960, 660)
+ctx.textAlign = 'center'
+for (const [col, team] of CAPTAINS.entries()) {
+  ctx.font = '900 24px sans-serif'
+  ctx.fillStyle = team.accent
+  ctx.fillText(team.players[0].name.toUpperCase(), col * 220 + 150, 42)
+  for (const [row, pose] of poses.entries()) {
+    const x = col * 220 + 150,
+      y = row * 148 + 182
+    ctx.fillStyle = '#102b3a'
+    ctx.fillRect(x - 92, y - 123, 184, 134)
+    drawAthlete(ctx, { x, y, size: 2.3, kit: rosterKit(team, 0), pose, t: 0.1 })
+  }
+}
+ctx.font = '700 12px sans-serif'
+ctx.fillStyle = '#bdcbd1'
+for (const [i, name] of ['PRÊT', 'COURSE', 'LANCER', 'RÉCEPTION'].entries()) {
+  ctx.save()
+  ctx.translate(21, i * 148 + 131)
+  ctx.rotate(-Math.PI / 2)
+  ctx.fillText(name, 0, 0)
+  ctx.restore()
+}
+await writeFile('docs/previews/captains-baseball.png', sheet.toBuffer('image/png'))
 for (const [label, width, height, viewW] of [
   ['landscape', 844, 300, 560],
   ['portrait', 390, 541, 360],
@@ -46,5 +66,6 @@ for (const [label, width, height, viewW] of [
   context.imageSmoothingEnabled = false
   const scale = width / viewW
   drawMatch(match, context, scale, 1, height / scale, 4)
-  await writeFile(`docs/previews/arena-${label}.png`, canvas.toBuffer('image/png'))
+  await writeFile('docs/previews/arena-' + label + '.png', canvas.toBuffer('image/png'))
 }
+console.log('Review images rendered from 4 baseball atlases, 16 cels each.')

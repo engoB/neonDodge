@@ -38,10 +38,13 @@ npm run dev
 npm test
 npm run build
 npm run preview
-npm run assets  # régénère les quatre atlas PNG depuis le moteur de sprites
+npm run assets  # exporte les aperçus et le manifeste des atlas intégrés
+npm run test:ui # vérifie les écrans et contrôles dans Chromium / WebKit
 ```
 
-Les atlas transparents se trouvent dans `assets/sprites/` : cellules de 64 × 64 pixels, 13 lignes de poses, 8 images par ligne à 12 Hz. `atlas.json` fournit l’ordre des poses et l’identité des capitaines. Le jeu dessine les mêmes sprites directement sur Canvas ; les PNG sont des assets réutilisables.
+Les quatre atlas bitmap transparents se trouvent dans `assets/sprites/` : 16 images originales par capitaine, sur quatre colonnes, cellules de 160 × 128 pixels. Corps debout de 96 pixels et pieds alignés à 112 pixels : les capitaines mixtes ont la même stature. Le moteur utilise ces PNG en match et dans les portraits, avec des séquences dédiées à la course, au lancer et à la réception. Les états montée / descente partagent le cel de saut ; provocation / victoire partagent le cel de célébration. `atlas.json` décrit les séquences et les cadences. Les équipiers utilisent quatre silhouettes avec des palettes de tenue adaptées à leur club. Le stade utilise un panorama bitmap détaillé, avec quatre ambiances de couleur.
+
+Les sources ont été créées avec la génération d’images intégrée à partir de la référence arcade fournie. `scripts/prepare-atlas.py` extrait les silhouettes complètes et les aligne, sans redessiner les personnages (Pillow, NumPy et SciPy). Les prompts et les fichiers retenus sont documentés dans [la direction artistique](assets/ART_DIRECTION.md).
 
 La compilation reste compatible avec un sous-chemin GitHub Pages grâce aux chemins relatifs. Le workflow existant déploie après un envoi sur `main`, en exécutant les tests avant publication. La refonte est proposée sur une branche pour revue ; le site public existant ne représente pas cette version avant intégration.
 
@@ -49,6 +52,6 @@ La compilation reste compatible avec un sous-chemin GitHub Pages grâce aux chem
 
 Les tests couvrent le tournoi avec des robots au timing humain, la stabilité des six adversaires, les réceptions, la fenêtre de signature, l’annulation des gestes, la pause, la fin de match, les sauvegardes et les rendus des sprites / quatre stades dans deux formats. Les images de `docs/previews/` sont des rendus du moteur, pas des captures d’une session navigateur.
 
-La compilation et les tests sont vérifiés. Le navigateur de cet environnement ne peut pas accéder au serveur local et ne permet pas d’ouvrir des fichiers locaux : une vérification de l’interface sur Safari iOS, Chrome Android et ordinateur reste à effectuer avant de qualifier la version de prête pour une sortie commerciale. Voir [la revue du projet](docs/REVIEW.md).
+La compilation et les tests de simulation / rendu sont vérifiés. La CI exécute aussi 42 scénarios d’interface : Chromium ordinateur, petit portrait, portrait, paysage ; WebKit portrait et paysage. Les captures et traces sont jointes aux runs GitHub Actions. Ces émulations ne remplacent pas un tournoi sur Safari iOS et Chrome Android réels avant sortie commerciale. Voir [la revue du projet](docs/REVIEW.md).
 
 Jeu original, sans lien avec une licence sportive ou un éditeur existant.

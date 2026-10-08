@@ -1,4 +1,5 @@
-// Four original ballparks; deterministic pixels keep the crowd stable between frames.
+// Rich stadium bitmap with restrained palette overlays for each ballpark.
+import { getSpriteAsset } from './sprites.js'
 const hash = (i, s = 0) => {
   const v = Math.sin(i * 127.1 + s * 311.7) * 43758.5453
   return v - Math.floor(v)
@@ -34,6 +35,23 @@ export const BALLPARKS = {
   },
 }
 function stadium(arena, ctx, camX, w, top, bottom, t) {
+  const panorama = getSpriteAsset('stadium')
+  if (panorama) {
+    ctx.save()
+    ctx.imageSmoothingEnabled = false
+    const h = bottom - top
+    // Cover, with subtle camera parallax; never stretch the panorama's proportions.
+    const scale = Math.max(w / panorama.width, h / panorama.height)
+    const sw = w / scale,
+      sh = h / scale
+    const sx = Math.max(0, Math.min(panorama.width - sw, (panorama.width - sw) / 2 + (camX - 240) * 0.35))
+    ctx.drawImage(panorama, sx, panorama.height - sh, sw, sh, 0, top, w, h)
+    const tint = { gym: '#0c405510', roof: '#c46a3220', beach: '#1bc4b52b', neon: '#602c8d40' }[arena]
+    ctx.fillStyle = tint
+    ctx.fillRect(0, top, w, h)
+    ctx.restore()
+    return
+  }
   const p = BALLPARKS[arena],
     g = ctx.createLinearGradient(0, top, 0, bottom)
   g.addColorStop(0, p.sky[0])

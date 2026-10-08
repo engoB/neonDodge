@@ -182,12 +182,25 @@ export const RIVALS = [
 
 export function rosterKit(teamDef, i) {
   const p = teamDef.players[i]
+  const captain = {
+    neons: 'riko',
+    chaussettes: 'gaspard',
+    corbeaux: 'iris',
+    mouettes: 'riko',
+    cactus: 'gaspard',
+    requins: 'vega',
+    eclairs: 'vega',
+  }[teamDef.id]
   return {
     ...teamDef.kit,
     number: i + 1,
     style: i % 4,
     ...(p.kitOverride || {}),
     helmet: teamDef.kit.helmet || i === 5,
+    spriteId: ['riko', 'gaspard', 'iris', 'vega'][
+      (['riko', 'gaspard', 'iris', 'vega'].indexOf(captain) + i) % 4
+    ],
+    nativePalette: i === 0 && ['neons', 'chaussettes', 'corbeaux', 'eclairs'].includes(teamDef.id),
   }
 }
 

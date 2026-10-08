@@ -3,14 +3,15 @@ import MatchScreen from './components/MatchScreen.jsx'
 import { PLAYER_TEAM, RIVALS, SPECIALS, rosterKit, CAPTAINS } from './game/teams.js'
 import { load, save, recordMatch } from './game/storage.js'
 import { setSound, setMusic, unlockAudio, sfx } from './game/audio.js'
-import { drawAthlete } from './game/sprites.js'
+import { drawAthlete, preloadSprites } from './game/sprites.js'
 
 export function Portrait({ kit, pose = 'idle', className = '', facing = 1, reducedMotion = false }) {
   const ref = useRef(null)
   useEffect(() => {
     const canvas = ref.current
     const ctx = canvas.getContext('2d')
-    let raf
+    let raf,
+      disposed = false
     const draw = (now = 0) => {
       const w = canvas.clientWidth,
         h = canvas.clientHeight
@@ -21,7 +22,8 @@ export function Portrait({ kit, pose = 'idle', className = '', facing = 1, reduc
       }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, w, h)
-      const scale = Math.min(w / 40, h / 54)
+      ctx.imageSmoothingEnabled = false
+      const scale = Math.min(w / 58, h / 58)
       ctx.translate(w / 2, h - 5)
       ctx.scale(scale, scale)
       drawAthlete(ctx, {
@@ -35,8 +37,15 @@ export function Portrait({ kit, pose = 'idle', className = '', facing = 1, reduc
       })
       if (!reducedMotion) raf = requestAnimationFrame(draw)
     }
-    draw()
-    return () => cancelAnimationFrame(raf)
+    preloadSprites()
+      .then(() => {
+        if (!disposed) draw()
+      })
+      .catch(() => {})
+    return () => {
+      disposed = true
+      cancelAnimationFrame(raf)
+    }
   }, [kit, pose, facing, reducedMotion])
   return <canvas ref={ref} className={`portrait ${className}`} aria-hidden="true" />
 }
