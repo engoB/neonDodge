@@ -10,9 +10,9 @@ Prompt final :
 
 ## Sprites
 
-Les sprites sont dessinés par du code original dans `src/game/sprites.js`. `npm run assets` exporte les quatre capitaines dans des PNG transparents, sans appel à un service externe. Chaque atlas comporte 13 poses et 8 cellules par pose ; `assets/sprites/atlas.json` en décrit la structure.
+Les sprites sont des atlas bitmap transparents issus de la génération intégrée imagegen, selon la référence arcade fournie. `src/game/sprites.js` les charge et anime leurs 16 cels. `npm run assets` exporte le manifeste et les aperçus à partir de ces mêmes images ; il ne régénère pas les dessins.
 
-Les capitaines sont Riko (Neon Foxes), Gaspard (Red Bats), Iris (Gold Owls) et Vega (Violet Phantoms). Les différences de kit incluent couleur, teinte de peau, cheveux, lunettes, moustache et casque. Les autres membres du club conservent leurs caractéristiques, leur nom et leur signature. Les PNG et le dessin en jeu proviennent de la même fonction.
+Les capitaines sont Riko (Neon Foxes), Gaspard (Red Bats), Iris (Gold Owls) et Vega (Violet Phantoms). Les différences incluent couleur, teinte de peau, cheveux, lunettes, moustache et casque. Les autres membres du club conservent leurs caractéristiques, leur nom et leur signature ; leurs visuels utilisent ces quatre silhouettes avec des palettes aux couleurs du club.
 
 ## Atlas bitmap — référence arcade fournie
 
