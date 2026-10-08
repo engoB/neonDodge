@@ -63,6 +63,18 @@ test.beforeEach(async ({ page }) => {
 
 test('accueil : quatre capitaines, illustration chargée et titre lisible', async ({ page }, info) => {
   await expect(page.locator('.captain-badge')).toHaveCount(4)
+  await expect
+    .poll(async () =>
+      page.locator('.captain-badge canvas').evaluateAll((canvases) =>
+        canvases.every((canvas) =>
+          canvas
+            .getContext('2d')
+            .getImageData(0, 0, canvas.width, canvas.height)
+            .data.some((value, index) => index % 4 === 3 && value > 0),
+        ),
+      ),
+    )
+    .toBe(true)
   await expect(page.getByRole('heading', { name: /NEON.*SLUGGER/ })).toBeVisible()
   const visual = await page.locator('.hero-art').evaluate(async (el) => {
     const source = getComputedStyle(el).backgroundImage.match(/url\(["']?(.*?)["']?\)/)?.[1]
