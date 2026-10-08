@@ -5,16 +5,16 @@ Neon Slugger transforme Neon Dodge en un univers de baseball arcade : stade noct
 
 ## La version 2
 
-- Accueil illustré, tournoi, club avec sept fiches de joueurs, animations consultables, playbook et réglages.
+- Écran titre direct avec menu arcade : Histoire, Match Arcade, Équipe et Commandes.
 - Quatre ballparks : Fox Yard, Skyline Park, Harbor Field, Neon Dome. Six clubs rivaux à difficulté progressive.
 - Sprites originaux en pixel art : repos, marche, course, possession, préparation, lancer, réception, montée, descente, impact, KO, provocation et victoire.
-- Jauge qui distingue charge, fenêtre signature et dépassement. Balle blanche agrandie, longue traînée, guide de visée et minimap.
-- Caméra arcade qui recadre le porteur, suit le lancer et resserre l’action près de la cible. Les joueurs regardent la balle sans retournements parasites.
-- Mode Histoire en six chapitres, avec face-à-face dialogués et portraits des capitaines. Les signatures déclenchent une annonce plein écran façon jeu de combat.
+- Jauge qui distingue charge, fenêtre signature et dépassement. Balle blanche agrandie, longue traînée et guide de visée.
+- Caméra arcade rapprochée qui recadre le porteur, suit le lancer et resserre l’action près de la cible. Les joueurs regardent la balle sans retournements parasites.
+- Mode Histoire en six chapitres, avec face-à-face dialogués et portraits des capitaines. Les signatures utilisent un bandeau compact façon jeu de combat.
 - Contrôles tactiles avec capture du pointeur : interrompre un geste ou mettre en pause ne provoque aucun lancer.
 - Décompte et pause sans appui bloqué ; temps de jeu distinct du décompte ; fin de match sans dégâts supplémentaires.
 - Bonus de réception parfaite conservé pour le prochain élan. Progression de Neon Dodge conservée sur cet appareil.
-- Portrait : caméra suivant la balle, minimap et commandes sur deux lignes. Paysage : terrain complet et commandes compactes. Zones de jeu réservées pour laisser le HUD et les commandes visibles.
+- Portrait et paysage : score minimal, consigne courte sur le terrain et trois commandes sur une seule ligne afin de réserver l’écran au jeu.
 - Réglages de sons, musique, vibrations et animations réduites ; préférence système prise en compte. Dialogues de réglages, pause et résultats accessibles au clavier.
 
 ## Jouer

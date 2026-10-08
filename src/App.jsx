@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import MatchScreen from './components/MatchScreen.jsx'
-import { PLAYER_TEAM, RIVALS, SPECIALS, rosterKit, CAPTAINS } from './game/teams.js'
+import { PLAYER_TEAM, RIVALS, SPECIALS, rosterKit } from './game/teams.js'
 import { load, save, recordMatch } from './game/storage.js'
 import { setSound, setMusic, unlockAudio, sfx } from './game/audio.js'
 import { drawAthlete, preloadSprites } from './game/sprites.js'
@@ -68,17 +68,19 @@ function Header({ screen, go, onSettings }) {
   return (
     <header className="site-header">
       <Brand onClick={() => go('title')} />
-      <nav aria-label="Navigation principale">
-        {[
-          ['tournament', 'La coupe'],
-          ['roster', 'Le club'],
-          ['howto', 'Les règles'],
-        ].map(([id, label]) => (
-          <button key={id} className={screen === id ? 'active' : ''} onClick={() => go(id)}>
-            {label}
-          </button>
-        ))}
-      </nav>
+      {screen !== 'title' && (
+        <nav aria-label="Navigation principale">
+          {[
+            ['tournament', 'Histoire'],
+            ['roster', 'Équipe'],
+            ['howto', 'Commandes'],
+          ].map(([id, label]) => (
+            <button key={id} className={screen === id ? 'active' : ''} onClick={() => go(id)}>
+              {label}
+            </button>
+          ))}
+        </nav>
+      )}
       <button className="icon-button" onClick={onSettings} aria-label="Réglages">
         ⚙
       </button>
@@ -86,143 +88,47 @@ function Header({ screen, go, onSettings }) {
   )
 }
 
-function Title({ onTournament, onQuick, onHowTo, trophies, progress, reducedMotion }) {
+function Title({ onTournament, onQuick, onRoster, onHowTo, trophies, progress }) {
   return (
-    <main className="home">
-      <section className="hero" aria-labelledby="hero-title">
+    <main className="title-screen">
+      <section className="title-stage" aria-labelledby="hero-title">
         <div className="hero-art" />
         <div className="hero-grid" />
-        <div className="hero-copy">
-          <div className="eyebrow">
-            <span className="live-dot" /> BASEBALL. DODGEBALL. ALL‑STAR.
-          </div>
+        <div className="title-lockup">
+          <div className="eyebrow">BASEBALL × DODGEBALL</div>
           <h1 id="hero-title">
             <span>NEON</span>SLUGGER<span className="title-star">✦</span>
           </h1>
-          <p className="hero-tagline">Le stade est à vous.</p>
-          <p className="hero-description">
-            L’instinct du dodgeball. L’attitude du baseball.
-            <br />
-            Chargez, esquivez, attrapez. À un seul doigt.
-          </p>
-          <div className="hero-actions">
-            <button className="button primary" onClick={onTournament}>
-              MODE HISTOIRE · {progress.beaten > 0 ? 'REPRENDRE LA COUPE' : 'ENTRER DANS LA LIGUE'}
-              <span>↗</span>
+          <nav className="arcade-menu" aria-label="Menu du jeu">
+            <button className="active" onClick={onTournament}>
+              <span>01</span>
+              <b>MODE HISTOIRE</b>
+              <small>{progress.beaten > 0 ? `CONTINUER · ${progress.beaten}/6` : 'NOUVELLE SAISON'}</small>
+              <i>▶</i>
             </button>
-            <button className="button secondary" onClick={onQuick}>
-              MODE ARCADE · MATCH EXPRESS<span>▶</span>
+            <button onClick={onQuick}>
+              <span>02</span>
+              <b>MATCH ARCADE</b>
+              <small>JOUER MAINTENANT</small>
+              <i>▶</i>
             </button>
-          </div>
-          <button className="text-button" onClick={onHowTo}>
-            <span className="small-play">▷</span> Première visite ? Apprenez les gestes <span>→</span>
-          </button>
-          {trophies > 0 && (
-            <p className="champion-tag">
-              ✦ {trophies} coupe{trophies > 1 ? 's' : ''} remportée{trophies > 1 ? 's' : ''}
-            </p>
-          )}
+            <button onClick={onRoster}>
+              <span>03</span>
+              <b>ÉQUIPE</b>
+              <small>NEON FOXES</small>
+              <i>▶</i>
+            </button>
+            <button onClick={onHowTo}>
+              <span>04</span>
+              <b>COMMANDES</b>
+              <small>PLAYBOOK</small>
+              <i>▶</i>
+            </button>
+          </nav>
+          {trophies > 0 && <p className="title-trophies">✦ CHAMPION × {trophies}</p>}
         </div>
-        <div className="hero-stamp">
-          <span>EST. 2026</span>
-          <b>
-            ONE TOUCH
-            <br />
-            BIG ENERGY
-          </b>
-          <span>ARCADE BASEBALL CLUB</span>
-        </div>
-        <div className="hero-bottom">
-          <span>
-            <i /> LA SAISON EST OUVERTE
-          </span>
-          <span>
-            PORTRAIT + PAYSAGE <b>↔</b>
-          </span>
-        </div>
+        <div className="title-insert">PRESS START · ONE TOUCH ARCADE</div>
       </section>
-      <section className="captain-line" aria-label="Les quatre capitaines">
-        <span className="eyebrow">
-          QUATRE CAPITAINES.
-          <br />
-          UNE SEULE COURONNE.
-        </span>
-        {CAPTAINS.map((team, i) => (
-          <div key={team.id} className="captain-badge" style={{ '--team-accent': team.accent }}>
-            <Portrait kit={rosterKit(team, 0)} pose="idle" reducedMotion={reducedMotion} />
-            <span>
-              <b>{team.players[0].name}</b>
-              <small>{team.name}</small>
-            </span>
-            <i>0{i + 1}</i>
-          </div>
-        ))}
-      </section>
-      <section className="ticker" aria-label="Caractéristiques du jeu">
-        <span>7 JOUEURS PAR ÉQUIPE</span>
-        <b>✦</b>
-        <span>6 RIVAUX À DÉFIER</span>
-        <b>✦</b>
-        <span>6 TIRS SIGNATURE</span>
-        <b>✦</b>
-        <span>ZÉRO PUB · 100 % ARCADE</span>
-      </section>
-      <section className="club-preview">
-        <div className="club-heading">
-          <div>
-            <div className="eyebrow">VOTRE CLUB · VOTRE COUPE</div>
-            <h2>Une équipe. Tout un caractère.</h2>
-          </div>
-          <span className="club-note">
-            LES NEON FOXES <b>01—07</b>
-          </span>
-        </div>
-        <div className="feature-grid">
-          <button className="feature-card captain-card" onClick={onTournament}>
-            <div className="card-copy">
-              <span className="card-index">01 / LE CAPITAINE</span>
-              <h3>Riko & les Foxes</h3>
-              <p>
-                Une escouade électrique.
-                <br />
-                Sept talents, six tirs signature.
-              </p>
-              <span className="card-link">RENCONTRER VOS RIVAUX ↗</span>
-            </div>
-            <div className="captain-glow" />
-            <Portrait kit={rosterKit(PLAYER_TEAM, 0)} pose="hold" reducedMotion={reducedMotion} />
-          </button>
-          <button className="feature-card" onClick={onHowTo}>
-            <span className="card-index">02 / LE BON TIMING</span>
-            <span className="feature-symbol">◎</span>
-            <h3>Un doigt. Le déclic.</h3>
-            <p>
-              Le mouvement est automatique.
-              <br />
-              Le moment décisif vous appartient.
-            </p>
-            <span className="card-link">LES GESTES QUI CHANGENT TOUT ↗</span>
-          </button>
-          <button className="feature-card trophy-card" onClick={onTournament}>
-            <span className="card-index">03 / LA NEON CUP</span>
-            <span className="feature-symbol">♜</span>
-            <h3>La ville attend sa légende.</h3>
-            <p>
-              Quatre stades. Six rencontres.
-              <br />
-              Un dernier duel sous les projecteurs.
-            </p>
-            <span className="card-link">{progress.beaten} / 6 RENCONTRES GAGNÉES ↗</span>
-          </button>
-        </div>
-      </section>
-      <footer className="site-footer">
-        <span>
-          NEON SLUGGER <b>•</b> UN JEU ORIGINAL
-        </span>
-        <span>Sans compte. Sans publicité. Progression sur cet appareil.</span>
-        <span>JOUER AU FEELING. GAGNER AU TIMING.</span>
-      </footer>
     </main>
   )
 }
@@ -734,10 +640,10 @@ export default function App() {
         <Title
           onTournament={() => go('tournament')}
           onQuick={quick}
+          onRoster={() => go('roster')}
           onHowTo={() => go('howto')}
           trophies={progress.trophies}
           progress={progress}
-          reducedMotion={progress.settings.reducedMotion}
         />
       )}{' '}
       {screen === 'tournament' && (

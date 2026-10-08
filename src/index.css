@@ -135,6 +135,115 @@ canvas {
   max-width: 1600px;
   margin: auto;
 }
+.title-screen {
+  max-width: 1600px;
+  margin: auto;
+  min-height: calc(100dvh - 88px);
+}
+.title-stage {
+  position: relative;
+  min-height: calc(100dvh - 88px);
+  overflow: hidden;
+  background: #0e2133;
+  display: flex;
+  align-items: center;
+  padding: 38px 6% 50px;
+}
+.title-lockup {
+  position: relative;
+  z-index: 1;
+  width: min(470px, 100%);
+}
+.title-lockup h1 {
+  position: relative;
+  display: inline-block;
+  margin: 16px 0 25px;
+  font: 900 clamp(70px, 8.2vw, 120px) / 0.82 var(--font-display);
+  letter-spacing: -2px;
+  text-shadow:
+    3px 3px #0b1b2c,
+    5px 5px var(--coral);
+}
+.title-lockup h1 > span:first-child {
+  display: block;
+  color: var(--mint);
+  font-size: 0.52em;
+  letter-spacing: 0.22em;
+  line-height: 1.15;
+  text-shadow: none;
+}
+.title-lockup .title-star {
+  position: absolute;
+  right: -28px;
+  top: 13px;
+  color: var(--coral);
+  font-size: 20px;
+  text-shadow: none;
+}
+.arcade-menu {
+  display: grid;
+  gap: 7px;
+  width: min(420px, 100%);
+}
+.arcade-menu button {
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: 34px 1fr auto 20px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 13px;
+  text-align: left;
+  color: var(--cream);
+  background: #08141fe8;
+  border: 1px solid #425865;
+  box-shadow: 3px 3px #0008;
+}
+.arcade-menu button.active {
+  color: #08141f;
+  background: var(--coral);
+  border-color: var(--cream);
+  box-shadow: 3px 3px var(--cream);
+}
+.arcade-menu button > span {
+  color: var(--mint);
+  font: 8px monospace;
+}
+.arcade-menu button.active > span {
+  color: #08141f;
+}
+.arcade-menu b {
+  font: 18px var(--font-display);
+  letter-spacing: 1px;
+}
+.arcade-menu small {
+  color: #a9bac0;
+  font: 7px monospace;
+  letter-spacing: 1px;
+}
+.arcade-menu button.active small {
+  color: #22313a;
+}
+.arcade-menu i {
+  font-style: normal;
+  text-align: right;
+}
+.title-trophies,
+.title-insert {
+  position: relative;
+  z-index: 1;
+  font: 8px monospace;
+  letter-spacing: 1.5px;
+}
+.title-trophies {
+  color: #f9d57c;
+  margin: 15px 0 0;
+}
+.title-insert {
+  position: absolute;
+  left: 6%;
+  bottom: 18px;
+  color: #8da2aa;
+}
 .hero {
   position: relative;
   min-height: 635px;
@@ -1393,6 +1502,39 @@ kbd {
     height: 34px;
     font-size: 19px;
   }
+  .title-screen,
+  .title-stage {
+    min-height: calc(100dvh - 74px);
+  }
+  .title-stage {
+    align-items: flex-end;
+    padding: 220px 6% 42px;
+  }
+  .title-stage .hero-art {
+    background-position: 66% top;
+    background-size: auto 100%;
+  }
+  .title-stage .hero-art:after {
+    background: linear-gradient(0deg, #08141ffa 8%, #08141fd9 47%, #08141f35 78%);
+  }
+  .title-lockup h1 {
+    margin: 12px 0 18px;
+    font-size: clamp(54px, 19vw, 78px);
+  }
+  .arcade-menu button {
+    min-height: 48px;
+    grid-template-columns: 26px 1fr auto 14px;
+    padding: 7px 10px;
+  }
+  .arcade-menu b {
+    font-size: 16px;
+  }
+  .arcade-menu small {
+    font-size: 6px;
+  }
+  .title-insert {
+    display: none;
+  }
   .hero {
     min-height: 735px;
     align-items: flex-end;
@@ -2060,4 +2202,155 @@ kbd {
   color: var(--mint);
   font-family: var(--font-display);
   font-size: 24px;
+}
+
+/* Match HUD v3: the field owns the screen; information stays compact. */
+.match-hud {
+  align-items: center;
+  gap: 7px;
+  padding: max(5px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) 5px
+    max(8px, env(safe-area-inset-left));
+}
+.scoreboard {
+  max-width: 680px;
+  padding: 6px 10px;
+  gap: 10px;
+  box-shadow: 2px 2px #030b13;
+}
+.score-name {
+  font-size: 9px;
+  gap: 5px;
+}
+.score-name b {
+  font-size: 13px;
+}
+.health-line {
+  gap: 3px;
+  margin-top: 4px;
+}
+.health-player > span {
+  height: 3px;
+}
+.health-player small,
+.score-middle span {
+  display: none;
+}
+.score-middle b {
+  margin: 0;
+  font-size: 12px;
+}
+.match-hud .icon-button {
+  width: 34px;
+  height: 34px;
+  font-size: 16px;
+}
+.arena-status {
+  position: absolute;
+  z-index: 5;
+  top: 8px;
+  left: max(8px, env(safe-area-inset-left));
+  width: 145px;
+  padding: 6px 8px;
+  border-left: 3px solid var(--mint);
+  background: #06131dce;
+  pointer-events: none;
+  box-shadow: 2px 2px #0006;
+}
+.arena-status > span {
+  display: block;
+  color: #a8bbc1;
+  font: 700 6px monospace;
+  letter-spacing: 0.8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.arena-status > strong {
+  display: block;
+  margin-top: 2px;
+  font: 14px var(--font-display);
+  letter-spacing: 0.7px;
+}
+.arena-status .timing-bar {
+  width: 100%;
+  height: 4px;
+  margin-top: 4px;
+}
+.arena-status .timing-bar:after {
+  top: -2px;
+  height: 8px;
+}
+.match-deck {
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+  padding: 7px max(12px, env(safe-area-inset-right)) max(7px, env(safe-area-inset-bottom))
+    max(12px, env(safe-area-inset-left));
+  background: #07141ff2;
+}
+.action-pad,
+.pass-button,
+.jump-button {
+  min-height: 52px;
+}
+.action-pad {
+  flex: 1 1 150px;
+  min-width: 118px;
+  max-width: 250px;
+  padding: 8px 13px;
+  text-align: center;
+}
+.action-pad strong {
+  font-size: 16px;
+}
+.pass-button,
+.jump-button {
+  flex: 0 0 auto;
+  min-width: 62px;
+}
+.jump-button {
+  min-width: 82px;
+}
+.pass-button span,
+.jump-button span {
+  font-size: 17px;
+}
+@media (max-width: 380px) {
+  .arcade-menu small {
+    display: none;
+  }
+  .arcade-menu button {
+    grid-template-columns: 24px 1fr 14px;
+  }
+  .arcade-menu i {
+    grid-column: 3;
+  }
+  .match-deck {
+    gap: 6px;
+    padding-inline: 8px;
+  }
+  .action-pad {
+    min-width: 104px;
+  }
+  .pass-button {
+    min-width: 56px;
+  }
+  .jump-button {
+    min-width: 74px;
+  }
+}
+@media (orientation: landscape) and (max-height: 530px) {
+  .match-hud {
+    padding-top: max(4px, env(safe-area-inset-top));
+    padding-bottom: 4px;
+  }
+  .match-deck {
+    padding-top: 5px;
+    padding-bottom: max(5px, env(safe-area-inset-bottom));
+  }
+  .action-pad,
+  .pass-button,
+  .jump-button {
+    min-height: 44px;
+  }
 }

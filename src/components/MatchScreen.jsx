@@ -30,18 +30,6 @@ function TeamBar({ name, players, side, accent }) {
     </div>
   )
 }
-function MiniMap({ hud }) {
-  return (
-    <svg className="minimap" viewBox="-36 -28 552 152" aria-label="Vue d’ensemble du terrain">
-      <rect x="0" y="0" width="480" height="96" fill="#225449" />
-      <path d="M240 0V96" stroke="#93b6ac" strokeWidth="2" />
-      {hud.minimap.map((p) => (
-        <circle key={p.id} cx={p.x} cy={p.y} r="7" fill={p.team === 0 ? '#5de7cd' : '#ff596d'} />
-      ))}
-      <circle cx={hud.ballMap.x} cy={hud.ballMap.y} r="7" fill="#fff" stroke="#08141f" strokeWidth="2" />
-    </svg>
-  )
-}
 export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
   const canvasRef = useRef(null),
     arenaRef = useRef(null),
@@ -254,18 +242,18 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
     late = hud?.chargeLate && !hud?.armed
   const title =
     hud?.state === 'intro'
-      ? 'LE MATCH VA COMMENCER'
+      ? 'PLAY BALL'
       : holding
         ? hud.armed
-          ? 'PASSE SIGNATURE REÇUE'
+          ? 'SUPER ARMÉ'
           : late
-            ? 'FENÊTRE DÉPASSÉE'
+            ? 'CHARGE PERDUE'
             : ready
-              ? 'SIGNATURE · RELÂCHEZ !'
-              : 'PRENEZ VOTRE ÉLAN'
+              ? 'RELÂCHEZ !'
+              : 'CHARGE'
         : hud?.threat !== null
-          ? 'LA BALLE ARRIVE'
-          : 'GARDEZ L’ŒIL SUR LA BALLE'
+          ? 'ATTRAPEZ !'
+          : 'SUIVEZ LA BALLE'
   return (
     <div
       className="game-surface"
@@ -288,41 +276,12 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
             )}
           </div>
         )}
-      </div>
-      {hud && (
-        <>
-          <div className="match-hud">
-            <div className="scoreboard">
-              <TeamBar name={PLAYER_TEAM.name} players={hud.us} side="left" accent={PLAYER_TEAM.accent} />
-              <div className="score-middle">
-                <span>NEON CUP</span>
-                <b>
-                  {Math.floor(hud.seconds / 60)}:{String(hud.seconds % 60).padStart(2, '0')}
-                </b>
-              </div>
-              <TeamBar name={rival.name} players={hud.them} side="right" accent={rival.accent} />
-            </div>
-            <button className="icon-button" onClick={togglePause} aria-label="Pause">
-              Ⅱ
-            </button>
-          </div>
-          <span className="match-label">
-            {rival.stadium.toUpperCase()} <span> / {label.toUpperCase()}</span>
-          </span>
-        </>
-      )}
-      {hud && ['intro', 'play'].includes(hud.state) && (
-        <div className="match-deck">
-          <div className="context-copy">
-            <div className="eyebrow">
-              {holding ? 'ATTAQUE' : 'DÉFENSE'} <span> / {hud.ctrl}</span>
-            </div>
+        {hud && ['intro', 'play'].includes(hud.state) && (
+          <div className="arena-status">
+            <span>
+              {holding ? 'ATTAQUE' : 'DÉFENSE'} · {hud.ctrl}
+            </span>
             <strong>{title}</strong>
-            <p>
-              {holding
-                ? 'Maintenez puis relâchez · Passe et Jump Shot ont leur propre bouton'
-                : 'Touchez juste avant l’impact · Maintenez pour sauter'}
-            </p>
             {holding && (
               <div
                 className={`timing-bar ${ready ? 'ready' : ''} ${late ? 'late' : ''}`}
@@ -336,7 +295,27 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
               </div>
             )}
           </div>
-          <MiniMap hud={hud} />
+        )}
+      </div>
+      {hud && (
+        <div className="match-hud">
+          <div className="scoreboard">
+            <TeamBar name={PLAYER_TEAM.name} players={hud.us} side="left" accent={PLAYER_TEAM.accent} />
+            <div className="score-middle">
+              <span>NEON CUP</span>
+              <b>
+                {Math.floor(hud.seconds / 60)}:{String(hud.seconds % 60).padStart(2, '0')}
+              </b>
+            </div>
+            <TeamBar name={rival.name} players={hud.them} side="right" accent={rival.accent} />
+          </div>
+          <button className="icon-button" onClick={togglePause} aria-label="Pause">
+            Ⅱ
+          </button>
+        </div>
+      )}
+      {hud && ['intro', 'play'].includes(hud.state) && (
+        <div className="match-deck">
           <button
             ref={actionRef}
             disabled={hud.state !== 'play'}
@@ -359,8 +338,7 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
                 : 'Réceptionner ou maintenir pour sauter'
             }
           >
-            <strong>{holding ? 'LANCER' : 'RÉCEPTION / SAUT'}</strong>
-            <small>{holding ? 'MAINTENIR → RELÂCHER' : 'TOUCHER → MAINTENIR'}</small>
+            <strong>{holding ? 'LANCER' : 'ATTRAPER / SAUT'}</strong>
           </button>
           <button
             className="pass-button"
