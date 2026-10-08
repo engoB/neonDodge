@@ -1,6 +1,6 @@
 // Progression sauvegardée sur l'appareil (localStorage, tolérant aux erreurs).
-const KEY = 'dodge-rush-v1'
-const DEFAULT = { unlocked: 1, levels: {}, endlessBest: 0, settings: { sound: true, music: true, haptics: true } }
+const KEY = 'neon-dodge-v1'
+const DEFAULT = { beaten: 0, best: {}, trophies: 0, settings: { sound: true, music: true, haptics: true } }
 
 export function load() {
   try {
@@ -19,17 +19,10 @@ export function save(d) {
   }
 }
 
-export function recordLevel(progress, index, id, r) {
-  const prev = progress.levels[id] || { best: 0, golds: [false, false, false], captain: false, done: false }
-  const next = {
-    best: Math.max(prev.best, r.win ? r.score : 0),
-    golds: prev.golds.map((g, i) => g || (r.win && r.golds[i])),
-    captain: prev.captain || (r.win && r.captain),
-    done: prev.done || r.win,
-  }
-  return {
-    ...progress,
-    levels: { ...progress.levels, [id]: next },
-    unlocked: r.win ? Math.max(progress.unlocked, index + 2) : progress.unlocked,
-  }
+export function recordMatch(progress, index, total, r) {
+  if (!r.win) return progress
+  const best = { ...progress.best, [index]: Math.max(progress.best[index] || 0, r.score) }
+  const beaten = Math.max(progress.beaten, index + 1)
+  const trophies = progress.trophies + (index === total - 1 && progress.beaten < total ? 1 : 0)
+  return { ...progress, best, beaten, trophies }
 }

@@ -1,40 +1,45 @@
-// Bot de test : joue un niveau avec la même touche unique qu'un joueur.
-import { Game } from '../src/game/engine.js'
+// Robot « humain » : n'utilise que les commandes à un doigt, avec des réflexes imparfaits.
+import { Match } from '../src/game/match.js'
 import * as C from '../src/game/constants.js'
 
-export function playLevel(opts, { maxFrames = 60 * 240, verbose = false } = {}) {
-  let result = null
-  const g = new Game({ ...opts, onEnd: (r) => (result = r) })
-  g.setView(480)
-  let holdFor = 0
-  const log = []
-  for (let f = 0; f < maxFrames && !result; f++) {
-    const p = g.p
-    if (holdFor > 0 && --holdFor === 0) g.release()
-    if (g.state === 'run' && !p.dead && p.bubble === 0 && holdFor === 0) {
-      let act = null
-      if (p.ball) {
-        const tgt = g.pickTarget()
-        if (tgt && (p.charged || tgt.x - p.x < 200)) act = 'throw'
-      } else {
-        const c = g.catchable()
-        if (c && c.ftc >= 2 && c.ftc <= 4) act = 'catch'
-      }
-      if (!act && p.grounded) {
-        // trou devant : sauter assez tôt pour le franchir
-        const ahead = [16, 26].some((d) => g.groundAt(p.x + d) === null && !g.surfaces(p.x + d).length)
-        const danger = g.balls.some((b) => b.owner === 'enemy' && !b.catchable && b.x > p.x && (b.x - p.x) / (C.RUN - b.vx) < 16)
-        const enemyBall = g.balls.some((b) => b.owner === 'enemy' && b.catchable && b.x > p.x && (b.x - p.x) / (C.RUN - b.vx) < 1.5)
-        if (ahead) act = 'gap'
-        else if (danger || (p.ball && enemyBall)) act = 'dodge'
-      }
-      if (act) {
-        g.press()
-        holdFor = act === 'gap' ? 30 : act === 'dodge' ? 12 : 1
-        if (verbose) log.push(`${f} ${act} x=${p.x | 0}`)
+export function playMatch(rival, seed, { skill = 0.7, maxFrames = 60 * 60 * 10 } = {}) {
+  let out = null
+  const m = new Match({ rival, seed, onEnd: (r) => (out = r) })
+  m.setView(560)
+  let r = seed * 7919
+  const rand = () => ((r = (r * 16807) % 2147483647) / 2147483647)
+  // erreur de timing d'un doigt humain : loi normale, écart-type (1 - adresse) × 4 images
+  const gauss = () => Math.sqrt(-2 * Math.log(rand() + 1e-9)) * Math.cos(2 * Math.PI * rand())
+  const sd = (1 - skill) * 4
+  let holdUntil = -1
+  let plannedCatch = null
+  for (let f = 0; f < maxFrames && !out; f++) {
+    if (m.state === 'play') {
+      const c = m.controlled
+      const h = m.holder
+      if (h && c === h) {
+        if (!m.input.pressed && h.state === 'hold') {
+          m.press()
+          // un joueur appliqué court jusqu'au super tir, sinon tir rapide
+          // vise le milieu de la zone du super tir, avec l'erreur humaine
+          holdUntil = f + Math.round(C.SUPER_CHARGE + C.SUPER_ZONE / 2 + gauss() * sd * 2)
+        } else if (m.input.pressed && f >= holdUntil) m.release()
+      } else if (c) {
+        const ftc = m.framesToContact(c)
+        if (ftc !== null && plannedCatch === null && ftc < 30) {
+          // vise la fenêtre parfaite avec une erreur de ±2 images selon l'adresse
+          const err = Math.round(gauss() * sd)
+          plannedCatch = { at: f + Math.max(0, Math.round(ftc - C.CATCH_PERFECT)) + err }
+        }
+        if (plannedCatch && f >= plannedCatch.at) {
+          m.press()
+          m.release()
+          plannedCatch = null
+        }
+        if (ftc === null) plannedCatch = null
       }
     }
-    g.update()
+    m.update()
   }
-  return { result, g, log }
+  return { out, m }
 }

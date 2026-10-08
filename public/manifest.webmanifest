@@ -1,7 +1,7 @@
 {
-  "name": "Dodge Rush",
-  "short_name": "Dodge Rush",
-  "description": "Balle au prisonnier à un doigt : sautez, attrapez, tirez.",
+  "name": "Neon Dodge",
+  "short_name": "Neon Dodge",
+  "description": "Balle au prisonnier à un doigt : deux équipes, un terrain, un tournoi.",
   "start_url": "./",
   "display": "standalone",
   "orientation": "any",
