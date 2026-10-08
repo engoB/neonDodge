@@ -1519,7 +1519,9 @@ kbd {
   }
   .title-lockup h1 {
     margin: 12px 0 18px;
-    font-size: clamp(54px, 19vw, 78px);
+    /* WebKit arrondit cette police pixel un peu plus largement : garder le
+       mot-symbole dans le cadre, même sur les portraits de 390 px. */
+    font-size: clamp(54px, 17vw, 74px);
   }
   .arcade-menu button {
     min-height: 48px;
