@@ -38,7 +38,7 @@ function MiniMap({ hud }) {
       {hud.minimap.map((p) => (
         <circle key={p.id} cx={p.x} cy={p.y} r="7" fill={p.team === 0 ? '#5de7cd' : '#ff596d'} />
       ))}
-      <circle cx={hud.ballMap.x} cy={hud.ballMap.y} r="6" fill="#f9d57c" stroke="#08141f" strokeWidth="2" />
+      <circle cx={hud.ballMap.x} cy={hud.ballMap.y} r="7" fill="#fff" stroke="#08141f" strokeWidth="2" />
     </svg>
   )
 }
@@ -185,6 +185,11 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
         m.swipeUp()
         setPressing(false)
       }
+      if (['KeyX', 'ArrowDown'].includes(e.code) && e.type === 'keydown') {
+        e.preventDefault()
+        m.jumpShot()
+        setPressing(false)
+      }
     }
     document.addEventListener('visibilitychange', hidden)
     window.addEventListener('blur', blur)
@@ -315,7 +320,7 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
             <strong>{title}</strong>
             <p>
               {holding
-                ? 'Maintenez · Relâchez pour lancer · Glissez ↑ pour passer'
+                ? 'Maintenez puis relâchez · Passe et Jump Shot ont leur propre bouton'
                 : 'Touchez juste avant l’impact · Maintenez pour sauter'}
             </p>
             {holding && (
@@ -368,6 +373,18 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
             aria-label="Passer la balle"
           >
             <span>↑</span>PASSE
+          </button>
+          <button
+            className="jump-button"
+            disabled={!hud.canJumpShot || hud.state !== 'play'}
+            onClick={() => {
+              unlockAudio()
+              matchRef.current?.jumpShot()
+              setPressing(false)
+            }}
+            aria-label="Faire un tir en saut"
+          >
+            <span>↗</span>JUMP SHOT
           </button>
         </div>
       )}

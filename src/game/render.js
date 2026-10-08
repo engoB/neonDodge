@@ -44,16 +44,23 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
   const fl = FLOORS[arena]
   const offY = (viewH - VIEW_H) * 0.85
   const sh = !m.reducedMotion && m.shake ? (Math.sin(t * 90) * m.shake) / 2 : 0
+  const zoom = m.camZoom || 1
+  const worldLeft = m.camX - m.viewW / (2 * zoom)
+  const worldWidth = m.viewW / zoom
+  const cameraY = FLOOR_Y + C.DEPTH * DEPTH_K * 0.55
   ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0)
   ctx.translate(0, offY)
   // décor du fond (tribunes, ciel…)
-  SCENES[arena].bg(ctx, m.camX * 0.6 + 200, m.viewW, -offY, FLOOR_Y - 15, m.reducedMotion ? 0 : t)
-  ctx.translate(-m.camX + sh, 0)
+  SCENES[arena].bg(ctx, m.camX, m.viewW, -offY, FLOOR_Y - 15, m.reducedMotion ? 0 : t)
+  ctx.save()
+  ctx.translate(m.viewW / 2 + sh, cameraY)
+  ctx.scale(zoom, zoom)
+  ctx.translate(-m.camX, -cameraY)
   // sol extérieur jusqu'en bas de l'écran
   ctx.fillStyle = fl.out
-  ctx.fillRect(m.camX - 40, FLOOR_Y - 30, m.viewW + 80, viewH - offY - FLOOR_Y + 40)
+  ctx.fillRect(worldLeft - 40, FLOOR_Y - 30, worldWidth + 80, viewH - offY - FLOOR_Y + 40)
   ctx.fillStyle = 'rgba(0,0,0,0.12)'
-  ctx.fillRect(m.camX - 40, FLOOR_Y - 30, m.viewW + 80, 4)
+  ctx.fillRect(worldLeft - 40, FLOOR_Y - 30, worldWidth + 80, 4)
   // terrain
   quad(ctx, 0, 0, C.COURT_W, C.DEPTH)
   ctx.fillStyle = fl.in
@@ -169,15 +176,27 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
   if (target) ring(ctx, target, '#fb923c', t)
   if (ctrl && !ctrl.ko) ring(ctx, ctrl, '#22d3ee', t)
 
-  if (b.state === 'flying' && b.kind === 'shot') {
+  if (b.state === 'flying') {
     const trail = b.trail || []
-    for (let i = 0; i < trail.length; i++) {
-      const [x, y] = toScreen(trail[i].x, trail[i].y, trail[i].z)
-      ctx.globalAlpha = ((i + 1) / trail.length) * (b.sup ? 0.45 : 0.2)
-      ctx.fillStyle = b.team === 0 ? '#5de7cd' : '#ff596d'
-      ctx.fillRect(x - 2, y - 2, b.sup ? 5 : 3, b.sup ? 5 : 3)
+    ctx.save()
+    ctx.lineCap = 'round'
+    for (let i = 1; i < trail.length; i++) {
+      const a = toScreen(trail[i - 1].x, trail[i - 1].y, trail[i - 1].z)
+      const c = toScreen(trail[i].x, trail[i].y, trail[i].z)
+      const f = i / trail.length
+      ctx.globalAlpha = f * (b.sup ? 0.78 : b.kind === 'pass' ? 0.38 : 0.62)
+      ctx.strokeStyle = '#ffffff'
+      ctx.lineWidth = 1 + f * (b.sup ? 6 : 3.5)
+      ctx.beginPath()
+      ctx.moveTo(a[0], a[1])
+      ctx.lineTo(c[0], c[1])
+      ctx.stroke()
+      ctx.globalAlpha *= 0.72
+      ctx.strokeStyle = b.team === 0 ? '#67e8f9' : '#fb7185'
+      ctx.lineWidth = Math.max(1, ctx.lineWidth * 0.36)
+      ctx.stroke()
     }
-    ctx.globalAlpha = 1
+    ctx.restore()
   }
   // A short dashed aim guide connects the pitcher to the announced target.
   if (holder && target && holder.team === 0 && m.state === 'play') {
@@ -204,7 +223,7 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
       drawBall(ctx, {
         x: bx,
         y: by,
-        r: 5,
+        r: b.sup ? 8.5 : 7,
         kind: b.sup
           ? b.team === 0
             ? 'super'
@@ -276,6 +295,7 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
   }
   ctx.globalAlpha = 1
   // superpositions écran
+  ctx.restore()
   ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0)
   if (!m.reducedMotion && m.shake > 6) {
     ctx.fillStyle = '#f5f0d912'
@@ -288,6 +308,7 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
     banner(ctx, cxs, cys, n > 3 ? 'PLAY BALL !' : n > 0 ? String(n) : 'GO !', n > 3 ? 28 : 46)
   }
   if (m.state === 'end') banner(ctx, cxs, cys, m.winner === 0 ? 'VICTOIRE !' : 'DÉFAITE…', 40)
+  if (m.superBanner) specialBanner(ctx, m.superBanner, m.viewW, viewH)
 }
 
 function poseOf(m, p) {
@@ -353,4 +374,39 @@ function banner(ctx, x, y, text, size) {
   ctx.strokeText(text, x, y)
   ctx.fillStyle = '#fde047'
   ctx.fillText(text, x, y)
+}
+
+function specialBanner(ctx, callout, width, height) {
+  const life = callout.t
+  const enter = Math.min(1, (84 - life) / 10)
+  const leave = Math.min(1, life / 14)
+  const alpha = Math.min(enter, leave)
+  const accent = callout.team === 0 ? '#67e8f9' : '#fb7185'
+  const y = height * 0.42
+  ctx.save()
+  ctx.globalAlpha = alpha
+  ctx.translate((1 - enter) * (callout.team === 0 ? -width : width), 0)
+  ctx.fillStyle = '#060d18e8'
+  ctx.beginPath()
+  ctx.moveTo(0, y - 43)
+  ctx.lineTo(width, y - 56)
+  ctx.lineTo(width, y + 38)
+  ctx.lineTo(0, y + 52)
+  ctx.closePath()
+  ctx.fill()
+  ctx.fillStyle = accent
+  ctx.fillRect(0, y - 48, width, 4)
+  ctx.fillRect(0, y + 43, width, 3)
+  ctx.textAlign = 'center'
+  ctx.font = '900 9px monospace'
+  ctx.fillStyle = '#f5f0d9'
+  ctx.fillText(callout.kicker, width / 2, y - 17)
+  const size = Math.max(30, Math.min(54, width / 8.4))
+  ctx.font = `900 italic ${size}px Impact, sans-serif`
+  ctx.lineWidth = Math.max(5, size / 7)
+  ctx.strokeStyle = '#111827'
+  ctx.strokeText(callout.name, width / 2, y + 25)
+  ctx.fillStyle = accent
+  ctx.fillText(callout.name, width / 2, y + 25)
+  ctx.restore()
 }

@@ -107,11 +107,11 @@ function Title({ onTournament, onQuick, onHowTo, trophies, progress, reducedMoti
           </p>
           <div className="hero-actions">
             <button className="button primary" onClick={onTournament}>
-              {progress.beaten > 0 ? 'REPRENDRE LA COUPE' : 'ENTRER DANS LA LIGUE'}
+              MODE HISTOIRE · {progress.beaten > 0 ? 'REPRENDRE LA COUPE' : 'ENTRER DANS LA LIGUE'}
               <span>↗</span>
             </button>
             <button className="button secondary" onClick={onQuick}>
-              MATCH EXPRESS<span>▶</span>
+              MODE ARCADE · MATCH EXPRESS<span>▶</span>
             </button>
           </div>
           <button className="text-button" onClick={onHowTo}>
@@ -231,7 +231,7 @@ function Tournament({ progress, onPick, reducedMotion }) {
   return (
     <main className="page-shell">
       <div className="page-heading">
-        <div className="eyebrow">SAISON 01 · NEON CUP</div>
+        <div className="eyebrow">MODE HISTOIRE · SAISON 01 · NEON CUP</div>
         <h1>
           La route vers la coupe<span>.</span>
         </h1>
@@ -258,7 +258,7 @@ function Tournament({ progress, onPick, reducedMotion }) {
             >
               <div className="fixture-top">
                 <span>
-                  MATCH 0{i + 1} {i === 5 ? '· FINALE' : ''}
+                  CHAPITRE 0{i + 1} · MATCH 0{i + 1} {i === 5 ? '· FINALE' : ''}
                 </span>
                 <span>{done ? '✦ GAGNÉ' : open ? 'À VOUS DE JOUER' : 'VERROUILLÉ'}</span>
               </div>
@@ -396,8 +396,8 @@ function HowTo({ onQuick }) {
           [
             '03',
             '↑',
-            'Changez l’angle',
-            'Glissez vers le haut ou utilisez Passe. Une passe chargée arme le tir signature du receveur pendant un court instant.',
+            'Passez en une touche',
+            'Appuyez sur Passe : le meilleur partenaire est choisi automatiquement. Une passe chargée arme son tir signature.',
           ],
           [
             '04',
@@ -407,9 +407,9 @@ function HowTo({ onQuick }) {
           ],
           [
             '05',
-            '⌁',
-            'Prenez de la hauteur',
-            'Sans balle : maintenez pour sauter. Un appui trop tôt laisse votre joueur exposé.',
+            '↗',
+            'Déclenchez le Jump Shot',
+            'Balle en main : appuyez sur Jump Shot, le joueur saute et lance automatiquement au sommet. En défense, maintenez pour esquiver.',
           ],
           [
             '06',
@@ -428,13 +428,122 @@ function HowTo({ onQuick }) {
       </div>
       <div className="playbook-footer">
         <span>
-          CLAVIER <kbd>Espace</kbd> Maintenir / relâcher <kbd>↑</kbd> Passe <kbd>Échap</kbd> Pause
+          CLAVIER <kbd>Espace</kbd> Tir / réception <kbd>↑</kbd> Passe <kbd>X</kbd> Jump Shot <kbd>Échap</kbd>{' '}
+          Pause
         </span>
         <button className="button primary" onClick={onQuick}>
           À VOUS DE JOUER <span>↗</span>
         </button>
       </div>
     </main>
+  )
+}
+
+const STORY_BEATS = [
+  [
+    'Gaspard',
+    'Le Fox Yard appartient aux Bats. Rentrez chez vous.',
+    'Riko',
+    'On ne vient pas prendre votre terrain. On vient gagner votre respect.',
+  ],
+  [
+    'Iris',
+    'Je connais déjà chacun de tes angles, Riko.',
+    'Riko',
+    'Alors regarde bien celui que je vais inventer.',
+  ],
+  [
+    'Marin',
+    'Ici, même le vent joue pour les Sharks.',
+    'Riko',
+    'Parfait. Il poussera notre victoire jusqu’aux tribunes.',
+  ],
+  [
+    'Pico',
+    'Notre rythme va vous faire courir après le match.',
+    'Riko',
+    'Les Foxes ne suivent pas le rythme. Ils le déclenchent.',
+  ],
+  [
+    'Bruce',
+    'Une balle des Bulls suffit pour éteindre vos néons.',
+    'Riko',
+    'Essaie. Les nôtres brillent encore plus fort sous les impacts.',
+  ],
+  [
+    'Vega',
+    'Tu voulais la couronne. Il faut maintenant me la prendre.',
+    'Riko',
+    'Pas la prendre, Vega. La mériter devant tout le Dome.',
+  ],
+]
+
+function StoryDialog({ rival, index, reducedMotion, onPlay, onClose }) {
+  const ref = useRef(null)
+  const [line, setLine] = useState(0)
+  const beat = STORY_BEATS[index]
+  const lines = [
+    {
+      speaker: 'Coach Nova',
+      text: `Chapitre ${index + 1}. ${rival.stadium}. ${rival.description}`,
+      side: 'coach',
+    },
+    { speaker: beat[0], text: beat[1], side: 'rival' },
+    { speaker: beat[2], text: beat[3], side: 'riko' },
+  ]
+  const current = lines[line]
+  useEffect(() => {
+    ref.current?.showModal()
+    return () => ref.current?.close()
+  }, [])
+  return (
+    <dialog
+      ref={ref}
+      className="story-dialog"
+      aria-labelledby="story-title"
+      onCancel={(event) => {
+        event.preventDefault()
+        onClose()
+      }}
+    >
+      <section className="story-card" style={{ '--rival-accent': rival.accent }}>
+        <div className="story-topline">
+          <span>MODE HISTOIRE · CHAPITRE 0{index + 1}</span>
+          <button className="icon-button" onClick={onClose} aria-label="Fermer le dialogue">
+            ×
+          </button>
+        </div>
+        <h2 id="story-title">FACE À FACE</h2>
+        <div className="story-versus">
+          <div className={current.side === 'riko' ? 'speaking' : ''}>
+            <Portrait kit={rosterKit(PLAYER_TEAM, 0)} pose="hold" reducedMotion={reducedMotion} />
+            <b>RIKO</b>
+            <small>NEON FOXES</small>
+          </div>
+          <span>VS</span>
+          <div className={current.side === 'rival' ? 'speaking' : ''}>
+            <Portrait kit={rosterKit(rival, 0)} pose="taunt" facing={-1} reducedMotion={reducedMotion} />
+            <b>{rival.players[0].name.toUpperCase()}</b>
+            <small>{rival.name.toUpperCase()}</small>
+          </div>
+        </div>
+        <div className={`speech-box ${current.side}`}>
+          <span>{current.speaker}</span>
+          <p>« {current.text} »</p>
+        </div>
+        <div className="story-dots" aria-label={`Dialogue ${line + 1} sur ${lines.length}`}>
+          {lines.map((_, i) => (
+            <i key={i} className={i === line ? 'active' : ''} />
+          ))}
+        </div>
+        <button
+          className="button primary story-next"
+          onClick={() => (line < lines.length - 1 ? setLine(line + 1) : onPlay())}
+        >
+          {line < lines.length - 1 ? 'CONTINUER' : 'PLAY BALL !'} <span>↗</span>
+        </button>
+      </section>
+    </dialog>
   )
 }
 
@@ -566,7 +675,8 @@ export default function App() {
     [tournament, setTournament] = useState(true),
     [result, setResult] = useState(null),
     [runId, setRunId] = useState(0),
-    [settingsOpen, setSettingsOpen] = useState(false)
+    [settingsOpen, setSettingsOpen] = useState(false),
+    [briefing, setBriefing] = useState(null)
   useEffect(() => {
     save(progress)
     setSound(progress.settings.sound)
@@ -631,7 +741,11 @@ export default function App() {
         />
       )}{' '}
       {screen === 'tournament' && (
-        <Tournament progress={progress} onPick={play} reducedMotion={progress.settings.reducedMotion} />
+        <Tournament
+          progress={progress}
+          onPick={(i) => setBriefing(i)}
+          reducedMotion={progress.settings.reducedMotion}
+        />
       )}{' '}
       {screen === 'roster' && <Roster reducedMotion={progress.settings.reducedMotion} />}{' '}
       {screen === 'howto' && <HowTo onQuick={quick} />}{' '}
@@ -640,6 +754,20 @@ export default function App() {
           settings={progress.settings}
           setSettings={(settings) => setProgress((p) => ({ ...p, settings }))}
           onClose={() => setSettingsOpen(false)}
+        />
+      )}
+      {briefing !== null && (
+        <StoryDialog
+          key={RIVALS[briefing].id}
+          rival={RIVALS[briefing]}
+          index={briefing}
+          reducedMotion={progress.settings.reducedMotion}
+          onClose={() => setBriefing(null)}
+          onPlay={() => {
+            const selected = briefing
+            setBriefing(null)
+            play(selected, true)
+          }}
         />
       )}
     </>

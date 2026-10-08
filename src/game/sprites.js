@@ -197,7 +197,7 @@ export function drawAthlete(ctx, o) {
             : frame === 12
               ? [-11, -39]
               : [9, -23]
-    drawBall(ctx, { x: hand[0], y: hand[1], r: 3.5, kind: ball, spin: t * 4 })
+    drawBall(ctx, { x: hand[0], y: hand[1], r: 4.5, kind: ball, spin: t * 4 })
   }
   ctx.restore()
 }
@@ -212,11 +212,19 @@ export function drawBall(ctx, b) {
   ctx.save()
   ctx.imageSmoothingEnabled = false
   ctx.translate(Math.round(b.x), Math.round(b.y))
-  ctx.rotate(b.spin ?? 0)
   if (['super', 'fire'].includes(b.kind)) {
     ctx.shadowColor = b.kind === 'fire' ? '#ff596d' : '#5de7cd'
-    ctx.shadowBlur = 10
+    ctx.shadowBlur = 14
   }
+  // Halo blanc et contour sombre : la balle reste lisible sur herbe, terre et tribunes.
+  ctx.fillStyle = '#ffffff'
+  ctx.strokeStyle = '#102337'
+  ctx.lineWidth = Math.max(1.5, r * 0.28)
+  ctx.beginPath()
+  ctx.arc(0, 0, r + 1.5, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+  ctx.rotate(b.spin ?? 0)
   ctx.drawImage(image, -r - 1, -r - 1, (r + 1) * 2, (r + 1) * 2)
   ctx.restore()
 }

@@ -37,7 +37,12 @@ async function expectMatchFits(page) {
   expect(g.arena.bottom).toBeLessThanOrEqual(g.controls.top + 1)
   expect(g.controls.bottom).toBeLessThanOrEqual(g.height + 1)
   expect(g.controls.right).toBeLessThanOrEqual(g.width + 1)
-  for (const button of [action(page), page.getByRole('button', { name: 'Passer la balle' }), pause(page)]) {
+  for (const button of [
+    action(page),
+    page.getByRole('button', { name: 'Passer la balle' }),
+    page.getByRole('button', { name: 'Faire un tir en saut' }),
+    pause(page),
+  ]) {
     const r = await button.boundingBox()
     expect(r.x).toBeGreaterThanOrEqual(0)
     expect(r.y).toBeGreaterThanOrEqual(0)
@@ -130,6 +135,11 @@ test('coupe : premier match accessible, suivants verrouillés et commandes visib
   await expect(page.locator('.fixture')).toHaveCount(6)
   await expect(page.locator('.fixture:disabled')).toHaveCount(5)
   await page.getByRole('button', { name: /MATCH 01/ }).click()
+  await expect(page.locator('.story-dialog')).toBeVisible()
+  await expect(page.locator('.story-versus canvas')).toHaveCount(2)
+  await page.getByRole('button', { name: /CONTINUER/ }).click()
+  await page.getByRole('button', { name: /CONTINUER/ }).click()
+  await page.getByRole('button', { name: /PLAY BALL/ }).click()
   await expect(action(page)).toBeEnabled()
   await expectMatchFits(page)
   await screenshot(page, info, 'match')
@@ -172,6 +182,14 @@ test('pointeur : annulation sans lancer, passe et reprise', async ({ page }) => 
   await expect(page.locator('.context-copy .eyebrow')).toContainText('ATTAQUE')
   await expect(page.locator('.context-copy .eyebrow')).not.toContainText('Riko')
   await expectMatchFits(page)
+})
+
+test('commandes directes : le Jump Shot se déclenche en une touche', async ({ page }) => {
+  await start(page)
+  const jump = page.getByRole('button', { name: 'Faire un tir en saut' })
+  await expect(jump).toBeEnabled()
+  await jump.click()
+  await expect(page.locator('.context-copy .eyebrow')).toContainText('DÉFENSE', { timeout: 2500 })
 })
 
 test('rotation : un match en cours conserve les commandes et son état', async ({ page }, info) => {
