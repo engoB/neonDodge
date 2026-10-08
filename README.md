@@ -8,7 +8,9 @@ Neon Slugger transforme Neon Dodge en un univers de baseball arcade : stade noct
 - Accueil illustré, tournoi, club avec sept fiches de joueurs, animations consultables, playbook et réglages.
 - Quatre ballparks : Fox Yard, Skyline Park, Harbor Field, Neon Dome. Six clubs rivaux à difficulté progressive.
 - Sprites originaux en pixel art : repos, marche, course, possession, préparation, lancer, réception, montée, descente, impact, KO, provocation et victoire.
-- Jauge qui distingue charge, fenêtre signature et dépassement. Traînées de balle, guide de visée et minimap.
+- Jauge qui distingue charge, fenêtre signature et dépassement. Balle blanche agrandie, longue traînée, guide de visée et minimap.
+- Caméra arcade qui recadre le porteur, suit le lancer et resserre l’action près de la cible. Les joueurs regardent la balle sans retournements parasites.
+- Mode Histoire en six chapitres, avec face-à-face dialogués et portraits des capitaines. Les signatures déclenchent une annonce plein écran façon jeu de combat.
 - Contrôles tactiles avec capture du pointeur : interrompre un geste ou mettre en pause ne provoque aucun lancer.
 - Décompte et pause sans appui bloqué ; temps de jeu distinct du décompte ; fin de match sans dégâts supplémentaires.
 - Bonus de réception parfaite conservé pour le prochain élan. Progression de Neon Dodge conservée sur cet appareil.
@@ -22,11 +24,12 @@ Neon Slugger transforme Neon Dodge en un univers de baseball arcade : stade noct
 | Balle en main            | Maintenir, puis relâcher             | Élan, puis lancer vers la cible orange                  |
 | Charge dorée après 0,4 s | Relâcher dans la fenêtre de 4 images | Tir signature ; après la fenêtre, tir normal            |
 | Balle en main            | Glisser ↑ ou bouton Passe            | Passe ; une passe chargée arme la signature du receveur |
+| Balle en main            | Bouton Jump Shot                     | Saut et lancer automatique au sommet                    |
 | En défense               | Toucher 2 à 4 images avant l’impact  | Réception ; à 3 images, réception parfaite              |
 | Tir signature adverse    | Réception parfaite                   | Seul timing qui permet de l’arrêter                     |
 | Sans balle               | Maintenir                            | Saut d’esquive                                          |
 
-Sur ordinateur : **Espace** pour maintenir / relâcher, **↑** pour passer, **Échap** pour suspendre / reprendre. Le mouvement et la récupération de balle sont automatiques. Une réception parfaite réduit à six images l’élan nécessaire pour la prochaine signature.
+Sur ordinateur : **Espace** pour maintenir / relâcher, **↑** pour passer, **X** ou **↓** pour le Jump Shot, **Échap** pour suspendre / reprendre. Le mouvement et la récupération de balle sont automatiques. Une réception parfaite réduit à six images l’élan nécessaire pour la prochaine signature.
 
 ## Développement
 

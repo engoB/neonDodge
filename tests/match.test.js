@@ -124,6 +124,48 @@ test('une réception parfaite conserve son bonus pour le prochain élan', () => 
   assert.equal(p.throwOpts.sup, true)
 })
 
+test('les joueurs regardent la balle sans osciller dans la zone morte', () => {
+  const m = new Match({ rival: RIVALS[0] })
+  m.state = 'play'
+  const p = m.players[1]
+  p.x = 100
+  p.facing = 1
+  m.ball.state = 'loose'
+  m.ball.holder = null
+  m.ball.x = 40
+  m.updateFacing(p)
+  assert.equal(p.facing, -1)
+  m.ball.x = 104
+  m.updateFacing(p)
+  assert.equal(p.facing, -1, 'la zone morte conserve la dernière direction')
+  m.ball.x = 160
+  m.updateFacing(p)
+  assert.equal(p.facing, 1)
+})
+
+test('le bouton Jump Shot saute puis lance automatiquement au sommet', () => {
+  const m = new Match({ rival: RIVALS[0] })
+  m.state = 'play'
+  assert.equal(m.jumpShot(), true)
+  assert.equal(m.holder.state, 'jump')
+  for (let i = 0; i < 90 && m.ball.state === 'held'; i++) m.update()
+  assert.equal(m.ball.state, 'flying')
+  assert.equal(m.ball.jumpShot, true)
+})
+
+test('la caméra cadre l’action et un tir signature déclenche son annonce', () => {
+  const m = new Match({ rival: RIVALS[0] })
+  m.state = 'play'
+  m.setView(360)
+  const p = m.players[0]
+  p.throwOpts = { target: m.players[10], sup: true }
+  m.release_ball(p)
+  for (let i = 0; i < 24; i++) m.updateCamera()
+  assert.ok(m.camZoom > 1.08)
+  assert.ok(m.camX < C.MID, 'la caméra se rapproche du lanceur au départ du tir')
+  assert.equal(m.superBanner.name, 'COMÈTE FATALE')
+})
+
 test('fin du match : plus de dégâts ni de temps de jeu, un seul résultat', () => {
   let ends = 0
   const m = new Match({ rival: RIVALS[0], onEnd: () => ends++ })

@@ -756,6 +756,137 @@ kbd {
   color: var(--cream);
   margin: 0 5px;
 }
+.story-dialog {
+  width: min(760px, calc(100% - 28px));
+  max-height: calc(100% - 24px);
+  padding: 0;
+  border: 0;
+  color: var(--cream);
+  background: transparent;
+  margin: auto;
+}
+.story-dialog::backdrop {
+  background: #030b15e8;
+  backdrop-filter: blur(8px);
+}
+.story-card {
+  position: relative;
+  overflow: hidden;
+  padding: 24px;
+  border: 2px solid var(--mint);
+  background: linear-gradient(135deg, #102b36 0 49.6%, #11192b 50% 100%);
+  box-shadow: 10px 10px 0 #0008;
+}
+.story-card:before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, transparent 0 5px, #ffffff05 6px);
+}
+.story-topline {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font: 900 9px monospace;
+  letter-spacing: 2px;
+  color: var(--mint);
+}
+.story-card h2 {
+  position: relative;
+  margin: -8px 0 0;
+  text-align: center;
+  font: italic 48px var(--font-display);
+  letter-spacing: 3px;
+  text-shadow: 4px 4px #0008;
+}
+.story-versus {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 70px 1fr;
+  align-items: end;
+  min-height: 220px;
+}
+.story-versus > div {
+  display: grid;
+  justify-items: center;
+  opacity: 0.72;
+  transform: scale(0.93);
+  transition: 160ms ease;
+}
+.story-versus > div.speaking {
+  opacity: 1;
+  transform: scale(1.04);
+  filter: drop-shadow(0 0 14px var(--mint));
+}
+.story-versus > div:last-child.speaking {
+  filter: drop-shadow(0 0 14px var(--rival-accent));
+}
+.story-versus .portrait {
+  width: 190px;
+  height: 165px;
+}
+.story-versus b {
+  font: 24px var(--font-display);
+  letter-spacing: 2px;
+}
+.story-versus > div:last-child b {
+  color: var(--rival-accent);
+}
+.story-versus small {
+  margin-top: 4px;
+  color: var(--muted);
+  font: 8px monospace;
+  letter-spacing: 1px;
+}
+.story-versus > span {
+  align-self: center;
+  justify-self: center;
+  font: italic 36px var(--font-display);
+  color: #f9d57c;
+  transform: rotate(-7deg);
+}
+.speech-box {
+  position: relative;
+  padding: 16px 19px;
+  background: #f5f0d9;
+  border-left: 7px solid var(--mint);
+  color: #08141f;
+  box-shadow: 5px 5px 0 #0007;
+}
+.speech-box.rival {
+  border-left-color: var(--rival-accent);
+}
+.speech-box > span {
+  font: 900 9px monospace;
+  letter-spacing: 1px;
+  color: #31505c;
+}
+.speech-box p {
+  margin: 7px 0 0;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.45;
+}
+.story-dots {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  margin: 15px 0;
+}
+.story-dots i {
+  width: 22px;
+  height: 3px;
+  background: #41535f;
+}
+.story-dots i.active {
+  background: #f9d57c;
+}
+.story-next {
+  position: relative;
+  width: 100%;
+}
 .settings-dialog {
   background: #0c1e2b;
   color: var(--cream);
@@ -1101,7 +1232,8 @@ kbd {
 .action-pad.pressing {
   background: #286459;
 }
-.pass-button {
+.pass-button,
+.jump-button {
   pointer-events: auto;
   min-width: 70px;
   min-height: 64px;
@@ -1114,11 +1246,22 @@ kbd {
   font: 9px monospace;
   gap: 5px;
 }
-.pass-button span {
+.jump-button {
+  min-width: 96px;
+  color: #08141f;
+  background: #f9d57c;
+  border-color: #fff0b8;
+  font-weight: 900;
+  box-shadow: 3px 3px 0 #a75b35;
+}
+.pass-button span,
+.jump-button span {
   font-size: 22px;
 }
-.pass-button:disabled {
+.pass-button:disabled,
+.jump-button:disabled {
   opacity: 0.3;
+  box-shadow: none;
 }
 .minimap {
   width: 110px;
@@ -1477,6 +1620,17 @@ kbd {
     min-width: 78px;
     min-height: 74px;
   }
+  .jump-button {
+    min-width: 0;
+    min-height: 74px;
+  }
+  .action-pad {
+    flex: 2 1 150px;
+  }
+  .pass-button,
+  .jump-button {
+    flex: 1 1 70px;
+  }
   .timing-bar {
     width: 185px;
   }
@@ -1485,6 +1639,30 @@ kbd {
   }
   .result-card h1 {
     font-size: 38px;
+  }
+  .story-card {
+    padding: 16px;
+  }
+  .story-card h2 {
+    margin-top: 5px;
+    font-size: 34px;
+  }
+  .story-versus {
+    grid-template-columns: 1fr 42px 1fr;
+    min-height: 170px;
+  }
+  .story-versus .portrait {
+    width: 125px;
+    height: 120px;
+  }
+  .story-versus b {
+    font-size: 17px;
+  }
+  .story-versus > span {
+    font-size: 27px;
+  }
+  .speech-box p {
+    font-size: 13px;
   }
 }
 @media (orientation: landscape) and (max-height: 530px) {
@@ -1550,13 +1728,18 @@ kbd {
     font-size: 6px;
     margin-top: 5px;
   }
-  .pass-button {
+  .pass-button,
+  .jump-button {
     min-height: 48px;
     min-width: 55px;
     font-size: 7px;
     gap: 2px;
   }
-  .pass-button span {
+  .jump-button {
+    min-width: 78px;
+  }
+  .pass-button span,
+  .jump-button span {
     font-size: 17px;
   }
   .minimap {

@@ -74,8 +74,10 @@ export class Match {
     this.shake = 0
     this.armed = [null, null] // passe spéciale armée par équipe : { special, t }
     this.stats = { catches: 0, perfects: 0, supers: 0, hits: 0, kos: 0, taken: 0, passes: 0 }
-    this.camX = 0
+    this.camX = C.MID
+    this.camZoom = 1
     this.viewW = 480
+    this.superBanner = null
     this.lastHud = ''
     this.hint = 'Maintenez pour courir, relâchez pour tirer'
     this.hintT = 400
@@ -111,6 +113,8 @@ export class Match {
       line: null,
       home: { x: 0, y: 0 },
       decided: null,
+      goalX: 0,
+      goalY: 0,
     }
     if (role === 'in') {
       const [fx, fy] = FORMATION[i]
@@ -128,6 +132,8 @@ export class Match {
     }
     p.x = p.home.x
     p.y = p.home.y
+    p.goalX = p.x
+    p.goalY = p.y
     return p
   }
 
@@ -304,6 +310,20 @@ export class Match {
     this.pass(c)
   }
 
+  // Une touche dédiée : le porteur saute et lance automatiquement au sommet.
+  jumpShot() {
+    if (this.state !== 'play') return false
+    const p = this.holder
+    if (!p || p.team !== 0 || p.ko || !['hold', 'dash'].includes(p.state)) return false
+    const inZone = p.charge >= C.SUPER_CHARGE && p.charge <= C.SUPER_CHARGE + C.SUPER_ZONE
+    p.airShot = { sup: inZone, running: p.charge >= 4 }
+    this.input.pressed = false
+    this.input.pendingJump = false
+    this.jump(p)
+    this.addText(p, 'JUMP SHOT !', '#ffffff')
+    return true
+  }
+
   framesToContact(p) {
     const b = this.ball
     if (b.state !== 'flying' || b.team === p.team || b.kind === 'pass') return null
@@ -407,6 +427,12 @@ export class Match {
       this.addText(p, (special ? specialName(special) : 'SUPER') + ' !', p.team === 0 ? '#67e8f9' : '#fb923c')
       sfx.superShot()
       this.shake = 8
+      this.superBanner = {
+        name: special ? specialName(special) : 'SUPER SLUGGER',
+        kicker: `${p.name.toUpperCase()} DÉCHAÎNE`,
+        team: p.team,
+        t: 84,
+      }
       this.vibrate(35)
     } else sfx.throw()
   }
@@ -588,8 +614,8 @@ export class Match {
         tx = b.x
         ty = b.y
       } else if (p.role === 'in' && h && h.team !== p.team) {
-        // en défense : petit écart pour ne pas rester alignés
-        ty = p.home.y + Math.sin(this.frame * 0.02 + p.id) * 10
+        // La ligne défensive coulisse avec la balle sans oscillation permanente.
+        ty = p.home.y + Math.max(-10, Math.min(10, (b.y - p.home.y) * 0.18))
       } else if (p.role === 'out') {
         // les extérieurs suivent la balle le long de leur ligne
         if (p.line === 'back') ty = Math.max(0, Math.min(C.DEPTH, b.y))
@@ -599,17 +625,21 @@ export class Match {
             Math.min(p.team === 0 ? C.COURT_W - 10 : C.MID - 10, b.x),
           )
       }
-      this.moveTo(p, tx, ty, b.state === 'loose' && this.collector() === p ? C.RUN : C.WALK)
+      const collecting = b.state === 'loose' && this.collector() === p
+      const follow = collecting ? 1 : 0.12
+      p.goalX += (tx - p.goalX) * follow
+      p.goalY += (ty - p.goalY) * follow
+      this.moveTo(p, p.goalX, p.goalY, collecting ? C.RUN : C.WALK)
     }
     this.clamp(p)
-    if (p.role === 'in') p.facing = p.team === 0 ? 1 : -1
+    this.updateFacing(p)
   }
 
   moveTo(p, tx, ty, speed) {
     const dx = tx - p.x
     const dy = ty - p.y
     const d = Math.hypot(dx, dy)
-    if (d < 1.5) {
+    if (d < 0.75) {
       if (p.state === 'walk') p.state = 'idle'
       return
     }
@@ -618,6 +648,18 @@ export class Match {
     p.x += (dx / d) * s
     p.y += (dy / d) * s
     p.state = 'walk'
+  }
+
+  updateFacing(p) {
+    if (p.ko) return
+    let lookX = this.ball.x
+    if (this.holder === p) {
+      const target = p.throwOpts?.target && !p.throwOpts.target.ko ? p.throwOpts.target : this.pickTarget(p)
+      lookX = target?.x ?? (p.team === 0 ? C.COURT_W : 0)
+    }
+    const dx = lookX - p.x
+    // Cette zone morte empêche le sprite de trembler quand la balle passe à sa verticale.
+    if (Math.abs(dx) > 6) p.facing = dx < 0 ? -1 : 1
   }
 
   clamp(p) {
@@ -649,6 +691,15 @@ export class Match {
   }
 
   humanHolder(p) {
+    if (p.state === 'jump') {
+      if (p.airShot && p.z > 18 && p.vz <= 0.65) {
+        const opts = p.airShot
+        p.airShot = null
+        this.startThrow(p, { ...opts, jump: true })
+      }
+      this.updateHeld()
+      return
+    }
     if (p.state === 'hold' && this.input.pressed) {
       p.state = 'dash'
       p.charge = p.readyCharge || 0
@@ -781,9 +832,9 @@ export class Match {
       return
     }
     b.age++
-    if (b.state === 'flying' && b.kind === 'shot') {
+    if (b.state === 'flying') {
       b.trail.push({ x: b.x, y: b.y, z: b.z })
-      if (b.trail.length > 8) b.trail.shift()
+      if (b.trail.length > (b.kind === 'shot' ? 16 : 10)) b.trail.shift()
     }
     if (b.state === 'flying' && b.kind === 'shot') this.moveShot(b)
     else {
@@ -806,7 +857,7 @@ export class Match {
       })
     if (b.state === 'flying' && b.kind === 'pass') {
       const r = b.receiver
-      if (r && !r.ko && Math.hypot(b.x - r.x, b.y - r.y) < 10 && b.z < 34) {
+      if (r && !r.ko && Math.hypot(b.x - r.x, b.y - r.y) < 14 && b.z < 38) {
         this.giveBall(r)
         r.state = 'catch'
         r.t = 8
@@ -998,18 +1049,37 @@ export class Match {
       t.t--
     }
     this.texts = this.texts.filter((t) => t.t > 0)
+    if (this.superBanner && --this.superBanner.t <= 0) this.superBanner = null
     if (this.shake > 0) this.shake--
   }
 
   updateCamera() {
     const w = this.viewW
-    const span = C.COURT_W + 60
-    if (w >= span) this.camX = (C.COURT_W - w) / 2
-    else {
-      const b = this.ball
-      const goal = Math.max(-30, Math.min(C.COURT_W + 30 - w, b.x - w / 2))
-      this.camX += (goal - this.camX) * 0.12
+    const b = this.ball
+    let focus = b.x
+    let wantedZoom = 1.04
+    if (b.state === 'held' && b.holder) {
+      const target = this.pickTarget(b.holder)
+      focus = target ? b.holder.x * 0.58 + target.x * 0.42 : b.holder.x
+      wantedZoom = 1.1
+    } else if (b.state === 'flying') {
+      focus = b.target && !b.target.ko ? b.x * 0.72 + b.target.x * 0.28 : b.x
+      const remaining = b.target ? Math.abs(b.target.x - b.x) : 220
+      wantedZoom = remaining < 150 ? 1.3 : 1.18
+    } else if (b.state === 'loose') wantedZoom = 1.08
+    if (this.state === 'intro' || this.state === 'end') {
+      focus = C.MID
+      wantedZoom = 1
     }
+    wantedZoom = Math.min(w < 420 ? 1.18 : 1.3, wantedZoom)
+    this.camZoom += (wantedZoom - this.camZoom) * 0.055
+    if (Math.abs(wantedZoom - this.camZoom) < 0.002) this.camZoom = wantedZoom
+    const half = w / (2 * this.camZoom)
+    const lo = -30 + half
+    const hi = C.COURT_W + 30 - half
+    const goal = lo > hi ? C.MID : Math.max(lo, Math.min(hi, focus))
+    this.camX += (goal - this.camX) * 0.085
+    if (Math.abs(goal - this.camX) < 0.08) this.camX = goal
   }
 
   vibrate(ms) {
@@ -1031,6 +1101,7 @@ export class Match {
       holding: !!h && h.team === 0,
       charge: h && h.team === 0 ? Math.min(1, h.charge / C.SUPER_CHARGE) : 0,
       armed: !!this.armed[0],
+      canJumpShot: !!h && h.team === 0 && ['hold', 'dash'].includes(h.state),
       superReady:
         !!h && h.team === 0 && h.charge >= C.SUPER_CHARGE && h.charge <= C.SUPER_CHARGE + C.SUPER_ZONE,
       chargeLate: !!h && h.team === 0 && h.charge > C.SUPER_CHARGE + C.SUPER_ZONE,
@@ -1062,12 +1133,12 @@ export class Match {
 export function specialName(id) {
   return (
     {
-      comete: 'COMÈTE',
-      fusee: 'FUSÉE',
-      serpentin: 'SERPENTIN',
-      meteore: 'MÉTÉORE',
-      vague: 'VAGUE',
-      eclair: 'ÉCLAIR',
+      comete: 'COMÈTE FATALE',
+      fusee: 'FUSÉE OMEGA',
+      serpentin: 'VIPER CURVE',
+      meteore: 'METEOR CRUSH',
+      vague: 'TSUNAMI DRIVE',
+      eclair: 'THUNDER K.O.',
     }[id] || 'SUPER'
   )
 }
