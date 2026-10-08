@@ -9,7 +9,8 @@ test('équipes : 7 joueurs, caractéristiques dans les plages mesurées', () => 
   for (const t of [PLAYER_TEAM, ...RIVALS]) {
     assert.equal(t.players.length, 7, t.name)
     for (const p of t.players) {
-      for (const k of ['force', 'power', 'speed', 'jump', 'catching', 'defense']) assert.ok(p.stats[k] >= 2 && p.stats[k] <= 11, `${t.name} ${p.name} ${k}`)
+      for (const k of ['force', 'power', 'speed', 'jump', 'catching', 'defense'])
+        assert.ok(p.stats[k] >= 2 && p.stats[k] <= 11, `${t.name} ${p.name} ${k}`)
       assert.ok(p.stats.hp >= 17 && p.stats.hp <= 23, `${t.name} ${p.name} PV`)
     }
   }
@@ -61,4 +62,84 @@ test('progression du tournoi : abordable au début, exigeante en finale', () => 
   assert.ok(moyen[0] >= 5, 'le premier adversaire doit être abordable pour un joueur moyen')
   assert.ok(moyen[5] <= 4, 'la finale doit résister à un joueur moyen')
   assert.ok(rate(RIVALS[5], 0.9) >= 4, 'un joueur très adroit doit pouvoir gagner la finale')
+})
+
+test('décompte et pause : les appuis ne verrouillent pas la prochaine action', () => {
+  const m = new Match({ rival: RIVALS[0] })
+  m.press()
+  assert.equal(m.input.pressed, false)
+  m.state = 'paused'
+  const frame = m.frame
+  for (let i = 0; i < 50; i++) m.update()
+  assert.equal(m.frame, frame)
+  assert.equal(m.playFrames, 0)
+  m.state = 'play'
+  m.press()
+  assert.equal(m.holder.state, 'dash')
+})
+
+test('annuler un geste ne lance pas la balle et remet la charge à zéro', () => {
+  const m = new Match({ rival: RIVALS[0] })
+  m.state = 'play'
+  m.press()
+  for (let i = 0; i < 18; i++) m.update()
+  m.cancelInput()
+  m.release()
+  assert.equal(m.ball.state, 'held')
+  assert.equal(m.holder.state, 'hold')
+  assert.equal(m.holder.charge, 0)
+  assert.equal(m.input.pressed, false)
+})
+
+test('le HUD distingue la fenêtre signature d’une charge dépassée', () => {
+  let hud
+  const m = new Match({
+    rival: RIVALS[0],
+    onHud: (h) => {
+      hud = h
+    },
+  })
+  m.state = 'play'
+  m.press()
+  for (let i = 0; i < C.SUPER_CHARGE; i++) m.update()
+  assert.equal(hud.superReady, true)
+  assert.equal(hud.chargeLate, false)
+  for (let i = 0; i <= C.SUPER_ZONE; i++) m.update()
+  assert.equal(hud.superReady, false)
+  assert.equal(hud.chargeLate, true)
+  m.release()
+  assert.equal(m.holder.throwOpts.sup, false)
+})
+
+test('une réception parfaite conserve son bonus pour le prochain élan', () => {
+  const m = new Match({ rival: RIVALS[0] })
+  m.state = 'play'
+  const p = m.players[0]
+  m.catchBall(p, true)
+  for (let i = 0; i < 12; i++) m.update()
+  m.press()
+  assert.equal(p.charge, C.SUPER_CHARGE - 6)
+  for (let i = 0; i < 6; i++) m.update()
+  m.release()
+  assert.equal(p.throwOpts.sup, true)
+})
+
+test('fin du match : plus de dégâts ni de temps de jeu, un seul résultat', () => {
+  let ends = 0
+  const m = new Match({ rival: RIVALS[0], onEnd: () => ends++ })
+  m.state = 'play'
+  m.alive(1).forEach((p) => {
+    p.ko = true
+    p.hp = 0
+  })
+  m.checkEnd()
+  const time = m.playFrames
+  const health = m.alive(0).map((p) => p.hp)
+  for (let i = 0; i < 220; i++) m.update()
+  assert.equal(ends, 1)
+  assert.equal(m.playFrames, time)
+  assert.deepEqual(
+    m.alive(0).map((p) => p.hp),
+    health,
+  )
 })

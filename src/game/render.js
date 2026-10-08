@@ -11,10 +11,10 @@ const SHEAR = 0.2 // décalage horizontal selon la profondeur (perspective)
 export const toScreen = (x, y, z = 0) => [x + (y - C.DEPTH / 2) * SHEAR, FLOOR_Y + y * DEPTH_K - z]
 
 const FLOORS = {
-  gym: { out: '#b8743a', in: '#d99a5b', line: '#fff7ed', mid: '#ef4444' },
-  roof: { out: '#4b5563', in: '#6b7280', line: '#f8fafc', mid: '#fb7185' },
-  beach: { out: '#d6aa5c', in: '#f2d38b', line: '#ffffff', mid: '#0ea5e9' },
-  neon: { out: '#0f0a2a', in: '#1c1445', line: '#22d3ee', mid: '#e879f9' },
+  gym: { out: '#153a36', in: '#29735a', dirt: '#ab7452', line: '#ecedd0', mid: '#5de7cd' },
+  roof: { out: '#243c3e', in: '#386456', dirt: '#aa6e58', line: '#f2dfc6', mid: '#ff7b7f' },
+  beach: { out: '#1c4946', in: '#338573', dirt: '#c6945c', line: '#f7e9c7', mid: '#f9d57c' },
+  neon: { out: '#213445', in: '#385367', dirt: '#886781', line: '#e9dcf7', mid: '#c2a0ff' },
 }
 
 function quad(ctx, x0, y0, x1, y1) {
@@ -43,11 +43,11 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
   const arena = m.rival.arena
   const fl = FLOORS[arena]
   const offY = (viewH - VIEW_H) * 0.55
-  const sh = m.shake ? (Math.sin(t * 90) * m.shake) / 2 : 0
+  const sh = !m.reducedMotion && m.shake ? (Math.sin(t * 90) * m.shake) / 2 : 0
   ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0)
   ctx.translate(0, offY)
   // décor du fond (tribunes, ciel…)
-  SCENES[arena].bg(ctx, m.camX * 0.6 + 200, m.viewW, -offY, FLOOR_Y + 10, t)
+  SCENES[arena].bg(ctx, m.camX * 0.6 + 200, m.viewW, -offY, FLOOR_Y - 15, m.reducedMotion ? 0 : t)
   ctx.translate(-m.camX + sh, 0)
   // sol extérieur jusqu'en bas de l'écran
   ctx.fillStyle = fl.out
@@ -58,6 +58,48 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
   quad(ctx, 0, 0, C.COURT_W, C.DEPTH)
   ctx.fillStyle = fl.in
   ctx.fill()
+  // Mown turf stripes, clay infields and four bases. Simulation stays dodgeball.
+  for (let x = 0; x < C.COURT_W; x += 32) {
+    quad(ctx, x, 0, Math.min(x + 16, C.COURT_W), C.DEPTH)
+    ctx.fillStyle = '#ffffff09'
+    ctx.fill()
+  }
+  for (const center of [C.MID / 2, C.MID * 1.5]) {
+    ctx.beginPath()
+    for (const [i, [dx, dy]] of [
+      [0, [-68, 0]],
+      [1, [0, -36]],
+      [2, [68, 0]],
+      [3, [0, 36]],
+    ]) {
+      const [sx, sy] = toScreen(center + dx, C.DEPTH / 2 + dy)
+      if (i === 0) ctx.moveTo(sx, sy)
+      else ctx.lineTo(sx, sy)
+    }
+    ctx.closePath()
+    ctx.fillStyle = fl.dirt
+    ctx.fill()
+    ctx.strokeStyle = '#e8c6a880'
+    ctx.lineWidth = 1
+    ctx.stroke()
+    for (const [dx, dy] of [
+      [-68, 0],
+      [0, -36],
+      [68, 0],
+      [0, 36],
+    ]) {
+      const [sx, sy] = toScreen(center + dx, C.DEPTH / 2 + dy)
+      ctx.fillStyle = fl.line
+      ctx.fillRect(sx - 3, sy - 2, 6, 3)
+    }
+    const [sx, sy] = toScreen(center, C.DEPTH / 2)
+    ctx.fillStyle = '#d6a378'
+    ctx.beginPath()
+    ctx.ellipse(sx, sy, 12, 7, 0, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillStyle = fl.line
+    ctx.fillRect(sx - 4, sy - 1, 8, 2)
+  }
   ctx.strokeStyle = fl.line
   ctx.lineWidth = 2
   quad(ctx, 0, 0, C.COURT_W, C.DEPTH)
@@ -105,6 +147,31 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
   if (target) ring(ctx, target, '#fb923c', t)
   if (ctrl && !ctrl.ko) ring(ctx, ctrl, '#22d3ee', t)
 
+  if (b.state === 'flying' && b.kind === 'shot') {
+    const trail = b.trail || []
+    for (let i = 0; i < trail.length; i++) {
+      const [x, y] = toScreen(trail[i].x, trail[i].y, trail[i].z)
+      ctx.globalAlpha = ((i + 1) / trail.length) * (b.sup ? 0.45 : 0.2)
+      ctx.fillStyle = b.team === 0 ? '#5de7cd' : '#ff596d'
+      ctx.fillRect(x - 2, y - 2, b.sup ? 5 : 3, b.sup ? 5 : 3)
+    }
+    ctx.globalAlpha = 1
+  }
+  // A short dashed aim guide connects the pitcher to the announced target.
+  if (holder && target && holder.team === 0 && m.state === 'play') {
+    const [x, y] = toScreen(holder.x, holder.y, holder.z + 20)
+    const [tx, ty] = toScreen(target.x, target.y, target.z + 20)
+    ctx.save()
+    ctx.globalAlpha = 0.24
+    ctx.strokeStyle = '#f9d57c'
+    ctx.lineWidth = 1
+    ctx.setLineDash([3, 5])
+    ctx.beginPath()
+    ctx.moveTo(x, y)
+    ctx.lineTo(tx, ty)
+    ctx.stroke()
+    ctx.restore()
+  }
   // joueurs et balle, triés par profondeur
   const items = m.players.filter((p) => !(p.ko && p.t > 70)).map((p) => ({ y: p.y, p }))
   if (b.state !== 'held') items.push({ y: b.y + 0.5, ball: true })
@@ -112,22 +179,58 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
   for (const it of items) {
     if (it.ball) {
       const [bx, by] = toScreen(b.x, b.y, b.z)
-      drawBall(ctx, { x: bx, y: by, r: 5, kind: b.sup ? (b.team === 0 ? 'super' : 'fire') : b.kind === 'loose' ? 'loose' : b.team === 0 ? 'player' : 'enemy', spin: b.age * 0.4 })
+      drawBall(ctx, {
+        x: bx,
+        y: by,
+        r: 5,
+        kind: b.sup
+          ? b.team === 0
+            ? 'super'
+            : 'fire'
+          : b.kind === 'loose'
+            ? 'loose'
+            : b.team === 0
+              ? 'player'
+              : 'enemy',
+        spin: b.age * 0.4,
+      })
       continue
     }
     const p = it.p
     const [sx, sy] = toScreen(p.x, p.y, p.z)
     const pose = poseOf(m, p)
     drawAthlete(ctx, {
-      x: sx, y: sy, facing: p.facing, pose, t: p.anim, kit: p.kit,
-      ball: holder === p ? (p.glow ? (p.team === 0 ? 'super' : 'fire') : p.team === 0 ? 'player' : 'enemy') : null,
+      x: sx,
+      y: sy,
+      facing: p.facing,
+      pose,
+      t: p.anim,
+      kit: p.kit,
+      ball:
+        holder === p
+          ? p.glow
+            ? p.team === 0
+              ? 'super'
+              : 'fire'
+            : p.team === 0
+              ? 'player'
+              : 'enemy'
+          : null,
       flash: p.flash > 0 && p.flash % 4 < 2,
       glow: p === holder && p.glow ? (p.team === 0 ? '#22d3ee' : '#fb923c') : null,
       alpha: p.ko ? Math.max(0, 1 - p.t / 70) : p.role === 'out' ? 0.95 : 1,
       rot: p.ko ? Math.min(1.4, p.t * 0.08) * -p.facing : 0,
     })
-    if (p === holder && p.team === 0 && p.state === 'dash') chargeRing(ctx, sx, sy - 48, Math.min(1, p.charge / C.SUPER_CHARGE), p.charge > C.SUPER_CHARGE + C.SUPER_ZONE)
-    if (p === ctrl || p === target || (p.state === 'hit' && !p.ko)) nameTag(ctx, p, sx, sy - 50 - (p === holder && p.state === 'dash' ? 10 : 0))
+    if (p === holder && p.team === 0 && p.state === 'dash')
+      chargeRing(
+        ctx,
+        sx,
+        sy - 48,
+        Math.min(1, p.charge / C.SUPER_CHARGE),
+        p.charge > C.SUPER_CHARGE + C.SUPER_ZONE,
+      )
+    if (p === ctrl || p === target || (p.state === 'hit' && !p.ko))
+      nameTag(ctx, p, sx, sy - 50 - (p === holder && p.state === 'dash' ? 10 : 0))
   }
   // particules et textes
   for (const q of m.parts) {
@@ -141,7 +244,7 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
   for (const tx of m.texts) {
     const [x, y] = toScreen(tx.x, tx.y, tx.z)
     ctx.globalAlpha = Math.min(1, tx.t / 14)
-    ctx.font = '900 11px Rubik, system-ui, sans-serif'
+    ctx.font = '900 11px monospace'
     ctx.lineWidth = 3
     ctx.strokeStyle = '#1b1530'
     ctx.strokeText(tx.text, x, y)
@@ -151,11 +254,15 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
   ctx.globalAlpha = 1
   // superpositions écran
   ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0)
+  if (!m.reducedMotion && m.shake > 6) {
+    ctx.fillStyle = '#f5f0d912'
+    ctx.fillRect(0, 0, m.viewW, viewH)
+  }
   const cxs = m.viewW / 2
   const cys = viewH / 2
   if (m.state === 'intro') {
     const n = Math.ceil(m.introT / 40)
-    banner(ctx, cxs, cys, n > 3 ? `${m.teams[0].name}  contre  ${m.teams[1].name}` : n > 0 ? String(n) : 'GO !', n > 3 ? 18 : 46)
+    banner(ctx, cxs, cys, n > 3 ? 'PLAY BALL !' : n > 0 ? String(n) : 'GO !', n > 3 ? 28 : 46)
   }
   if (m.state === 'end') banner(ctx, cxs, cys, m.winner === 0 ? 'VICTOIRE !' : 'DÉFAITE…', 40)
 }
@@ -164,7 +271,7 @@ function poseOf(m, p) {
   if (p.ko) return 'ko'
   if (p.state === 'hit') return 'hurt'
   if (p.state === 'catch') return 'catch'
-  if (p.state === 'whiff') return 'catch'
+  if (p.state === 'whiff') return 'hurt'
   if (p.state === 'windup') return 'windup'
   if (p.state === 'throw') return 'throw'
   if (p.z > 0) return p.vz > 0 ? 'jump' : 'fall'
@@ -200,7 +307,7 @@ function chargeRing(ctx, x, y, f, late) {
 
 function nameTag(ctx, p, x, y) {
   const w = 30
-  ctx.font = '800 7px Rubik, system-ui, sans-serif'
+  ctx.font = '800 7px monospace'
   ctx.textAlign = 'center'
   ctx.fillStyle = 'rgba(27,21,48,0.75)'
   rr(ctx, x - w / 2, y - 9, w, 12, 3)
@@ -216,7 +323,7 @@ function nameTag(ctx, p, x, y) {
 }
 
 function banner(ctx, x, y, text, size) {
-  ctx.font = `900 ${size}px Bungee, Rubik, system-ui, sans-serif`
+  ctx.font = `900 ${size}px Impact, sans-serif`
   ctx.textAlign = 'center'
   ctx.lineWidth = Math.max(4, size / 7)
   ctx.strokeStyle = '#1b1530'

@@ -1,0 +1,47 @@
+{
+  "frameW": 64,
+  "frameH": 64,
+  "frames": 8,
+  "fps": 12,
+  "poses": [
+    "idle",
+    "walk",
+    "run",
+    "hold",
+    "windup",
+    "throw",
+    "catch",
+    "jump",
+    "fall",
+    "hurt",
+    "ko",
+    "taunt",
+    "cheer"
+  ],
+  "captains": [
+    {
+      "id": "neons",
+      "team": "Neon Foxes",
+      "name": "Riko",
+      "filename": "neons-captain.png"
+    },
+    {
+      "id": "chaussettes",
+      "team": "Red Bats",
+      "name": "Gaspard",
+      "filename": "chaussettes-captain.png"
+    },
+    {
+      "id": "corbeaux",
+      "team": "Gold Owls",
+      "name": "Iris",
+      "filename": "corbeaux-captain.png"
+    },
+    {
+      "id": "eclairs",
+      "team": "Violet Phantoms",
+      "name": "Vega",
+      "filename": "eclairs-captain.png"
+    }
+  ]
+}
