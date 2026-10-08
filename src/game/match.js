@@ -75,7 +75,7 @@ export class Match {
     this.armed = [null, null] // passe spéciale armée par équipe : { special, t }
     this.stats = { catches: 0, perfects: 0, supers: 0, hits: 0, kos: 0, taken: 0, passes: 0 }
     this.camX = C.MID
-    this.camZoom = 1
+    this.camZoom = 1.14
     this.viewW = 480
     this.superBanner = null
     this.lastHud = ''
@@ -1057,21 +1057,21 @@ export class Match {
     const w = this.viewW
     const b = this.ball
     let focus = b.x
-    let wantedZoom = 1.04
+    let wantedZoom = 1.2
     if (b.state === 'held' && b.holder) {
       const target = this.pickTarget(b.holder)
       focus = target ? b.holder.x * 0.58 + target.x * 0.42 : b.holder.x
-      wantedZoom = 1.1
+      wantedZoom = 1.3
     } else if (b.state === 'flying') {
       focus = b.target && !b.target.ko ? b.x * 0.72 + b.target.x * 0.28 : b.x
       const remaining = b.target ? Math.abs(b.target.x - b.x) : 220
-      wantedZoom = remaining < 150 ? 1.3 : 1.18
-    } else if (b.state === 'loose') wantedZoom = 1.08
+      wantedZoom = remaining < 150 ? 1.48 : 1.36
+    } else if (b.state === 'loose') wantedZoom = 1.26
     if (this.state === 'intro' || this.state === 'end') {
       focus = C.MID
-      wantedZoom = 1
+      wantedZoom = this.state === 'intro' ? 1.14 : 1.2
     }
-    wantedZoom = Math.min(w < 420 ? 1.18 : 1.3, wantedZoom)
+    wantedZoom = Math.min(w < 420 ? 1.38 : 1.48, wantedZoom)
     this.camZoom += (wantedZoom - this.camZoom) * 0.055
     if (Math.abs(wantedZoom - this.camZoom) < 0.002) this.camZoom = wantedZoom
     const half = w / (2 * this.camZoom)
@@ -1112,13 +1112,6 @@ export class Match {
             return f === null ? null : Math.ceil(f)
           })()
         : null,
-      minimap:
-        this.frame % 6 === 0 || !this.mapHud
-          ? (this.mapHud = this.players
-              .filter((p) => !p.ko)
-              .map((p) => ({ id: p.id, team: p.team, x: Math.round(p.x), y: Math.round(p.y) })))
-          : this.mapHud,
-      ballMap: { x: Math.round(this.ball.x / 4) * 4, y: Math.round(this.ball.y / 4) * 4 },
       ctrl: c ? c.name : '',
       hint: this.hintT > 0 ? this.hint : '',
     }

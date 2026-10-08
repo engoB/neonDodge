@@ -161,7 +161,7 @@ test('la caméra cadre l’action et un tir signature déclenche son annonce', (
   p.throwOpts = { target: m.players[10], sup: true }
   m.release_ball(p)
   for (let i = 0; i < 24; i++) m.updateCamera()
-  assert.ok(m.camZoom > 1.08)
+  assert.ok(m.camZoom > 1.25)
   assert.ok(m.camX < C.MID, 'la caméra se rapproche du lanceur au départ du tir')
   assert.equal(m.superBanner.name, 'COMÈTE FATALE')
 })

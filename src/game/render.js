@@ -382,31 +382,27 @@ function specialBanner(ctx, callout, width, height) {
   const leave = Math.min(1, life / 14)
   const alpha = Math.min(enter, leave)
   const accent = callout.team === 0 ? '#67e8f9' : '#fb7185'
-  const y = height * 0.42
+  const cardW = Math.min(width - 24, 460)
+  const x = (width - cardW) / 2
+  const y = Math.max(10, Math.min(22, height * 0.08))
   ctx.save()
   ctx.globalAlpha = alpha
-  ctx.translate((1 - enter) * (callout.team === 0 ? -width : width), 0)
-  ctx.fillStyle = '#060d18e8'
-  ctx.beginPath()
-  ctx.moveTo(0, y - 43)
-  ctx.lineTo(width, y - 56)
-  ctx.lineTo(width, y + 38)
-  ctx.lineTo(0, y + 52)
-  ctx.closePath()
-  ctx.fill()
+  ctx.translate((1 - enter) * (callout.team === 0 ? -cardW : cardW), 0)
+  ctx.fillStyle = '#060d18df'
+  ctx.fillRect(x, y, cardW, 54)
   ctx.fillStyle = accent
-  ctx.fillRect(0, y - 48, width, 4)
-  ctx.fillRect(0, y + 43, width, 3)
+  ctx.fillRect(x, y, cardW, 3)
+  ctx.fillRect(x, y + 51, cardW, 3)
   ctx.textAlign = 'center'
-  ctx.font = '900 9px monospace'
+  ctx.font = '900 7px monospace'
   ctx.fillStyle = '#f5f0d9'
-  ctx.fillText(callout.kicker, width / 2, y - 17)
-  const size = Math.max(30, Math.min(54, width / 8.4))
+  ctx.fillText(callout.kicker, width / 2, y + 15)
+  const size = Math.max(21, Math.min(31, cardW / 13))
   ctx.font = `900 italic ${size}px Impact, sans-serif`
-  ctx.lineWidth = Math.max(5, size / 7)
+  ctx.lineWidth = Math.max(3, size / 8)
   ctx.strokeStyle = '#111827'
-  ctx.strokeText(callout.name, width / 2, y + 25)
+  ctx.strokeText(callout.name, width / 2, y + 43)
   ctx.fillStyle = accent
-  ctx.fillText(callout.name, width / 2, y + 25)
+  ctx.fillText(callout.name, width / 2, y + 43)
   ctx.restore()
 }

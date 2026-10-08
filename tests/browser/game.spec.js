@@ -4,7 +4,7 @@ const action = (page) => page.locator('[data-game-action="true"]')
 const pause = (page) => page.getByRole('button', { name: 'Pause', exact: true })
 
 async function start(page) {
-  await page.getByRole('button', { name: /MATCH EXPRESS/ }).click()
+  await page.getByRole('button', { name: /MATCH ARCADE/ }).click()
   await expect(action(page)).toBeEnabled()
   await expect(page.locator('.game-surface')).toBeVisible()
 }
@@ -66,20 +66,8 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/')
 })
 
-test('accueil : quatre capitaines, illustration chargée et titre lisible', async ({ page }, info) => {
-  await expect(page.locator('.captain-badge')).toHaveCount(4)
-  await expect
-    .poll(async () =>
-      page.locator('.captain-badge canvas').evaluateAll((canvases) =>
-        canvases.every((canvas) =>
-          canvas
-            .getContext('2d')
-            .getImageData(0, 0, canvas.width, canvas.height)
-            .data.some((value, index) => index % 4 === 3 && value > 0),
-        ),
-      ),
-    )
-    .toBe(true)
+test('accueil : menu arcade, illustration chargée et titre lisible', async ({ page }, info) => {
+  await expect(page.locator('.arcade-menu button')).toHaveCount(4)
   await expect(page.getByRole('heading', { name: /NEON.*SLUGGER/ })).toBeVisible()
   const visual = await page.locator('.hero-art').evaluate(async (el) => {
     const source = getComputedStyle(el).backgroundImage.match(/url\(["']?(.*?)["']?\)/)?.[1]
@@ -96,7 +84,7 @@ test('accueil : quatre capitaines, illustration chargée et titre lisible', asyn
 })
 
 test('club et règles : sélection, animations et navigation', async ({ page }, info) => {
-  await page.getByRole('button', { name: 'Le club', exact: true }).click()
+  await page.getByRole('button', { name: /ÉQUIPE/ }).click()
   await expect(page.locator('.roster-list button')).toHaveCount(7)
   await page.getByRole('button', { name: /Tao Intérieur/ }).click()
   await expect(page.locator('.player-showcase h2')).toHaveText('Tao')
@@ -107,7 +95,7 @@ test('club et règles : sélection, animations et navigation', async ({ page }, 
   )
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   await screenshot(page, info, 'club')
-  await page.getByRole('button', { name: 'Les règles', exact: true }).click()
+  await page.getByRole('button', { name: 'Commandes', exact: true }).click()
   await expect(page.locator('.rule-card')).toHaveCount(6)
   await page.getByRole('button', { name: /À VOUS DE JOUER/ }).click()
   await expect(action(page)).toBeEnabled()
@@ -131,7 +119,7 @@ test('réglages : dialogue modal, fermeture clavier et sauvegarde', async ({ pag
 test('coupe : premier match accessible, suivants verrouillés et commandes visibles', async ({
   page,
 }, info) => {
-  await page.getByRole('button', { name: /ENTRER DANS LA LIGUE/ }).click()
+  await page.getByRole('button', { name: /MODE HISTOIRE/ }).click()
   await expect(page.locator('.fixture')).toHaveCount(6)
   await expect(page.locator('.fixture:disabled')).toHaveCount(5)
   await page.getByRole('button', { name: /MATCH 01/ }).click()
@@ -160,7 +148,7 @@ test('clavier : pause, reprise avec focus sur l’action et lancer', async ({ pa
   )
   await page.keyboard.up('Space')
   await expect(action(page)).not.toHaveClass(/pressing/)
-  await expect(page.locator('.context-copy .eyebrow')).toContainText('DÉFENSE')
+  await expect(page.locator('.arena-status')).toContainText('DÉFENSE')
   await page.keyboard.press('Escape')
   await expect(page.locator('.pause-dialog')).toBeVisible()
   await page.keyboard.press('Escape')
@@ -177,10 +165,10 @@ test('pointeur : annulation sans lancer, passe et reprise', async ({ page }) => 
   await button.dispatchEvent('pointercancel', { pointerId: 1, isPrimary: true, button: 0 })
   await page.mouse.up()
   await expect(button).not.toHaveClass(/pressing/)
-  await expect(page.locator('.context-copy .eyebrow')).toContainText('ATTAQUE')
+  await expect(page.locator('.arena-status')).toContainText('ATTAQUE')
   await page.getByRole('button', { name: 'Passer la balle' }).click()
-  await expect(page.locator('.context-copy .eyebrow')).toContainText('ATTAQUE')
-  await expect(page.locator('.context-copy .eyebrow')).not.toContainText('Riko')
+  await expect(page.locator('.arena-status')).toContainText('ATTAQUE')
+  await expect(page.locator('.arena-status')).not.toContainText('Riko')
   await expectMatchFits(page)
 })
 
@@ -189,7 +177,7 @@ test('commandes directes : le Jump Shot se déclenche en une touche', async ({ p
   const jump = page.getByRole('button', { name: 'Faire un tir en saut' })
   await expect(jump).toBeEnabled()
   await jump.click()
-  await expect(page.locator('.context-copy .eyebrow')).toContainText('DÉFENSE', { timeout: 2500 })
+  await expect(page.locator('.arena-status')).toContainText('DÉFENSE', { timeout: 2500 })
 })
 
 test('rotation : un match en cours conserve les commandes et son état', async ({ page }, info) => {
@@ -197,7 +185,7 @@ test('rotation : un match en cours conserve les commandes et son état', async (
   const original = page.viewportSize()
   await page.setViewportSize({ width: original.height, height: original.width })
   await expectMatchFits(page)
-  await expect(page.locator('.context-copy .eyebrow')).toContainText('ATTAQUE')
+  await expect(page.locator('.arena-status')).toContainText('ATTAQUE')
   await screenshot(page, info, 'rotation')
   await pause(page).click()
   await page.getByRole('button', { name: /Retour au club/ }).click()
