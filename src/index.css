@@ -1162,6 +1162,7 @@ kbd {
 }
 .context-copy {
   flex: 1;
+  min-width: 0;
 }
 .context-copy > .eyebrow {
   font-size: 8px;
@@ -1730,6 +1731,7 @@ kbd {
   }
   .pass-button,
   .jump-button {
+    flex: 0 0 auto;
     min-height: 48px;
     min-width: 55px;
     font-size: 7px;
