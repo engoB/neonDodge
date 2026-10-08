@@ -61,6 +61,58 @@
     "walk": 7,
     "run": 12
   },
+  "athletes": [
+    {
+      "id": "riko",
+      "filename": "riko.png",
+      "role": "captain"
+    },
+    {
+      "id": "gaspard",
+      "filename": "gaspard.png",
+      "role": "captain"
+    },
+    {
+      "id": "iris",
+      "filename": "iris.png",
+      "role": "captain"
+    },
+    {
+      "id": "vega",
+      "filename": "vega.png",
+      "role": "captain"
+    },
+    {
+      "id": "scout",
+      "filename": "scout.png",
+      "role": "teammate"
+    },
+    {
+      "id": "rookie",
+      "filename": "rookie.png",
+      "role": "teammate"
+    },
+    {
+      "id": "dash",
+      "filename": "dash.png",
+      "role": "teammate"
+    },
+    {
+      "id": "ember",
+      "filename": "ember.png",
+      "role": "teammate"
+    },
+    {
+      "id": "echo",
+      "filename": "echo.png",
+      "role": "teammate"
+    },
+    {
+      "id": "nova",
+      "filename": "nova.png",
+      "role": "teammate"
+    }
+  ],
   "captains": [
     {
       "id": "riko",

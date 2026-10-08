@@ -34,9 +34,27 @@ export const ASSET_URLS = {
   gaspard: new URL('../../assets/sprites/gaspard.png', import.meta.url),
   iris: new URL('../../assets/sprites/iris.png', import.meta.url),
   vega: new URL('../../assets/sprites/vega.png', import.meta.url),
+  scout: new URL('../../assets/sprites/scout.png', import.meta.url),
+  rookie: new URL('../../assets/sprites/rookie.png', import.meta.url),
+  dash: new URL('../../assets/sprites/dash.png', import.meta.url),
+  ember: new URL('../../assets/sprites/ember.png', import.meta.url),
+  echo: new URL('../../assets/sprites/echo.png', import.meta.url),
+  nova: new URL('../../assets/sprites/nova.png', import.meta.url),
   baseball: new URL('../../assets/sprites/baseball.png', import.meta.url),
   stadium: new URL('../../assets/stadium-panorama.webp', import.meta.url),
 }
+export const ATHLETE_IDS = [
+  'riko',
+  'gaspard',
+  'iris',
+  'vega',
+  'scout',
+  'rookie',
+  'dash',
+  'ember',
+  'echo',
+  'nova',
+]
 const images = new Map()
 const variants = new Map()
 let createSurface
@@ -77,12 +95,17 @@ function teamAtlas(kit) {
   const source = images.get(kit.spriteId || 'riko')
   if (!source || kit.nativePalette) return source
   const key = kit.spriteId + ':' + kit.jersey
-  if (variants.has(key)) return variants.get(key)
+  if (variants.has(key)) {
+    const atlas = variants.get(key)
+    variants.delete(key)
+    variants.set(key, atlas)
+    return atlas
+  }
   const canvas = createSurface(source.width, source.height)
   const ctx = canvas.getContext('2d')
   ctx.drawImage(source, 0, 0)
   const pixels = ctx.getImageData(0, 0, source.width, source.height)
-  const ramp = { riko: [155, 205], gaspard: [345, 14], iris: [36, 65], vega: [250, 310] }[kit.spriteId]
+  const ramp = { gaspard: [345, 14], iris: [36, 65], vega: [250, 310] }[kit.spriteId] || [155, 205]
   const target = kit.jersey
     .slice(1)
     .match(/../g)
@@ -98,6 +121,8 @@ function teamAtlas(kit) {
   }
   ctx.putImageData(pixels, 0, 0)
   variants.set(key, canvas)
+  // Enough for both current clubs; avoid keeping every tournament palette in memory.
+  if (variants.size > 16) variants.delete(variants.keys().next().value)
   return canvas
 }
 function rgbToHsl(r, g, b) {
@@ -162,7 +187,16 @@ export function drawAthlete(ctx, o) {
   ctx.drawImage(image, (frame % 4) * 160, Math.floor(frame / 4) * 128, 160, 128, -40, -56 + bob, 80, 64)
   ctx.shadowBlur = 0
   if (ball && ![6, 7, 11].includes(frame)) {
-    const hand = [2, 3, 4, 5].includes(frame) ? [-18, -29] : frame === 12 ? [-11, -39] : [9, -23]
+    const hand =
+      frame === 4
+        ? [22, -30]
+        : frame === 5
+          ? [15, -32]
+          : [2, 3].includes(frame)
+            ? [-18, -29]
+            : frame === 12
+              ? [-11, -39]
+              : [9, -23]
     drawBall(ctx, { x: hand[0], y: hand[1], r: 3.5, kind: ball, spin: t * 4 })
   }
   ctx.restore()

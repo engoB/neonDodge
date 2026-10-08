@@ -35,3 +35,9 @@ Avant sortie : jouer au moins un tournoi complet sur téléphone, faire pivoter 
 Les anciens personnages procéduraux ont été remplacés par quatre atlas de 16 cels en pixel art détaillé, adaptés à la référence du projet : Riko, Gaspard, Iris, Vega. Même hauteur, deux hommes et deux femmes, gants compacts. Les silhouettes sont extraites globalement pour conserver les bras étendus sans ramener un fragment du sprite voisin. Les portraits attendent le chargement des images et le décompte du match commence seulement quand les assets sont disponibles. Les animations de lancer et réception suivent leur progression réelle. Le terrain a davantage de profondeur pour espacer les personnages, et une texture de gazon / terre.
 
 La reprise au clavier rend le focus au bouton d’action ; Échap reste disponible dans les résultats ; les clics secondaires ne déclenchent pas un lancer. Le HUD, le terrain et le panneau de commandes occupent leurs hauteurs réelles en flex plutôt que des marges fixes. La PR reste en brouillon pour revue visuelle.
+
+## Course et diversité du banc
+
+Les quatre anciennes images de course répétaient presque le même appui. Elles ont été remplacées par un cycle contact / passage / contact opposé / passage opposé, avec alternance des bras, jambes et main qui porte la balle. Le test de rendu vérifie que les jambes s’écartent aux appuis et se rapprochent aux passages. Les aperçus `course-capitaines.gif` et `course-en-match.gif` montrent respectivement le cycle et une simulation du moteur.
+
+Six silhouettes d’équipiers complètent les quatre capitaines : scout, rookie, dash, ember, echo, nova. Les membres d’un club ont chacun une silhouette distincte. La répartition reste stable et varie entre clubs ; les six profils secondaires sont partagés dans la ligue, avec les palettes de chaque club. Les visages des capitaines ne sont plus réutilisés pour les équipiers. Les variantes de couleur en mémoire sont limitées aux besoins des clubs courants.

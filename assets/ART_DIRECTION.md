@@ -10,9 +10,11 @@ Prompt final :
 
 ## Sprites
 
+Les six profils secondaires et le correctif de course sont décrits dans [TEAMMATE_ART.md](TEAMMATE_ART.md), avec les prompts finaux et les fichiers intégrés.
+
 Les sprites sont des atlas bitmap transparents issus de la génération intégrée imagegen, selon la référence arcade fournie. `src/game/sprites.js` les charge et anime leurs 16 cels. `npm run assets` exporte le manifeste et les aperçus à partir de ces mêmes images ; il ne régénère pas les dessins.
 
-Les capitaines sont Riko (Neon Foxes), Gaspard (Red Bats), Iris (Gold Owls) et Vega (Violet Phantoms). Les différences incluent couleur, teinte de peau, cheveux, lunettes, moustache et casque. Les autres membres du club conservent leurs caractéristiques, leur nom et leur signature ; leurs visuels utilisent ces quatre silhouettes avec des palettes aux couleurs du club.
+Les capitaines sont Riko (Neon Foxes), Gaspard (Red Bats), Iris (Gold Owls) et Vega (Violet Phantoms). Les différences incluent couleur, teinte de peau, cheveux, lunettes, moustache et casque. Les autres membres du club possèdent six nouvelles silhouettes distinctes des capitaines, avec des palettes aux couleurs du club ; quelques noms rivaux ont été harmonisés avec la distribution mixte, sans modifier les caractéristiques ou signatures.
 
 ## Atlas bitmap — référence arcade fournie
 

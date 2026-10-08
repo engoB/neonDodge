@@ -82,7 +82,7 @@ export const RIVALS = [
       skin: '#e9b98c',
       style: 1,
     },
-    ['Gaspard', 'Lino', 'Basile', 'Odin', 'Noé', 'Paco', 'Elio'],
+    ['Gaspard', 'Lino', 'Alba', 'Odin', 'Naé', 'Paco', 'Elia'],
     ['fusee', 'comete'],
     0,
   ),
@@ -101,7 +101,7 @@ export const RIVALS = [
       skin: '#c68b62',
       style: 2,
     },
-    ['Iris', 'Corvin', 'Nox', 'Ash', 'Kaï', 'Rémi', 'Ozan'],
+    ['Iris', 'Corvin', 'Nox', 'Ash', 'Kaï', 'Rémi', 'Ozane'],
     ['eclair', 'serpentin'],
     1.5,
   ),
@@ -119,7 +119,7 @@ export const RIVALS = [
       skin: '#f1c9a0',
       style: 3,
     },
-    ['Marin', 'Océane', 'Loïc', 'Perle', 'Yann', 'Coral', 'Tim'],
+    ['Marin', 'Loïc', 'Océane', 'Yann', 'Perle', 'Tim', 'Coral'],
     ['vague', 'meteore'],
     3,
   ),
@@ -137,7 +137,7 @@ export const RIVALS = [
       skin: '#d6a274',
       style: 0,
     },
-    ['Pico', 'Saguaro', 'Agave', 'Yuca', 'Dune', 'Opu', 'Ray'],
+    ['Pico', 'Saguaro', 'Agave', 'Yuca', 'Dune', 'Ray', 'Opu'],
     ['serpentin', 'fusee'],
     4.5,
   ),
@@ -155,7 +155,7 @@ export const RIVALS = [
       skin: '#a87452',
       style: 2,
     },
-    ['Bruce', 'Mako', 'Tiburon', 'Fin', 'Rex', 'Gil', 'Orca'],
+    ['Bruce', 'Mako', 'Tibra', 'Rex', 'Fin', 'Gil', 'Orca'],
     ['comete', 'meteore', 'eclair'],
     6,
   ),
@@ -191,15 +191,18 @@ export function rosterKit(teamDef, i) {
     requins: 'vega',
     eclairs: 'vega',
   }[teamDef.id]
+  // Six supporting faces; rotate within the male/female pools by club so the
+  // lineups differ, while a player's identity stays fixed across every screen.
+  const club = ['neons', ...RIVALS.map((r) => r.id)].indexOf(teamDef.id)
+  const pool = i % 2 ? ['scout', 'rookie', 'dash'] : ['ember', 'nova', 'echo']
+  const teammate = pool[(Math.floor((i - 1) / 2) + Math.max(0, club)) % 3]
   return {
     ...teamDef.kit,
     number: i + 1,
     style: i % 4,
     ...(p.kitOverride || {}),
     helmet: teamDef.kit.helmet || i === 5,
-    spriteId: ['riko', 'gaspard', 'iris', 'vega'][
-      (['riko', 'gaspard', 'iris', 'vega'].indexOf(captain) + i) % 4
-    ],
+    spriteId: i === 0 ? captain : teammate,
     nativePalette: i === 0 && ['neons', 'chaussettes', 'corbeaux', 'eclairs'].includes(teamDef.id),
   }
 }
