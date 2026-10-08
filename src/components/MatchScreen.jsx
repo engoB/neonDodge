@@ -1,217 +1,410 @@
 import { useEffect, useRef, useState } from 'react'
 import { Match } from '../game/match.js'
 import { drawMatch, VIEW_H } from '../game/render.js'
+import { preloadSprites } from '../game/sprites.js'
+import { PLAYER_TEAM } from '../game/teams.js'
 import { unlockAudio, startMusic, stopMusic } from '../game/audio.js'
 
-const MIN_VIEW_W = 340
 const ARENA_MUSIC = { gym: 0, roof: 1, beach: 2, neon: 3 }
-
 function TeamBar({ name, players, side, accent }) {
   return (
-    <div className={`flex min-w-0 flex-1 flex-col gap-1 ${side === 'right' ? 'items-end text-right' : ''}`}>
-      <div className="truncate font-display text-[11px] tracking-wide" style={{ color: accent }}>
-        {name}
+    <div className={`score-team ${side}`} style={{ '--team-accent': accent }}>
+      <div className="score-name">
+        <span>{name}</span>
+        <b>{players.filter((p) => !p.ko).length}</b>
       </div>
-      <div className={`flex w-full gap-1 ${side === 'right' ? 'flex-row-reverse' : ''}`}>
-        {players.map((p, i) => (
-          <div key={i} className={`min-w-0 flex-1 ${p.ko ? 'opacity-35' : ''}`}>
-            <div className="truncate text-[9px] font-bold leading-tight text-white/80">{p.ko ? 'KO' : p.name}</div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-black/40">
-              <div
-                className={`h-full rounded-full ${p.hp / p.max > 0.35 ? 'bg-emerald-400' : 'bg-rose-500'}`}
-                style={{ width: `${(p.hp / p.max) * 100}%`, marginLeft: side === 'right' ? 'auto' : 0 }}
-              />
-            </div>
+      <div className="health-line">
+        {players.map((p) => (
+          <div
+            className="health-player"
+            key={p.name}
+            aria-label={`${p.name} : ${p.hp} points de vie sur ${p.max}`}
+          >
+            <span>
+              <i style={{ width: `${(p.hp / p.max) * 100}%` }} />
+            </span>
+            <small>{p.ko ? 'KO' : p.name}</small>
           </div>
         ))}
       </div>
     </div>
   )
 }
-
-export default function MatchScreen({ rival, settings, onEnd, onQuit, label, playerAccent }) {
-  const wrapRef = useRef(null)
-  const canvasRef = useRef(null)
-  const matchRef = useRef(null)
-  const touch = useRef({ y: 0, swiped: false })
-  const [hud, setHud] = useState(null)
-  const [paused, setPaused] = useState(false)
-  const [attempt, setAttempt] = useState(0)
-
+function MiniMap({ hud }) {
+  return (
+    <svg className="minimap" viewBox="-36 -28 552 152" aria-label="Vue d’ensemble du terrain">
+      <rect x="0" y="0" width="480" height="96" fill="#225449" />
+      <path d="M240 0V96" stroke="#93b6ac" strokeWidth="2" />
+      {hud.minimap.map((p) => (
+        <circle key={p.id} cx={p.x} cy={p.y} r="7" fill={p.team === 0 ? '#5de7cd' : '#ff596d'} />
+      ))}
+      <circle cx={hud.ballMap.x} cy={hud.ballMap.y} r="6" fill="#f9d57c" stroke="#08141f" strokeWidth="2" />
+    </svg>
+  )
+}
+export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
+  const canvasRef = useRef(null),
+    arenaRef = useRef(null),
+    matchRef = useRef(null),
+    pointer = useRef(null),
+    pauseRef = useRef(null),
+    actionRef = useRef(null)
+  const [hud, setHud] = useState(null),
+    [paused, setPaused] = useState(false),
+    [attempt, setAttempt] = useState(0),
+    [pressing, setPressing] = useState(false)
+  const [assetStatus, setAssetStatus] = useState('loading')
+  function clearInput() {
+    pointer.current = null
+    matchRef.current?.cancelInput()
+    setPressing(false)
+  }
+  function pause() {
+    const m = matchRef.current
+    if (!m || !['intro', 'play'].includes(m.state)) return
+    m.resumeState = m.state
+    clearInput()
+    m.state = 'paused'
+    setPaused(true)
+    stopMusic()
+  }
+  function resume() {
+    const m = matchRef.current
+    if (!m || m.state !== 'paused') return
+    clearInput()
+    m.state = m.resumeState || 'play'
+    setPaused(false)
+    if (settings.music) startMusic(ARENA_MUSIC[rival.arena])
+  }
+  function togglePause() {
+    if (matchRef.current?.state === 'paused') resume()
+    else pause()
+  }
   useEffect(() => {
-    const canvas = canvasRef.current
-    const wrap = wrapRef.current
-    const ctx = canvas.getContext('2d')
-    const m = new Match({ rival, seed: (Date.now() % 100000) + attempt, haptics: settings.haptics, onHud: setHud, onEnd })
+    const canvas = canvasRef.current,
+      arena = arenaRef.current,
+      ctx = canvas.getContext('2d', { alpha: false })
+    const m = new Match({
+      rival,
+      seed: Math.floor(Math.random() * 2 ** 32),
+      haptics: settings.haptics,
+      reducedMotion: settings.reducedMotion,
+      onHud: setHud,
+      onEnd,
+    })
     matchRef.current = m
-    if (new URLSearchParams(location.search).has('debug')) window.__match = m
-    let scale = 1
-    let dpr = 1
-    let viewH = VIEW_H
+    if (import.meta.env.DEV && new URLSearchParams(location.search).has('debug')) window.__match = m
+    let scale = 1,
+      dpr = 1,
+      viewH = VIEW_H,
+      raf,
+      last = performance.now(),
+      acc = 0
+    const start = last
+    let ready = false,
+      disposed = false
+    setAssetStatus('loading')
+    preloadSprites()
+      .then(() => {
+        if (disposed) return
+        ready = true
+        last = performance.now()
+        setAssetStatus('ready')
+        if (settings.music && m.state !== 'paused') startMusic(ARENA_MUSIC[rival.arena])
+      })
+      .catch(() => {
+        if (!disposed) setAssetStatus('error')
+      })
     const resize = () => {
-      const w = wrap.clientWidth
-      const h = wrap.clientHeight
+      const w = arena.clientWidth,
+        h = arena.clientHeight
+      if (!w || !h) return
       dpr = Math.min(2, window.devicePixelRatio || 1)
-      // en portrait on agrandit le terrain : la caméra suit la balle
-      scale = Math.min(h / VIEW_H, w / MIN_VIEW_W)
-      if (h > w) scale = Math.max(scale, Math.min(h / VIEW_H, (w / MIN_VIEW_W) * 1.35))
+      const portrait = window.innerHeight > window.innerWidth
+      scale = portrait ? Math.min(w / 360, h / VIEW_H) : Math.min(w / 560, h / VIEW_H)
       m.setView(w / scale)
       viewH = h / scale
+      m.updateCamera()
       canvas.width = Math.round(w * dpr)
       canvas.height = Math.round(h * dpr)
-      canvas.style.width = w + 'px'
-      canvas.style.height = h + 'px'
+      ctx.imageSmoothingEnabled = false
     }
     resize()
     const ro = new ResizeObserver(resize)
-    ro.observe(wrap)
-    let raf = 0
-    let last = performance.now()
-    let acc = 0
-    const t0 = last
+    ro.observe(arena)
     const loop = (now) => {
+      if (!ready) {
+        last = now
+        raf = requestAnimationFrame(loop)
+        return
+      }
       acc += Math.min(0.1, (now - last) / 1000)
       last = now
       while (acc >= 1 / 60) {
         m.update()
         acc -= 1 / 60
       }
-      drawMatch(m, ctx, scale, dpr, viewH, (now - t0) / 1000)
+      drawMatch(m, ctx, scale, dpr, viewH, (now - start) / 1000)
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
-    if (settings.music) startMusic(ARENA_MUSIC[rival.arena] ?? 0)
-    const onVis = () => {
-      if (document.hidden && m.state === 'play') {
-        m.state = 'paused'
-        setPaused(true)
-      }
+    const hidden = () => {
+      if (document.hidden) pause()
     }
-    document.addEventListener('visibilitychange', onVis)
+    const blur = () => {
+      pause()
+    }
     const key = (e) => {
       if (e.repeat) return
+      if (e.code === 'Escape' && e.type === 'keydown') {
+        if (!['intro', 'play', 'paused'].includes(m.state)) return
+        e.preventDefault()
+        togglePause()
+        return
+      }
+      if (m.state !== 'play') return
       if (['Space', 'Enter', 'KeyZ'].includes(e.code)) {
+        // Native buttons keep their keyboard semantics, especially in the pause dialog.
+        if (
+          document.activeElement?.tagName === 'BUTTON' &&
+          document.activeElement?.dataset.gameAction !== 'true'
+        )
+          return
         e.preventDefault()
         if (e.type === 'keydown') {
           unlockAudio()
           m.press()
-        } else m.release()
+          setPressing(true)
+        } else {
+          m.release()
+          setPressing(false)
+        }
       }
-      if (e.code === 'ArrowUp' && e.type === 'keydown') m.swipeUp()
-      if (e.code === 'Escape' && e.type === 'keydown') togglePause()
+      if (e.code === 'ArrowUp' && e.type === 'keydown') {
+        e.preventDefault()
+        m.swipeUp()
+        setPressing(false)
+      }
     }
+    document.addEventListener('visibilitychange', hidden)
+    window.addEventListener('blur', blur)
     window.addEventListener('keydown', key)
     window.addEventListener('keyup', key)
     return () => {
+      disposed = true
       cancelAnimationFrame(raf)
       ro.disconnect()
-      document.removeEventListener('visibilitychange', onVis)
+      m.cancelInput()
+      document.removeEventListener('visibilitychange', hidden)
+      window.removeEventListener('blur', blur)
       window.removeEventListener('keydown', key)
       window.removeEventListener('keyup', key)
       stopMusic()
+      if (window.__match === m) delete window.__match
     }
+    // Recreate only for a new attempt; the match settings are fixed for this run.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attempt])
-
-  function togglePause() {
-    const m = matchRef.current
-    if (!m) return
-    if (m.state === 'play') {
-      m.state = 'paused'
-      setPaused(true)
-    } else if (m.state === 'paused') {
-      m.state = 'play'
-      setPaused(false)
+  useEffect(() => {
+    if (paused) pauseRef.current?.showModal()
+    else {
+      pauseRef.current?.close()
+      if (matchRef.current?.state === 'play') actionRef.current?.focus({ preventScroll: true })
     }
-  }
-
+  }, [paused])
   const down = (e) => {
-    if (e.target.closest('button')) return
+    if (e.target.closest('button') && e.currentTarget.dataset.gameAction !== 'true') return
+    if (matchRef.current?.state !== 'play' || pointer.current !== null || !e.isPrimary || e.button !== 0)
+      return
     e.preventDefault()
+    e.stopPropagation()
     unlockAudio()
-    touch.current = { y: e.clientY, swiped: false }
-    matchRef.current?.press()
+    pointer.current = { id: e.pointerId, y: e.clientY, swiped: false }
+    e.currentTarget.setPointerCapture(e.pointerId)
+    matchRef.current.press()
+    setPressing(true)
   }
   const move = (e) => {
-    const t = touch.current
-    if (!t.swiped && e.buttons !== 0 && t.y - e.clientY > 40) {
-      t.swiped = true
+    const p = pointer.current
+    if (!p || p.id !== e.pointerId) return
+    if (!p.swiped && p.y - e.clientY > 40) {
+      p.swiped = true
       matchRef.current?.swipeUp()
+      setPressing(false)
     }
   }
-  const up = () => matchRef.current?.release()
-
+  const up = (e) => {
+    const p = pointer.current
+    if (!p || p.id !== e.pointerId) return
+    e.stopPropagation()
+    pointer.current = null
+    matchRef.current?.release()
+    setPressing(false)
+  }
+  const cancel = (e) => {
+    if (pointer.current?.id === e.pointerId) clearInput()
+  }
+  const holding = hud?.holding,
+    ready = hud?.superReady || hud?.armed,
+    late = hud?.chargeLate && !hud?.armed
+  const title =
+    hud?.state === 'intro'
+      ? 'LE MATCH VA COMMENCER'
+      : holding
+        ? hud.armed
+          ? 'PASSE SIGNATURE REÇUE'
+          : late
+            ? 'FENÊTRE DÉPASSÉE'
+            : ready
+              ? 'SIGNATURE · RELÂCHEZ !'
+              : 'PRENEZ VOTRE ÉLAN'
+        : hud?.threat !== null
+          ? 'LA BALLE ARRIVE'
+          : 'GARDEZ L’ŒIL SUR LA BALLE'
   return (
     <div
-      ref={wrapRef}
-      className="game-surface fixed inset-0 overflow-hidden bg-ink"
+      className="game-surface"
       onPointerDown={down}
       onPointerMove={move}
       onPointerUp={up}
-      onPointerCancel={up}
+      onPointerCancel={cancel}
+      onLostPointerCapture={cancel}
       onContextMenu={(e) => e.preventDefault()}
     >
-      <canvas ref={canvasRef} className="absolute inset-0 block" />
-      {hud && (
-        <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-2 p-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
-          <div className="flex min-w-0 flex-1 items-start gap-3 rounded-2xl bg-night/75 px-3 py-2 backdrop-blur">
-            <TeamBar name="Les Néons" players={hud.us} side="left" accent={playerAccent} />
-            <div className="self-center font-display text-xs text-white/60">VS</div>
-            <TeamBar name={rival.name} players={hud.them} side="right" accent={rival.accent} />
+      <div ref={arenaRef} className="match-arena">
+        <canvas ref={canvasRef} aria-label="Match de baseball dodgeball, contrôles ci-dessous" />
+        {assetStatus !== 'ready' && (
+          <div className="arena-loading" role="status">
+            <strong>{assetStatus === 'error' ? 'LE STADE ATTEND' : 'ENTRÉE AU STADE…'}</strong>
+            {assetStatus === 'error' && (
+              <button className="button primary" onClick={() => setAttempt((a) => a + 1)}>
+                Réessayer
+              </button>
+            )}
           </div>
+        )}
+      </div>
+      {hud && (
+        <>
+          <div className="match-hud">
+            <div className="scoreboard">
+              <TeamBar name={PLAYER_TEAM.name} players={hud.us} side="left" accent={PLAYER_TEAM.accent} />
+              <div className="score-middle">
+                <span>NEON CUP</span>
+                <b>
+                  {Math.floor(hud.seconds / 60)}:{String(hud.seconds % 60).padStart(2, '0')}
+                </b>
+              </div>
+              <TeamBar name={rival.name} players={hud.them} side="right" accent={rival.accent} />
+            </div>
+            <button className="icon-button" onClick={togglePause} aria-label="Pause">
+              Ⅱ
+            </button>
+          </div>
+          <span className="match-label">
+            {rival.stadium.toUpperCase()} <span> / {label.toUpperCase()}</span>
+          </span>
+        </>
+      )}
+      {hud && ['intro', 'play'].includes(hud.state) && (
+        <div className="match-deck">
+          <div className="context-copy">
+            <div className="eyebrow">
+              {holding ? 'ATTAQUE' : 'DÉFENSE'} <span> / {hud.ctrl}</span>
+            </div>
+            <strong>{title}</strong>
+            <p>
+              {holding
+                ? 'Maintenez · Relâchez pour lancer · Glissez ↑ pour passer'
+                : 'Touchez juste avant l’impact · Maintenez pour sauter'}
+            </p>
+            {holding && (
+              <div
+                className={`timing-bar ${ready ? 'ready' : ''} ${late ? 'late' : ''}`}
+                role="progressbar"
+                aria-label="Charge du tir"
+                aria-valuenow={Math.round(hud.charge * 100)}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              >
+                <i style={{ width: `${hud.charge * 100}%` }} />
+              </div>
+            )}
+          </div>
+          <MiniMap hud={hud} />
           <button
-            type="button"
-            onClick={togglePause}
-            className="pointer-events-auto grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-night/75 text-lg font-black backdrop-blur active:scale-95"
-            aria-label="Pause"
+            ref={actionRef}
+            disabled={hud.state !== 'play'}
+            className={`action-pad ${pressing ? 'pressing' : ''}`}
+            data-game-action="true"
+            onPointerDown={down}
+            onPointerMove={move}
+            onPointerUp={up}
+            onPointerCancel={cancel}
+            onLostPointerCapture={cancel}
+            onClick={(e) => {
+              if (e.detail === 0) {
+                matchRef.current?.press()
+                matchRef.current?.release()
+              }
+            }}
+            aria-label={
+              holding
+                ? 'Maintenir pour charger, relâcher pour lancer'
+                : 'Réceptionner ou maintenir pour sauter'
+            }
           >
-            ❚❚
+            <strong>{holding ? 'LANCER' : 'RÉCEPTION / SAUT'}</strong>
+            <small>{holding ? 'MAINTENIR → RELÂCHER' : 'TOUCHER → MAINTENIR'}</small>
+          </button>
+          <button
+            className="pass-button"
+            disabled={!holding || hud.state !== 'play'}
+            onClick={() => {
+              unlockAudio()
+              matchRef.current?.swipeUp()
+              setPressing(false)
+            }}
+            aria-label="Passer la balle"
+          >
+            <span>↑</span>PASSE
           </button>
         </div>
       )}
-      {hud && hud.state === 'play' && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-1 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          {hud.holding ? (
-            <div className={`rounded-full px-4 py-1.5 text-xs font-black ${hud.charge >= 1 || hud.armed ? 'animate-pulse bg-aqua text-night' : 'bg-night/75 text-white'}`}>
-              {hud.armed
-                ? 'PASSE SPÉCIALE REÇUE : relâchez pour le super tir'
-                : hud.charge >= 1
-                  ? 'SUPER TIR PRÊT : relâchez !'
-                  : 'Maintenez : course · Relâchez : tir · Glissez ↑ : passe'}
-            </div>
-          ) : (
-            <div className="rounded-full bg-night/75 px-4 py-1.5 text-xs font-black text-white">
-              Touchez au moment de l’impact : attraper · Maintenez : sauter
-            </div>
-          )}
-        </div>
-      )}
-      {paused && (
-        <div className="absolute inset-0 grid place-items-center bg-ink/70 p-6 backdrop-blur-sm">
-          <div className="w-full max-w-xs animate-pop rounded-3xl border-4 border-night bg-white p-6 text-center text-night shadow-2xl">
-            <div className="font-display text-3xl">Pause</div>
-            <div className="mt-1 text-sm font-bold text-slate-500">{label}</div>
-            <div className="mt-5 flex flex-col gap-3">
-              <button type="button" className="rounded-2xl bg-flame py-3 font-black text-white active:scale-95" onClick={togglePause}>
-                Reprendre
-              </button>
-              <button
-                type="button"
-                className="rounded-2xl bg-night py-3 font-black text-white active:scale-95"
-                onClick={() => {
-                  setPaused(false)
-                  setAttempt((a) => a + 1)
-                }}
-              >
-                Recommencer le match
-              </button>
-              <button type="button" className="rounded-2xl bg-slate-200 py-3 font-black active:scale-95" onClick={onQuit}>
-                Abandonner
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <dialog
+        ref={pauseRef}
+        className="pause-dialog"
+        onCancel={(e) => {
+          e.preventDefault()
+          resume()
+        }}
+      >
+        <section className="pause-card">
+          <span className="eyebrow">LE STADE VOUS ATTEND</span>
+          <h2>TIME OUT.</h2>
+          <p>
+            {label}
+            <br />
+            Les gestes sont suspendus pendant la pause.
+          </p>
+          <button className="button primary" onClick={resume}>
+            REPRENDRE LE MATCH <span>▶</span>
+          </button>
+          <button
+            className="button secondary"
+            onClick={() => {
+              clearInput()
+              setPaused(false)
+              setAttempt((a) => a + 1)
+            }}
+          >
+            RECOMMENCER <span>↺</span>
+          </button>
+          <button className="text-button" onClick={onQuit}>
+            Retour au club →
+          </button>
+        </section>
+      </dialog>
     </div>
   )
 }

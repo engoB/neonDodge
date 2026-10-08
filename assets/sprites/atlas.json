@@ -1,0 +1,142 @@
+{
+  "frameW": 160,
+  "frameH": 128,
+  "columns": 4,
+  "rows": 4,
+  "cels": 16,
+  "standingHeight": 96,
+  "baseline": 112,
+  "sequences": {
+    "idle": [
+      0,
+      1
+    ],
+    "walk": [
+      2,
+      3,
+      4,
+      5
+    ],
+    "run": [
+      2,
+      3,
+      4,
+      5
+    ],
+    "hold": [
+      6
+    ],
+    "windup": [
+      7
+    ],
+    "throw": [
+      8,
+      9
+    ],
+    "catch": [
+      10,
+      11
+    ],
+    "jump": [
+      12
+    ],
+    "fall": [
+      12
+    ],
+    "hurt": [
+      13
+    ],
+    "ko": [
+      14
+    ],
+    "taunt": [
+      15
+    ],
+    "cheer": [
+      15
+    ]
+  },
+  "fps": {
+    "idle": 3,
+    "walk": 7,
+    "run": 12
+  },
+  "athletes": [
+    {
+      "id": "riko",
+      "filename": "riko.png",
+      "role": "captain"
+    },
+    {
+      "id": "gaspard",
+      "filename": "gaspard.png",
+      "role": "captain"
+    },
+    {
+      "id": "iris",
+      "filename": "iris.png",
+      "role": "captain"
+    },
+    {
+      "id": "vega",
+      "filename": "vega.png",
+      "role": "captain"
+    },
+    {
+      "id": "scout",
+      "filename": "scout.png",
+      "role": "teammate"
+    },
+    {
+      "id": "rookie",
+      "filename": "rookie.png",
+      "role": "teammate"
+    },
+    {
+      "id": "dash",
+      "filename": "dash.png",
+      "role": "teammate"
+    },
+    {
+      "id": "ember",
+      "filename": "ember.png",
+      "role": "teammate"
+    },
+    {
+      "id": "echo",
+      "filename": "echo.png",
+      "role": "teammate"
+    },
+    {
+      "id": "nova",
+      "filename": "nova.png",
+      "role": "teammate"
+    }
+  ],
+  "captains": [
+    {
+      "id": "riko",
+      "team": "Neon Foxes",
+      "name": "Riko",
+      "filename": "riko.png"
+    },
+    {
+      "id": "gaspard",
+      "team": "Red Bats",
+      "name": "Gaspard",
+      "filename": "gaspard.png"
+    },
+    {
+      "id": "iris",
+      "team": "Gold Owls",
+      "name": "Iris",
+      "filename": "iris.png"
+    },
+    {
+      "id": "vega",
+      "team": "Violet Phantoms",
+      "name": "Vega",
+      "filename": "vega.png"
+    }
+  ]
+}

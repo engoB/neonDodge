@@ -1,51 +1,57 @@
-<h1 align="center">Neon Dodge</h1>
-<p align="center"><b>La balle au prisonnier à un doigt.</b><br>Deux équipes de sept, un terrain coupé en deux, des tirs, des passes, des rattrapages au millimètre et des super tirs. Un tournoi de six matchs.</p>
-<p align="center"><a href="https://engob.github.io/neonDodge/"><b>▶ Jouer</b></a> · <sub>Statut : <b>En ligne</b></sub></p>
+<h1 align="center">Neon Slugger</h1>
+<p align="center"><b>Le dodgeball rencontre le baseball.</b><br>Un jeu d’arcade à un doigt, quatre capitaines et une Neon Cup à conquérir.</p>
 
-> **Pensé pour le téléphone.** Le jeu s’ouvre dans le navigateur, sans installation, en portrait comme en paysage. Sur ordinateur : barre d’espace (maintenir / relâcher) et flèche du haut pour passer.
+Neon Slugger transforme Neon Dodge en un univers de baseball arcade : stade nocturne, quatre capitaines mixtes sur un même plan visuel, uniformes, casquettes, gants de taille naturelle, balles cousues et nouveaux portraits animés. Les règles restent celles du dodgeball : éliminer les quatre intérieurs adverses, avec l’aide de trois extérieurs.
 
----
+## La version 2
 
-### Le match
+- Accueil illustré, tournoi, club avec sept fiches de joueurs, animations consultables, playbook et réglages.
+- Quatre ballparks : Fox Yard, Skyline Park, Harbor Field, Neon Dome. Six clubs rivaux à difficulté progressive.
+- Sprites originaux en pixel art : repos, marche, course, possession, préparation, lancer, réception, montée, descente, impact, KO, provocation et victoire.
+- Jauge qui distingue charge, fenêtre signature et dépassement. Traînées de balle, guide de visée et minimap.
+- Contrôles tactiles avec capture du pointeur : interrompre un geste ou mettre en pause ne provoque aucun lancer.
+- Décompte et pause sans appui bloqué ; temps de jeu distinct du décompte ; fin de match sans dégâts supplémentaires.
+- Bonus de réception parfaite conservé pour le prochain élan. Progression de Neon Dodge conservée sur cet appareil.
+- Portrait : caméra suivant la balle, minimap et commandes sur deux lignes. Paysage : terrain complet et commandes compactes. Zones de jeu réservées pour laisser le HUD et les commandes visibles.
+- Réglages de sons, musique, vibrations et animations réduites ; préférence système prise en compte. Dialogues de réglages, pause et résultats accessibles au clavier.
 
-Chaque équipe aligne **4 intérieurs** dans sa moitié de terrain et **3 extérieurs** autour de la moitié adverse (au fond et sur les côtés). Les intérieurs ont des points de vie : un tir qui les touche en retire, un super tir en retire beaucoup. L’équipe qui met KO les 4 intérieurs adverses gagne.
+## Jouer
 
-Chaque joueur a ses caractéristiques (force, puissance de tir, vitesse, saut, réception, défense, points de vie) et son propre tir spécial : Comète, Fusée, Serpentin, Météore, Vague ou Éclair.
+| Situation                | Geste                                | Effet                                                   |
+| ------------------------ | ------------------------------------ | ------------------------------------------------------- |
+| Balle en main            | Maintenir, puis relâcher             | Élan, puis lancer vers la cible orange                  |
+| Charge dorée après 0,4 s | Relâcher dans la fenêtre de 4 images | Tir signature ; après la fenêtre, tir normal            |
+| Balle en main            | Glisser ↑ ou bouton Passe            | Passe ; une passe chargée arme la signature du receveur |
+| En défense               | Toucher 2 à 4 images avant l’impact  | Réception ; à 3 images, réception parfaite              |
+| Tir signature adverse    | Réception parfaite                   | Seul timing qui permet de l’arrêter                     |
+| Sans balle               | Maintenir                            | Saut d’esquive                                          |
 
-### Un seul doigt
+Sur ordinateur : **Espace** pour maintenir / relâcher, **↑** pour passer, **Échap** pour suspendre / reprendre. Le mouvement et la récupération de balle sont automatiques. Une réception parfaite réduit à six images l’élan nécessaire pour la prochaine signature.
 
-Les déplacements sont automatiques. Le doigt décide du moment.
+## Développement
 
-| Situation | Geste | Effet |
-|---|---|---|
-| Votre équipe a la balle | **maintenir** | le porteur court vers la ligne ; la jauge se remplit |
-| | **relâcher** | tir sur l’adversaire en face (anneau orange) |
-| | relâcher **pile quand la jauge est pleine** | **super tir** (la fenêtre est très courte) |
-| | **glisser vers le haut** | passe ; après une course complète, **passe spéciale** : le receveur tire un super tir |
-| L’adversaire tire | **toucher juste avant l’impact** | rattrapage (3 images avant : PARFAIT) ; trop tôt, le joueur reste exposé |
-| | **maintenir** | saut pour esquiver |
-
-### Les adversaires
-
-Six équipes de plus en plus fortes. L’IA prend 2 ou 3 pas d’élan avant de tirer, choisit au hasard entre tir au sol et tir en saut, vise l’adversaire placé dans un cône devant elle, tente des super tirs et des passes, et rattrape ou esquive de mieux en mieux au fil du tournoi.
-
-### Comment c’est fait
-
-React + Vite + Tailwind CSS pour l’interface, moteur maison en JavaScript sur un `<canvas>` (simulation à pas fixe de 60 images/s, terrain en perspective, séparée du rendu). Personnages et décors dessinés par le code ; musique et bruitages synthétisés à la volée ; aucun fichier image ni son.
-
-Les réglages (vitesses, gravité, élan des tirs, fenêtre de rattrapage, élan du super tir, rebonds, comportement de l’IA) sont regroupés dans [`src/game/constants.js`](src/game/constants.js) : ce sont des valeurs de jeu mesurées puis adaptées au tactile. Le code, les équipes, les personnages, les graphismes et les sons sont entièrement originaux.
-
-**Outils** &nbsp; `React` `Vite` `Tailwind CSS` `Canvas` `Web Audio`
+Node.js 22.12+ ou 24+, React, Vite, Canvas 2D et Web Audio. Aucun compte, publicité, suivi ou dépendance à des polices externes. Les scores et réglages restent dans `localStorage`.
 
 ```bash
-npm install
-npm run dev      # développement
-npm test         # tests : équipes, matchs IA contre IA, fenêtre de rattrapage, progression du tournoi
-npm run build    # version publiable dans dist/
+npm ci
+npm run dev
+npm test
+npm run build
+npm run preview
+npm run assets  # exporte les aperçus et le manifeste des atlas intégrés
+npm run test:ui # vérifie les écrans et contrôles dans Chromium / WebKit
 ```
 
-Les tests font jouer un robot qui n’utilise que les gestes à un doigt, avec des erreurs de timing humaines : un joueur moyen doit gagner les premiers matchs et peiner en finale. Le site se déploie seul sur GitHub Pages à chaque envoi sur `main` (`.github/workflows/deploy.yml`).
+Les dix atlas bitmap transparents se trouvent dans `assets/sprites/` : 16 images par personnage, sur quatre colonnes, cellules de 160 × 128 pixels. Corps debout de 96 pixels et pieds alignés à 112 pixels : les capitaines mixtes ont la même stature. Le moteur utilise ces PNG en match et dans les portraits, avec des séquences dédiées à la course, au lancer et à la réception. Les états montée / descente partagent le cel de saut ; provocation / victoire partagent le cel de célébration. `atlas.json` décrit les séquences et les cadences. Les équipiers utilisent six profils distincts des capitaines : trois masculins et trois féminins, avec coiffures, visages et gabarits différents. Chaque club compte sept silhouettes distinctes ; les couleurs des tenues suivent son identité. Le choix de silhouette est déterministe et reste le même dans le club et en match. Le stade utilise un panorama bitmap détaillé, avec quatre ambiances de couleur.
 
-### Mentions
+Les sources ont été créées avec la génération d’images intégrée à partir de la référence arcade fournie. `scripts/prepare-atlas.py` extrait les silhouettes complètes et les aligne, sans redessiner les personnages (Pillow, NumPy et SciPy). Les prompts et les fichiers retenus sont documentés dans [la direction artistique](assets/ART_DIRECTION.md).
 
-Jeu original, sans lien avec un éditeur ou une licence existante. Aucune donnée collectée : pas de compte, pas de publicité, pas de suivi. La progression reste dans le navigateur.
+La compilation reste compatible avec un sous-chemin GitHub Pages grâce aux chemins relatifs. Le workflow existant déploie après un envoi sur `main`, en exécutant les tests avant publication. La refonte est proposée sur une branche pour revue ; le site public existant ne représente pas cette version avant intégration.
+
+## Validation
+
+Les tests couvrent le tournoi avec des robots au timing humain, la stabilité des six adversaires, les réceptions, la fenêtre de signature, l’annulation des gestes, la pause, la fin de match, les sauvegardes et les rendus des sprites / quatre stades dans deux formats. Les images de `docs/previews/` sont des rendus du moteur, pas des captures d’une session navigateur.
+
+La compilation et les tests de simulation / rendu sont vérifiés. La CI exécute aussi 42 scénarios d’interface : Chromium ordinateur, petit portrait, portrait, paysage ; WebKit portrait et paysage. Les captures et traces sont jointes aux runs GitHub Actions. Ces émulations ne remplacent pas un tournoi sur Safari iOS et Chrome Android réels avant sortie commerciale. Voir [la revue du projet](docs/REVIEW.md).
+
+Jeu original, sans lien avec une licence sportive ou un éditeur existant.

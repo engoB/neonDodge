@@ -1,312 +1,222 @@
-// Personnages et objets dessinés en vectoriel (création originale).
-
-const OUT = '#1b1530'
-
-function limb(ctx, px, py, ang, len, w, col) {
-  const ex = px + Math.sin(ang) * len
-  const ey = py + Math.cos(ang) * len
-  ctx.strokeStyle = OUT
-  ctx.lineWidth = w + 2
-  ctx.beginPath()
-  ctx.moveTo(px, py)
-  ctx.lineTo(ex, ey)
-  ctx.stroke()
-  ctx.strokeStyle = col
-  ctx.lineWidth = w
-  ctx.beginPath()
-  ctx.moveTo(px, py)
-  ctx.lineTo(ex, ey)
-  ctx.stroke()
-  return [ex, ey]
+// Bitmap cels: the same atlas drives portraits and live gameplay.
+export const ANIMATION_POSES = [
+  'idle',
+  'walk',
+  'run',
+  'hold',
+  'windup',
+  'throw',
+  'catch',
+  'jump',
+  'fall',
+  'hurt',
+  'ko',
+  'taunt',
+  'cheer',
+]
+export const FRAME_SEQUENCES = {
+  idle: [0, 1],
+  walk: [2, 3, 4, 5],
+  run: [2, 3, 4, 5],
+  hold: [6],
+  windup: [7],
+  throw: [8, 9],
+  catch: [10, 11],
+  jump: [12],
+  fall: [12],
+  hurt: [13],
+  ko: [14],
+  taunt: [15],
+  cheer: [15],
 }
-
-function shade(hex, k) {
-  const n = parseInt(hex.slice(1), 16)
-  const r = Math.min(255, ((n >> 16) & 255) * k)
-  const g = Math.min(255, ((n >> 8) & 255) * k)
-  const b = Math.min(255, (n & 255) * k)
-  return `rgb(${r | 0},${g | 0},${b | 0})`
+export const ASSET_URLS = {
+  riko: new URL('../../assets/sprites/riko.png', import.meta.url),
+  gaspard: new URL('../../assets/sprites/gaspard.png', import.meta.url),
+  iris: new URL('../../assets/sprites/iris.png', import.meta.url),
+  vega: new URL('../../assets/sprites/vega.png', import.meta.url),
+  scout: new URL('../../assets/sprites/scout.png', import.meta.url),
+  rookie: new URL('../../assets/sprites/rookie.png', import.meta.url),
+  dash: new URL('../../assets/sprites/dash.png', import.meta.url),
+  ember: new URL('../../assets/sprites/ember.png', import.meta.url),
+  echo: new URL('../../assets/sprites/echo.png', import.meta.url),
+  nova: new URL('../../assets/sprites/nova.png', import.meta.url),
+  baseball: new URL('../../assets/sprites/baseball.png', import.meta.url),
+  stadium: new URL('../../assets/stadium-panorama.webp', import.meta.url),
 }
-
-// angles : jambe avant, jambe arrière, bras avant, bras arrière (0 = vers le bas, + = vers l'avant)
-const POSES = {
-  run: (ph) => [Math.sin(ph) * 0.9, -Math.sin(ph) * 0.9, -Math.sin(ph) * 1.0, Math.sin(ph) * 1.0],
-  walk: (ph) => [Math.sin(ph) * 0.5, -Math.sin(ph) * 0.5, -Math.sin(ph) * 0.5, Math.sin(ph) * 0.5],
-  jump: () => [0.9, -0.35, 2.5, -0.7],
-  fall: () => [0.5, -0.2, 1.9, 1.1],
-  catch: () => [0.45, -0.45, 1.45, 1.3],
-  hold: (ph) => [Math.sin(ph) * 0.9, -Math.sin(ph) * 0.9, 1.2, 1.0],
-  throw: () => [0.7, -0.5, 1.7, -0.9],
-  windup: () => [0.35, -0.35, -2.4, 0.7],
-  idle: (ph, t) => [0.12, -0.12, 0.25 + Math.sin(t * 3) * 0.06, -0.25],
-  taunt: (ph, t) => [0.12, -0.12, 2.6 + Math.sin(t * 10) * 0.25, -0.3],
-  cheer: (ph, t) => [0.15, -0.15, 2.8 + Math.sin(t * 12) * 0.2, 2.6 - Math.sin(t * 12) * 0.2],
-  ko: (ph) => [Math.sin(ph * 1.3) * 1.2, -Math.sin(ph * 1.3) * 1.2, 2.5 + Math.sin(ph) * 0.5, 2.2 - Math.sin(ph) * 0.5],
-  hurt: () => [-0.5, 0.4, 2.6, 2.2],
-}
-
-export function drawAthlete(ctx, o) {
-  const { x, y, facing = 1, pose = 'run', t = 0, kit, rot = 0, alpha = 1, ball = null, size = 1, flash = false, glow = null } = o
-  ctx.save()
-  ctx.globalAlpha = alpha
-  ctx.translate(x, y)
-  if (rot) {
-    ctx.translate(0, -16 * size)
-    ctx.rotate(rot)
-    ctx.translate(0, 16 * size)
+export const ATHLETE_IDS = [
+  'riko',
+  'gaspard',
+  'iris',
+  'vega',
+  'scout',
+  'rookie',
+  'dash',
+  'ember',
+  'echo',
+  'nova',
+]
+const images = new Map()
+const variants = new Map()
+let createSurface
+let loading
+const browserLoader = (url) =>
+  new Promise((resolve, reject) => {
+    const image = new Image()
+    image.onload = () => resolve(image)
+    image.onerror = () => reject(new Error('Impossible de charger ' + url.pathname))
+    image.src = url.href
+  })
+export function preloadSprites(loader = browserLoader, canvasFactory) {
+  createSurface =
+    canvasFactory ||
+    ((w, h) => {
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      return canvas
+    })
+  if (!loading) {
+    loading = Promise.all(
+      Object.entries(ASSET_URLS).map(async ([id, url]) => {
+        images.set(id, await loader(url))
+      }),
+    ).catch((error) => {
+      loading = null
+      throw error
+    })
   }
-  ctx.scale(facing * size, size)
-  ctx.lineCap = 'round'
-  ctx.lineJoin = 'round'
-  const ph = t * 15
-  const [lA, lB, aA, aB] = (POSES[pose] || POSES.run)(ph, t)
-  const bob = pose === 'run' || pose === 'hold' ? Math.abs(Math.sin(ph)) * -1.2 : 0
+  return loading
+}
+export const getSpriteAsset = (id) => images.get(id)
 
-  if (pose !== 'ko') {
-    ctx.fillStyle = 'rgba(0,0,0,0.18)'
-    ctx.beginPath()
-    ctx.ellipse(0, 0.5, 8, 2, 0, 0, Math.PI * 2)
-    ctx.fill()
+// Classic arcade palette swaps at runtime. Only the jersey/cap color ramp is
+// remapped; skin, leather, cream pants and the dark outlines retain their colors.
+function teamAtlas(kit) {
+  const source = images.get(kit.spriteId || 'riko')
+  if (!source || kit.nativePalette) return source
+  const key = kit.spriteId + ':' + kit.jersey
+  if (variants.has(key)) {
+    const atlas = variants.get(key)
+    variants.delete(key)
+    variants.set(key, atlas)
+    return atlas
+  }
+  const canvas = createSurface(source.width, source.height)
+  const ctx = canvas.getContext('2d')
+  ctx.drawImage(source, 0, 0)
+  const pixels = ctx.getImageData(0, 0, source.width, source.height)
+  const ramp = { gaspard: [345, 14], iris: [36, 65], vega: [250, 310] }[kit.spriteId] || [155, 205]
+  const target = kit.jersey
+    .slice(1)
+    .match(/../g)
+    .map((v) => parseInt(v, 16) / 255)
+  const targetHsl = rgbToHsl(...target)
+  for (let i = 0; i < pixels.data.length; i += 4) {
+    if (!pixels.data[i + 3]) continue
+    const [h, s, l] = rgbToHsl(pixels.data[i] / 255, pixels.data[i + 1] / 255, pixels.data[i + 2] / 255)
+    const within = ramp[0] > ramp[1] ? h >= ramp[0] || h <= ramp[1] : h >= ramp[0] && h <= ramp[1]
+    if (!within || s < 0.35 || l < 0.12 || l > 0.85) continue
+    const rgb = hslToRgb(targetHsl[0], Math.min(0.95, s * 0.75 + targetHsl[1] * 0.25), l)
+    for (let c = 0; c < 3; c++) pixels.data[i + c] = Math.round(rgb[c] * 255)
+  }
+  ctx.putImageData(pixels, 0, 0)
+  variants.set(key, canvas)
+  // Enough for both current clubs; avoid keeping every tournament palette in memory.
+  if (variants.size > 16) variants.delete(variants.keys().next().value)
+  return canvas
+}
+function rgbToHsl(r, g, b) {
+  const max = Math.max(r, g, b),
+    min = Math.min(r, g, b),
+    d = max - min,
+    l = (max + min) / 2
+  if (!d) return [0, 0, l]
+  let h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4
+  return [h * 60, d / (1 - Math.abs(2 * l - 1)), l]
+}
+function hslToRgb(h, s, l) {
+  const a = s * Math.min(l, 1 - l)
+  return [0, 8, 4].map((n) => {
+    const k = (n + h / 30) % 12
+    return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))
+  })
+}
+
+export function animationFrame(pose, t = 0, progress) {
+  const frames = FRAME_SEQUENCES[pose] || FRAME_SEQUENCES.idle
+  if (progress !== undefined && ['throw', 'catch'].includes(pose))
+    return frames[Math.min(frames.length - 1, Math.floor(Math.max(0, progress) * frames.length))]
+  const fps = pose === 'idle' ? 3 : pose === 'walk' ? 7 : 12
+  return frames[Math.floor(Math.max(0, t) * fps) % frames.length]
+}
+export function drawAthlete(ctx, o) {
+  const {
+    x,
+    y,
+    facing = 1,
+    pose = 'idle',
+    t = 0,
+    progress,
+    kit,
+    rot = 0,
+    alpha = 1,
+    ball = null,
+    size = 1,
+    flash = false,
+    glow = null,
+  } = o
+  const image = teamAtlas(kit)
+  if (!image) return
+  const frame = animationFrame(pose, t, progress)
+  ctx.save()
+  ctx.imageSmoothingEnabled = false
+  ctx.globalAlpha *= alpha * (flash ? 0.35 : 1)
+  ctx.translate(Math.round(x), Math.round(y))
+  ctx.scale(facing * size, size)
+  if (rot && pose !== 'ko') {
+    ctx.translate(0, -24)
+    ctx.rotate(rot)
+    ctx.translate(0, 24)
   }
   if (glow) {
-    ctx.save()
     ctx.shadowColor = glow
-    ctx.shadowBlur = 14
-    ctx.strokeStyle = glow
-    ctx.lineWidth = 1.5
-    ctx.beginPath()
-    ctx.ellipse(0, -18, 13, 22, 0, 0, Math.PI * 2)
-    ctx.stroke()
-    ctx.restore()
+    ctx.shadowBlur = 9
   }
-  ctx.translate(0, bob)
-
-  const skin = flash ? '#ffffff' : kit.skin
-  const jersey = flash ? '#ffffff' : kit.jersey
-  const [bx, by] = limb(ctx, -1, -20, aB, 9, 3.2, shade(skin, 0.8))
-  limb(ctx, -1, -11, lB, 11, 3.6, shade(kit.shorts, 0.75))
-  shoe(ctx, -1, -11, lB, '#2a2342')
-
-  ctx.fillStyle = OUT
-  rr(ctx, -7, -23.5, 14, 14, 4)
-  ctx.fill()
-  ctx.fillStyle = jersey
-  rr(ctx, -6, -22.5, 12, 12, 3)
-  ctx.fill()
-  ctx.fillStyle = kit.trim
-  ctx.fillRect(-6, -17.5, 12, 2)
-  ctx.fillStyle = kit.shorts
-  ctx.fillRect(-6, -12, 12, 4.5)
-
-  limb(ctx, 1, -11, lA, 11, 3.6, kit.shorts)
-  shoe(ctx, 1, -11, lA, '#f8fafc')
-
-  ctx.fillStyle = OUT
-  ctx.beginPath()
-  ctx.arc(1, -28, 8.6, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.fillStyle = skin
-  ctx.beginPath()
-  ctx.arc(1, -28, 7.4, 0, Math.PI * 2)
-  ctx.fill()
-  hair(ctx, kit, t)
-  ctx.fillStyle = kit.band
-  ctx.fillRect(-6.2, -32, 14.4, 3)
-  ctx.strokeStyle = kit.band
-  ctx.lineWidth = 1.6
-  const flap = Math.sin(t * 18) * 2
-  ctx.beginPath()
-  ctx.moveTo(-6, -31)
-  ctx.quadraticCurveTo(-10, -32 + flap, -14, -29 + flap)
-  ctx.moveTo(-6, -30)
-  ctx.quadraticCurveTo(-10, -28 - flap * 0.5, -13, -25 - flap * 0.5)
-  ctx.stroke()
-  ctx.fillStyle = OUT
-  if (pose === 'ko' || pose === 'hurt') {
-    ctx.lineWidth = 1.2
-    ctx.strokeStyle = OUT
-    ctx.beginPath()
-    ctx.moveTo(3, -29.5); ctx.lineTo(6, -26.5)
-    ctx.moveTo(6, -29.5); ctx.lineTo(3, -26.5)
-    ctx.stroke()
-  } else {
-    ctx.fillRect(4, -29, 2, 3)
-    ctx.fillRect(3, -30.6, 4, 1)
-    ctx.fillStyle = 'rgba(255,120,120,0.45)'
-    ctx.fillRect(3, -25.6, 3, 1.3)
-  }
-
-  const [ax, ay] = limb(ctx, 1, -20, aA, 9, 3.2, skin)
-  if (ball) {
-    const two = pose === 'catch' || pose === 'hold'
-    drawBall(ctx, { x: two ? (ax + bx) / 2 + 3 : ax, y: two ? (ay + by) / 2 : ay, kind: ball, r: 5, spin: t * 4 })
+  // 160×128 cells preserve complete reaching arms; body 96px, feet at y=112.
+  const bob = ['cheer', 'taunt'].includes(pose) ? -Math.abs(Math.sin(t * 7)) * 2 : 0
+  ctx.drawImage(image, (frame % 4) * 160, Math.floor(frame / 4) * 128, 160, 128, -40, -56 + bob, 80, 64)
+  ctx.shadowBlur = 0
+  if (ball && ![6, 7, 11].includes(frame)) {
+    const hand =
+      frame === 4
+        ? [22, -30]
+        : frame === 5
+          ? [15, -32]
+          : [2, 3].includes(frame)
+            ? [-18, -29]
+            : frame === 12
+              ? [-11, -39]
+              : [9, -23]
+    drawBall(ctx, { x: hand[0], y: hand[1], r: 3.5, kind: ball, spin: t * 4 })
   }
   ctx.restore()
 }
-
-function shoe(ctx, px, py, ang, col) {
-  const ex = px + Math.sin(ang) * 11
-  const ey = py + Math.cos(ang) * 11
-  ctx.fillStyle = OUT
-  rr(ctx, ex - 2.5, ey - 2, 7, 3.6, 1.6)
-  ctx.fill()
-  ctx.fillStyle = col
-  rr(ctx, ex - 1.8, ey - 1.4, 5.6, 2.2, 1)
-  ctx.fill()
-}
-
-function hair(ctx, kit, t) {
-  ctx.fillStyle = kit.hair
-  ctx.strokeStyle = OUT
-  ctx.lineWidth = 1
-  ctx.beginPath()
-  switch (kit.style) {
-    case 1: // brosse
-      ctx.moveTo(-7, -30)
-      ctx.lineTo(-7, -37)
-      ctx.lineTo(8, -37)
-      ctx.lineTo(8.5, -31)
-      break
-    case 2: // crête
-      ctx.moveTo(-6, -31)
-      for (let i = 0; i < 5; i++) {
-        ctx.lineTo(-5 + i * 3, -41 + (i % 2) * 3)
-        ctx.lineTo(-3.5 + i * 3, -34)
-      }
-      ctx.lineTo(8, -31)
-      break
-    case 3: // queue de cheval
-      ctx.moveTo(-7, -27)
-      ctx.quadraticCurveTo(-8, -37, 1, -37)
-      ctx.quadraticCurveTo(9, -37, 8.5, -31)
-      ctx.lineTo(-7, -30)
-      ctx.moveTo(-6, -32)
-      ctx.quadraticCurveTo(-14, -30 + Math.sin(t * 14) * 2, -13, -22)
-      ctx.lineTo(-8, -28)
-      break
-    default: // épis
-      ctx.moveTo(-8, -26)
-      ctx.lineTo(-12, -33)
-      ctx.lineTo(-7, -33)
-      ctx.lineTo(-8, -39)
-      ctx.lineTo(-2, -36)
-      ctx.lineTo(1, -42)
-      ctx.lineTo(4, -36)
-      ctx.lineTo(9, -38)
-      ctx.lineTo(8.5, -31)
-      ctx.lineTo(-6, -30)
-  }
-  ctx.closePath()
-  ctx.fill()
-  ctx.stroke()
-}
-
 export function rr(ctx, x, y, w, h, r) {
   ctx.beginPath()
-  ctx.moveTo(x + r, y)
-  ctx.arcTo(x + w, y, x + w, y + h, r)
-  ctx.arcTo(x + w, y + h, x, y + h, r)
-  ctx.arcTo(x, y + h, x, y, r)
-  ctx.arcTo(x, y, x + w, y, r)
-  ctx.closePath()
+  ctx.roundRect(x, y, w, h, r)
 }
-
-const BALL_COL = {
-  enemy: ['#ef4444', '#fecaca'],
-  roll: ['#64748b', '#e2e8f0'],
-  fire: ['#f97316', '#fde047'],
-  player: ['#06b6d4', '#cffafe'],
-  super: ['#ffffff', '#67e8f9'],
-  loose: ['#f59e0b', '#fef3c7'],
-}
-
 export function drawBall(ctx, b) {
+  const image = images.get('baseball')
+  if (!image) return
   const r = b.r ?? 5
-  const [c1, c2] = BALL_COL[b.kind] || BALL_COL.enemy
   ctx.save()
-  ctx.translate(b.x, b.y)
-  if (b.kind === 'fire' || b.kind === 'super') {
-    ctx.shadowColor = b.kind === 'fire' ? '#fb923c' : '#22d3ee'
-    ctx.shadowBlur = 12
-  }
-  ctx.fillStyle = OUT
-  ctx.beginPath()
-  ctx.arc(0, 0, r + 1, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.shadowBlur = 0
-  const g = ctx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.1, 0, 0, r)
-  g.addColorStop(0, c2)
-  g.addColorStop(1, c1)
-  ctx.fillStyle = g
-  ctx.beginPath()
-  ctx.arc(0, 0, r, 0, Math.PI * 2)
-  ctx.fill()
+  ctx.imageSmoothingEnabled = false
+  ctx.translate(Math.round(b.x), Math.round(b.y))
   ctx.rotate(b.spin ?? 0)
-  ctx.strokeStyle = 'rgba(0,0,0,0.25)'
-  ctx.lineWidth = 0.9
-  ctx.beginPath()
-  ctx.moveTo(-r, 0)
-  ctx.quadraticCurveTo(0, r * 0.6, r, 0)
-  ctx.stroke()
-  ctx.restore()
-}
-
-export function drawCoin(ctx, x, y, t) {
-  const w = Math.abs(Math.cos(t * 4 + x * 0.05)) * 5 + 1
-  ctx.fillStyle = OUT
-  ctx.beginPath()
-  ctx.ellipse(x, y, w + 1, 6, 0, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.fillStyle = '#fbbf24'
-  ctx.beginPath()
-  ctx.ellipse(x, y, w, 5, 0, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.fillStyle = '#fef3c7'
-  ctx.fillRect(x - w * 0.3, y - 3, Math.max(1, w * 0.3), 4)
-}
-
-export function drawGold(ctx, x, y, t) {
-  const by = y + Math.sin(t * 3) * 2.5
-  ctx.save()
-  ctx.translate(x, by)
-  ctx.rotate(t * 0.8)
-  ctx.fillStyle = 'rgba(253,224,71,0.25)'
-  for (let i = 0; i < 8; i++) {
-    ctx.rotate(Math.PI / 4)
-    ctx.beginPath()
-    ctx.moveTo(0, 0)
-    ctx.lineTo(-3, 18)
-    ctx.lineTo(3, 18)
-    ctx.fill()
+  if (['super', 'fire'].includes(b.kind)) {
+    ctx.shadowColor = b.kind === 'fire' ? '#ff596d' : '#5de7cd'
+    ctx.shadowBlur = 10
   }
+  ctx.drawImage(image, -r - 1, -r - 1, (r + 1) * 2, (r + 1) * 2)
   ctx.restore()
-  ctx.save()
-  ctx.shadowColor = '#fde047'
-  ctx.shadowBlur = 12
-  drawBall(ctx, { x, y: by, r: 8, kind: 'fire', spin: t })
-  ctx.restore()
-  ctx.fillStyle = '#fff'
-  ctx.fillRect(x - 4, by - 5, 2, 2)
-}
-
-export function drawHeart(ctx, x, y, t, col = '#f43f5e') {
-  const s = 1 + Math.sin(t * 6) * 0.08
-  ctx.save()
-  ctx.translate(x, y)
-  ctx.scale(s, s)
-  ctx.fillStyle = OUT
-  heartPath(ctx, 7.5)
-  ctx.fill()
-  ctx.fillStyle = col
-  heartPath(ctx, 6)
-  ctx.fill()
-  ctx.restore()
-}
-
-function heartPath(ctx, r) {
-  ctx.beginPath()
-  ctx.moveTo(0, r * 0.9)
-  ctx.bezierCurveTo(-r * 1.4, -r * 0.1, -r * 0.6, -r * 1.1, 0, -r * 0.4)
-  ctx.bezierCurveTo(r * 0.6, -r * 1.1, r * 1.4, -r * 0.1, 0, r * 0.9)
-  ctx.closePath()
 }

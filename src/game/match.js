@@ -20,23 +20,49 @@ function rng(seed) {
 
 // Positions de départ : 4 intérieurs dans sa moitié, 3 extérieurs autour de la moitié adverse
 const FORMATION = [
-  [0.62, 0.5], [0.3, 0.2], [0.3, 0.8], [0.12, 0.5],
+  [0.62, 0.5],
+  [0.3, 0.2],
+  [0.3, 0.8],
+  [0.12, 0.5],
 ]
 
 export class Match {
-  constructor({ rival, seed = 1, onHud = () => {}, onEnd = () => {}, haptics = true, auto = false }) {
+  constructor({
+    rival,
+    seed = 1,
+    onHud = () => {},
+    onEnd = () => {},
+    haptics = true,
+    reducedMotion = false,
+    auto = false,
+  }) {
     this.rand = rng(seed)
     this.rival = rival
     this.level = rival.level
     this.onHud = onHud
     this.onEnd = onEnd
+    this.reducedMotion = reducedMotion
     this.haptics = haptics
     this.auto = auto // vrai : l'équipe du joueur est aussi pilotée par l'IA (tests, démo)
     this.teams = [PLAYER_TEAM, rival]
     this.players = []
     for (let t = 0; t < 2; t++) for (let i = 0; i < 7; i++) this.players.push(this.makePlayer(t, i))
-    this.ball = { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, g: 0, state: 'held', holder: null, age: 0, hit: new Set(), trail: [] }
+    this.ball = {
+      x: 0,
+      y: 0,
+      z: 0,
+      vx: 0,
+      vy: 0,
+      vz: 0,
+      g: 0,
+      state: 'held',
+      holder: null,
+      age: 0,
+      hit: new Set(),
+      trail: [],
+    }
     this.giveBall(this.players[0])
+    this.playFrames = 0
     this.frame = 0
     this.state = 'intro'
     this.introT = 150
@@ -60,9 +86,31 @@ export class Match {
     const pd = td.players[i]
     const role = i < 4 ? 'in' : 'out'
     const p = {
-      id: team * 7 + i, team, idx: i, role, name: pd.name, kit: rosterKit(td, i), stats: pd.stats, special: pd.special,
-      x: 0, y: 0, z: 0, vz: 0, kx: 0, hp: pd.stats.hp, maxHp: pd.stats.hp, state: 'idle', t: 0, facing: team === 0 ? 1 : -1,
-      ko: false, flash: 0, charge: 0, anim: this.randSafe() * 10, line: null, home: { x: 0, y: 0 }, decided: null,
+      id: team * 7 + i,
+      team,
+      idx: i,
+      role,
+      name: pd.name,
+      kit: rosterKit(td, i),
+      stats: pd.stats,
+      special: pd.special,
+      x: 0,
+      y: 0,
+      z: 0,
+      vz: 0,
+      kx: 0,
+      hp: pd.stats.hp,
+      maxHp: pd.stats.hp,
+      state: 'idle',
+      t: 0,
+      facing: team === 0 ? 1 : -1,
+      ko: false,
+      flash: 0,
+      charge: 0,
+      anim: this.randSafe() * 10,
+      line: null,
+      home: { x: 0, y: 0 },
+      decided: null,
     }
     if (role === 'in') {
       const [fx, fy] = FORMATION[i]
@@ -72,7 +120,10 @@ export class Match {
       p.line = ['back', 'top', 'bottom'][i - 4]
       const far = team === 0 ? C.COURT_W + 14 : -14
       const sideX = team === 0 ? C.MID + 110 : C.MID - 110
-      p.home = p.line === 'back' ? { x: far, y: C.DEPTH / 2 } : { x: sideX, y: p.line === 'top' ? -18 : C.DEPTH + 16 }
+      p.home =
+        p.line === 'back'
+          ? { x: far, y: C.DEPTH / 2 }
+          : { x: sideX, y: p.line === 'top' ? -18 : C.DEPTH + 16 }
       p.facing = team === 0 ? -1 : 1
     }
     p.x = p.home.x
@@ -112,7 +163,9 @@ export class Match {
     }
     const mine = this.alive(0)
     if (!mine.length) return null
-    return mine.reduce((a, p) => (Math.hypot(p.x - b.x, p.y - b.y) < Math.hypot(a.x - b.x, a.y - b.y) ? p : a))
+    return mine.reduce((a, p) =>
+      Math.hypot(p.x - b.x, p.y - b.y) < Math.hypot(a.x - b.x, a.y - b.y) ? p : a,
+    )
   }
 
   setView(w) {
@@ -129,9 +182,11 @@ export class Match {
     b.target = null
     b.vx = b.vy = b.vz = 0
     b.hit = new Set()
+    b.trail = []
     p.state = 'hold'
     p.t = 0
     p.charge = 0
+    p.readyCharge = 0
     p.decided = null
     this.updateHeld()
   }
@@ -170,6 +225,7 @@ export class Match {
   // --- Entrées : un seul doigt ------------------------------------------------------
 
   press() {
+    if (this.state !== 'play') return
     const inp = this.input
     if (inp.pressed) return
     inp.pressed = true
@@ -182,7 +238,8 @@ export class Match {
     if (h === c) {
       if (c.state === 'hold') {
         c.state = 'dash'
-        c.charge = 0
+        c.charge = c.readyCharge || 0
+        c.readyCharge = 0
       }
       return
     }
@@ -210,13 +267,32 @@ export class Match {
       this.startThrow(c, { sup: inZone, running: c.charge >= 4 })
       return
     }
-    if (inp.pendingJump && this.frame - inp.pressFrame < C.HOLD_TO_JUMP && inp.threatAtPress && c.z === 0 && c.state !== 'jump') {
+    if (
+      inp.pendingJump &&
+      this.frame - inp.pressFrame < C.HOLD_TO_JUMP &&
+      inp.threatAtPress &&
+      c.z === 0 &&
+      c.state !== 'jump'
+    ) {
       // rattrapage tenté trop tôt : le joueur reste exposé un instant
       c.state = 'whiff'
       c.t = C.WHIFF
       this.addText(c, 'TROP TÔT', '#fca5a5')
     }
     inp.pendingJump = false
+  }
+
+  // Cancellation (lost pointer, blur, pause) never fires a pitch.
+  cancelInput() {
+    this.input.pressed = false
+    this.input.pendingJump = false
+    this.input.threatAtPress = false
+    const h = this.holder
+    if (h && h.team === 0 && h.state === 'dash') {
+      h.state = 'hold'
+      h.charge = 0
+      h.glow = false
+    }
   }
 
   // glissement vers le haut pendant l'appui : passe
@@ -257,7 +333,7 @@ export class Match {
       this.stats.catches++
       if (perfect) {
         this.stats.perfects++
-        p.charge = C.SUPER_CHARGE - 6
+        p.readyCharge = C.SUPER_CHARGE - 6
         this.addText(p, 'PARFAIT !', '#fde047')
         sfx.perfect()
         this.vibrate(25)
@@ -285,6 +361,7 @@ export class Match {
 
   release_ball(p) {
     const b = this.ball
+    b.trail = []
     const o = p.throwOpts || {}
     const target = o.target && !o.target.ko ? o.target : this.pickTarget(p)
     const armed = this.armed[p.team]
@@ -340,7 +417,11 @@ export class Match {
     // passe vers un extérieur si on est intérieur, sinon vers un intérieur
     const pool = mates.filter((q) => (p.role === 'in' ? q.role === 'out' : q.role === 'in'))
     const list = pool.length ? pool : mates
-    const r = list.reduce((a, q) => (Math.abs(q.y - p.y) + Math.abs(q.x - p.x) * 0.3 < Math.abs(a.y - p.y) + Math.abs(a.x - p.x) * 0.3 ? q : a))
+    const r = list.reduce((a, q) =>
+      Math.abs(q.y - p.y) + Math.abs(q.x - p.x) * 0.3 < Math.abs(a.y - p.y) + Math.abs(a.x - p.x) * 0.3
+        ? q
+        : a,
+    )
     const b = this.ball
     const special = p.charge >= C.SUPER_CHARGE
     if (special) {
@@ -416,6 +497,7 @@ export class Match {
   // --- Boucle --------------------------------------------------------------------------
 
   update() {
+    if (this.state === 'paused') return
     this.frame++
     if (this.state === 'intro') {
       this.introT--
@@ -428,7 +510,17 @@ export class Match {
       this.emitHud()
       return
     }
-    if (this.state === 'paused') return
+    if (this.state === 'end') {
+      for (const p of this.players) {
+        p.anim += 1 / 60
+        if (p.ko) p.t++
+      }
+      this.updateFx()
+      if (--this.endT === 0) this.finish()
+      this.emitHud()
+      return
+    }
+    this.playFrames++
     if (this.hintT > 0) this.hintT--
     for (const a of this.armed) if (a && --a.t <= 0) this.armed[this.armed.indexOf(a)] = null
     this.updateInput()
@@ -501,7 +593,11 @@ export class Match {
       } else if (p.role === 'out') {
         // les extérieurs suivent la balle le long de leur ligne
         if (p.line === 'back') ty = Math.max(0, Math.min(C.DEPTH, b.y))
-        else tx = Math.max(p.team === 0 ? C.MID + 10 : 10, Math.min(p.team === 0 ? C.COURT_W - 10 : C.MID - 10, b.x))
+        else
+          tx = Math.max(
+            p.team === 0 ? C.MID + 10 : 10,
+            Math.min(p.team === 0 ? C.COURT_W - 10 : C.MID - 10, b.x),
+          )
       }
       this.moveTo(p, tx, ty, b.state === 'loose' && this.collector() === p ? C.RUN : C.WALK)
     }
@@ -540,13 +636,24 @@ export class Match {
     if (b.state !== 'loose') return null
     const inside = b.x > 0 && b.x < C.COURT_W && b.y > -4 && b.y < C.DEPTH + 4
     let pool
-    if (inside) pool = this.players.filter((p) => !p.ko && p.role === 'in' && (b.x < C.MID ? p.team === 0 : p.team === 1))
+    if (inside)
+      pool = this.players.filter(
+        (p) => !p.ko && p.role === 'in' && (b.x < C.MID ? p.team === 0 : p.team === 1),
+      )
     else pool = this.players.filter((p) => !p.ko && p.role === 'out')
     if (!pool.length) pool = this.players.filter((p) => !p.ko)
-    return pool.reduce((a, p) => (Math.hypot(p.x - b.x, p.y - b.y) < Math.hypot(a.x - b.x, a.y - b.y) ? p : a), pool[0])
+    return pool.reduce(
+      (a, p) => (Math.hypot(p.x - b.x, p.y - b.y) < Math.hypot(a.x - b.x, a.y - b.y) ? p : a),
+      pool[0],
+    )
   }
 
   humanHolder(p) {
+    if (p.state === 'hold' && this.input.pressed) {
+      p.state = 'dash'
+      p.charge = p.readyCharge || 0
+      p.readyCharge = 0
+    }
     if (p.state === 'dash') {
       const lo = p.role === 'in'
       if (lo) p.x += C.RUN * (0.8 + p.stats.speed * 0.025)
@@ -594,7 +701,13 @@ export class Match {
       const pPass = p.role === 'in' ? 0.14 : 0.3
       p.decided = {
         think: Math.round(10 + this.rand() * (36 - lvl * 3.5)),
-        plan: this.armed[p.team] ? 'steps' : r < pPass ? 'pass' : r < pPass + pSuper && p.role === 'in' ? 'super' : 'steps',
+        plan: this.armed[p.team]
+          ? 'steps'
+          : r < pPass
+            ? 'pass'
+            : r < pPass + pSuper && p.role === 'in'
+              ? 'super'
+              : 'steps',
         steps: C.AI_STEPS[Math.floor(this.rand() * C.AI_STEPS.length)],
         stepT: C.AI_STEP_FRAMES,
         jump: this.rand() < C.AI_JUMP_THROW,
@@ -644,7 +757,13 @@ export class Match {
       if (this.rand() < 0.1 + lvl * 0.075 + p.stats.jump * 0.01) this.jump(p)
       return
     }
-    const pc = Math.max(0.05, Math.min(0.88, 0.2 + p.stats.catching * 0.035 + lvl * 0.055 - (b.running ? 0.1 : 0) - (b.jumpShot ? 0.08 : 0)))
+    const pc = Math.max(
+      0.05,
+      Math.min(
+        0.88,
+        0.2 + p.stats.catching * 0.035 + lvl * 0.055 - (b.running ? 0.1 : 0) - (b.jumpShot ? 0.08 : 0),
+      ),
+    )
     const r = this.rand()
     if (r < pc) this.catchBall(p, false)
     else if (r < pc + 0.08 + p.stats.jump * 0.008) this.jump(p)
@@ -662,6 +781,10 @@ export class Match {
       return
     }
     b.age++
+    if (b.state === 'flying' && b.kind === 'shot') {
+      b.trail.push({ x: b.x, y: b.y, z: b.z })
+      if (b.trail.length > 8) b.trail.shift()
+    }
     if (b.state === 'flying' && b.kind === 'shot') this.moveShot(b)
     else {
       b.vz -= b.g
@@ -669,7 +792,18 @@ export class Match {
       b.y += b.vy
       b.z += b.vz
     }
-    if (b.sup && b.age % 2 === 0) this.parts.push({ x: b.x, y: b.y, z: b.z, vx: 0, vy: 0, vz: 0.2, life: 18, color: b.team === 0 ? '#67e8f9' : '#fb923c', size: 4 })
+    if (b.sup && b.age % 2 === 0)
+      this.parts.push({
+        x: b.x,
+        y: b.y,
+        z: b.z,
+        vx: 0,
+        vy: 0,
+        vz: 0.2,
+        life: 18,
+        color: b.team === 0 ? '#67e8f9' : '#fb923c',
+        size: 4,
+      })
     if (b.state === 'flying' && b.kind === 'pass') {
       const r = b.receiver
       if (r && !r.ko && Math.hypot(b.x - r.x, b.y - r.y) < 10 && b.z < 34) {
@@ -775,8 +909,8 @@ export class Match {
       const dy = t.y - b.by
       const d = Math.hypot(dx, dy)
       if (d > 20) {
-        b.dirx += ((dx / d) - b.dirx) * 0.04
-        b.diry += ((dy / d) - b.diry) * 0.04
+        b.dirx += (dx / d - b.dirx) * 0.04
+        b.diry += (dy / d - b.diry) * 0.04
         const n = Math.hypot(b.dirx, b.diry)
         b.dirx /= n
         b.diry /= n
@@ -799,6 +933,7 @@ export class Match {
       if (!this.alive(t).length && this.state === 'play') {
         this.state = 'end'
         this.winner = 1 - t
+        this.cancelInput()
         this.endT = 150
         if (this.winner === 0) sfx.win()
         else sfx.lose()
@@ -813,8 +948,11 @@ export class Match {
       ...this.stats,
       survivors: me.length,
       hpLeft: me.reduce((a, p) => a + p.hp, 0),
-      frames: this.frame,
-      score: this.winner === 0 ? 1000 + me.reduce((a, p) => a + p.hp, 0) * 20 + this.stats.perfects * 100 + this.stats.supers * 50 : this.stats.hits * 50,
+      frames: this.playFrames,
+      score:
+        this.winner === 0
+          ? 1000 + me.reduce((a, p) => a + p.hp, 0) * 20 + this.stats.perfects * 100 + this.stats.supers * 50
+          : this.stats.hits * 50,
     })
   }
 
@@ -822,7 +960,8 @@ export class Match {
 
   addText(p, text, color) {
     let z = p.z + 52
-    for (let k = 0; k < 5 && this.texts.some((o) => Math.abs(o.x - p.x) < 50 && Math.abs(o.z - z) < 12); k++) z += 12
+    for (let k = 0; k < 5 && this.texts.some((o) => Math.abs(o.x - p.x) < 50 && Math.abs(o.z - z) < 12); k++)
+      z += 12
     this.texts.push({ x: p.x, y: p.y, z, text, color, t: 55 })
   }
 
@@ -830,7 +969,17 @@ export class Match {
     for (let i = 0; i < n; i++) {
       const a = this.rand() * Math.PI * 2
       const s = 0.8 + this.rand() * 2.4
-      this.parts.push({ x, y, z, vx: Math.cos(a) * s, vy: Math.sin(a) * s * 0.4, vz: 1 + this.rand() * 2, life: 28, color, size: 2 + this.rand() * 2 })
+      this.parts.push({
+        x,
+        y,
+        z,
+        vx: Math.cos(a) * s,
+        vy: Math.sin(a) * s * 0.4,
+        vz: 1 + this.rand() * 2,
+        life: 28,
+        color,
+        size: 2 + this.rand() * 2,
+      })
     }
   }
 
@@ -868,7 +1017,10 @@ export class Match {
   }
 
   emitHud() {
-    const team = (t) => this.players.filter((p) => p.team === t && p.role === 'in').map((p) => ({ name: p.name, hp: p.hp, max: p.maxHp, ko: p.ko }))
+    const team = (t) =>
+      this.players
+        .filter((p) => p.team === t && p.role === 'in')
+        .map((p) => ({ name: p.name, hp: p.hp, max: p.maxHp, ko: p.ko }))
     const c = this.controlled
     const h = this.holder
     const hud = {
@@ -879,6 +1031,23 @@ export class Match {
       holding: !!h && h.team === 0,
       charge: h && h.team === 0 ? Math.min(1, h.charge / C.SUPER_CHARGE) : 0,
       armed: !!this.armed[0],
+      superReady:
+        !!h && h.team === 0 && h.charge >= C.SUPER_CHARGE && h.charge <= C.SUPER_CHARGE + C.SUPER_ZONE,
+      chargeLate: !!h && h.team === 0 && h.charge > C.SUPER_CHARGE + C.SUPER_ZONE,
+      seconds: Math.floor(this.playFrames / 60),
+      threat: c
+        ? (() => {
+            const f = this.framesToContact(c)
+            return f === null ? null : Math.ceil(f)
+          })()
+        : null,
+      minimap:
+        this.frame % 6 === 0 || !this.mapHud
+          ? (this.mapHud = this.players
+              .filter((p) => !p.ko)
+              .map((p) => ({ id: p.id, team: p.team, x: Math.round(p.x), y: Math.round(p.y) })))
+          : this.mapHud,
+      ballMap: { x: Math.round(this.ball.x / 4) * 4, y: Math.round(this.ball.y / 4) * 4 },
       ctrl: c ? c.name : '',
       hint: this.hintT > 0 ? this.hint : '',
     }
@@ -891,5 +1060,14 @@ export class Match {
 }
 
 export function specialName(id) {
-  return { comete: 'COMÈTE', fusee: 'FUSÉE', serpentin: 'SERPENTIN', meteore: 'MÉTÉORE', vague: 'VAGUE', eclair: 'ÉCLAIR' }[id] || 'SUPER'
+  return (
+    {
+      comete: 'COMÈTE',
+      fusee: 'FUSÉE',
+      serpentin: 'SERPENTIN',
+      meteore: 'MÉTÉORE',
+      vague: 'VAGUE',
+      eclair: 'ÉCLAIR',
+    }[id] || 'SUPER'
+  )
 }

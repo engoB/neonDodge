@@ -1,11 +1,11 @@
 {
-  "name": "Neon Dodge",
-  "short_name": "Neon Dodge",
-  "description": "Balle au prisonnier à un doigt : deux équipes, un terrain, un tournoi.",
+  "name": "Neon Slugger",
+  "short_name": "Neon Slugger",
+  "description": "Le dodgeball rencontre le baseball. Un seul doigt, toute une coupe.",
   "start_url": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#120a2e",
-  "theme_color": "#120a2e",
+  "background_color": "#08141f",
+  "theme_color": "#08141f",
   "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
 }
