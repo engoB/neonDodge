@@ -70,6 +70,7 @@ test.beforeEach(async ({ page }) => {
 
 test('accueil : écran titre épuré puis menu console', async ({ page }, info) => {
   await expect(page.getByRole('button', { name: /START GAME/ })).toBeVisible()
+  await expect(page.getByText('TOUCH TO START')).toHaveCount(0)
   await expect(page.getByRole('heading', { name: /NEON.*SLUGGER/ })).toBeVisible()
   const visual = await page.locator('.hero-art').evaluate(async (el) => {
     const source = getComputedStyle(el).backgroundImage.match(/url\(["']?(.*?)["']?\)/)?.[1]
@@ -81,7 +82,11 @@ test('accueil : écran titre épuré puis menu console', async ({ page }, info) 
   expect(visual).toEqual({ width: 1536, height: 1024 })
   const box = await page.locator('#hero-title').boundingBox()
   expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize().width + 1)
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth && document.documentElement.scrollHeight <= innerHeight,
+    ),
+  ).toBe(true)
   await screenshot(page, info, 'accueil')
   await page.getByRole('button', { name: /START GAME/ }).click()
   await expect(page.locator('.console-menu-list button')).toHaveCount(4)
@@ -92,9 +97,18 @@ test('arcade : sélection aux flèches et lancement plein écran', async ({ page
   await page.getByRole('button', { name: /START GAME/ }).click()
   await page.getByRole('button', { name: /ARCADE/ }).click()
   await expect(page.getByText('RED BATS', { exact: true })).toBeVisible()
+  await expect(page.getByText('FOX YARD', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: /ADVERSAIRE, valeur suivante/ }).click()
   await expect(page.getByText('GOLD OWLS', { exact: true })).toBeVisible()
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  await expect(page.getByText('FOX YARD', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Terrain suivant' }).click()
+  await expect(page.getByText('SKYLINE PARK', { exact: true })).toBeVisible()
+  await expect(page.locator('.stadium-card canvas')).toBeVisible()
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth && document.documentElement.scrollHeight <= innerHeight,
+    ),
+  ).toBe(true)
   await screenshot(page, info, 'arcade-select')
   await page.getByRole('button', { name: /PLAY BALL/ }).click()
   await expect(action(page)).toBeEnabled()
@@ -124,7 +138,7 @@ test('coupe : premier match accessible, suivants verrouillés et commandes visib
   await expect(page.getByRole('heading', { name: /CHAPITRE 01/ })).toBeVisible()
   await page.getByRole('button', { name: /START CHAPTER/ }).click()
   await expect(page.locator('.story-dialog')).toBeVisible()
-  await expect(page.locator('.story-versus canvas')).toHaveCount(2)
+  await expect(page.locator('.story-versus .dialogue-portrait')).toHaveCount(2)
   await expect(page.locator('.speech-box.riko')).toBeVisible()
   await screenshot(page, info, 'histoire-gauche')
   await page.getByRole('button', { name: /NEXT/ }).click()
@@ -177,16 +191,14 @@ test('commandes directes : le Jump Shot se déclenche en une touche', async ({ p
   await expect(page.locator('.arena-status')).toContainText('DÉFENSE', { timeout: 2500 })
 })
 
-test('rotation : un match en cours conserve les commandes et son état', async ({ page }, info) => {
-  await start(page)
+test('paysage : le jeu demande explicitement le retour au portrait', async ({ page }, info) => {
   const original = page.viewportSize()
   await page.setViewportSize({ width: original.height, height: original.width })
-  await expectMatchFits(page)
-  await expect(page.locator('.arena-status')).toContainText('ATTAQUE')
-  await screenshot(page, info, 'rotation')
-  await pause(page).click()
-  await page.getByRole('button', { name: /Retour au club/ }).click()
-  await expect(page.getByRole('heading', { name: 'SELECT MODE' })).toBeVisible()
+  await expect(page.getByRole('complementary', { name: 'Orientation portrait requise' })).toBeVisible()
+  await expect(page.getByText('TOURNEZ L’ÉCRAN')).toBeVisible()
+  await screenshot(page, info, 'portrait-required')
+  await page.setViewportSize(original)
+  await expect(page.getByRole('button', { name: /START GAME/ })).toBeVisible()
 })
 
 test('training : équipe sélectionnée, vies restaurées et retour menu', async ({ page }, info) => {

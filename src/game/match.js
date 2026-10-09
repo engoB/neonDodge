@@ -1174,13 +1174,16 @@ export class Match {
     const b = this.ball
     let focus = b.x
     let wantedZoom = 1.2
+    const portraitView = w <= 420
+    const followsHolder = b.state === 'held' && b.holder
     if (this.impactFocus) {
       focus = this.impactFocus.x
       wantedZoom = 1.78
-    } else if (b.state === 'held' && b.holder) {
-      const target = this.pickTarget(b.holder)
-      focus = target ? b.holder.x * 0.58 + target.x * 0.42 : b.holder.x
-      wantedZoom = 1.3
+    } else if (followsHolder) {
+      // In portrait the thrower is the anchor. Blending toward the target used
+      // to push edge players outside the narrow viewport.
+      focus = b.holder.x
+      wantedZoom = portraitView ? 1.24 : 1.3
     } else if (b.state === 'flying') {
       focus = b.target && !b.target.ko ? b.x * 0.72 + b.target.x * 0.28 : b.x
       const remaining = b.target ? Math.abs(b.target.x - b.x) : 220
@@ -1192,16 +1195,18 @@ export class Match {
       wantedZoom = this.state === 'intro' ? 1.14 : 1.36
     }
     wantedZoom = Math.min(
-      w < 420 ? (this.impactFocus ? 1.62 : 1.42) : this.impactFocus ? 1.82 : 1.52,
+      portraitView ? (this.impactFocus ? 1.58 : 1.34) : this.impactFocus ? 1.82 : 1.52,
       wantedZoom,
     )
     this.camZoom += (wantedZoom - this.camZoom) * 0.055
     if (Math.abs(wantedZoom - this.camZoom) < 0.002) this.camZoom = wantedZoom
     const half = w / (2 * this.camZoom)
-    const lo = -30 + half
-    const hi = C.COURT_W + 30 - half
+    // Let the camera look beyond the chalk line on a narrow screen. The scene
+    // renderer fills that space, while the active athlete stays fully visible.
+    const lo = followsHolder && portraitView ? 38 : -30 + half
+    const hi = followsHolder && portraitView ? C.COURT_W - 38 : C.COURT_W + 30 - half
     const goal = lo > hi ? C.MID : Math.max(lo, Math.min(hi, focus))
-    this.camX += (goal - this.camX) * 0.085
+    this.camX += (goal - this.camX) * (followsHolder && portraitView ? 0.18 : 0.085)
     if (Math.abs(goal - this.camX) < 0.08) this.camX = goal
   }
 

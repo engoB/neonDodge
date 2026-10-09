@@ -16,7 +16,6 @@ export default defineConfig({
     actionTimeout: 10000,
   },
   projects: [
-    { name: 'desktop-chromium', use: { browserName: 'chromium', viewport: { width: 1440, height: 900 } } },
     {
       name: 'small-portrait-chromium',
       use: { browserName: 'chromium', viewport: { width: 320, height: 568 }, hasTouch: true, isMobile: true },
@@ -26,16 +25,8 @@ export default defineConfig({
       use: { browserName: 'chromium', viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true },
     },
     {
-      name: 'landscape-chromium',
-      use: { browserName: 'chromium', viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true },
-    },
-    {
       name: 'portrait-webkit',
       use: { browserName: 'webkit', viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true },
-    },
-    {
-      name: 'landscape-webkit',
-      use: { browserName: 'webkit', viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true },
     },
   ],
   webServer: {
