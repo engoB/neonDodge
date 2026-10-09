@@ -173,6 +173,21 @@ test('la caméra cadre l’action et un tir signature déclenche son annonce', (
   assert.equal(m.superBanner.name, 'COMÈTE FATALE')
 })
 
+test('en portrait la caméra reste centrée sur le porteur, même au bord du terrain', () => {
+  const m = new Match({ rival: RIVALS[0] })
+  m.state = 'play'
+  m.setView(360)
+  const holder = m.holder
+  holder.x = 18
+  m.ball.x = holder.x
+  for (let i = 0; i < 90; i++) m.updateCamera()
+  assert.ok(Math.abs(m.camX - holder.x) <= 21, `porteur gauche hors centre : ${m.camX}`)
+  holder.x = C.COURT_W - 18
+  m.ball.x = holder.x
+  for (let i = 0; i < 90; i++) m.updateCamera()
+  assert.ok(Math.abs(m.camX - holder.x) <= 21, `porteur droit hors centre : ${m.camX}`)
+})
+
 test('fin du match : plus de dégâts ni de temps de jeu, un seul résultat', () => {
   let ends = 0
   const m = new Match({ rival: RIVALS[0], onEnd: () => ends++ })

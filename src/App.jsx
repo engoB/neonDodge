@@ -5,6 +5,44 @@ import { load, save, recordMatch } from './game/storage.js'
 import { setSound, setMusic, unlockAudio, sfx } from './game/audio.js'
 import { drawAthlete, preloadSprites } from './game/sprites.js'
 import { SCENES } from './game/scenery.js'
+import dialogueCaptains from '../assets/dialogue-captains-v2.webp'
+
+const DIALOGUE_PORTRAITS = {
+  neons: 0,
+  chaussettes: 1,
+  corbeaux: 2,
+  mouettes: 3,
+  cactus: 4,
+  requins: 5,
+  eclairs: 6,
+}
+
+function DialoguePortrait({ team, side, speaking }) {
+  const index = DIALOGUE_PORTRAITS[team.id] ?? 0
+  const column = index % 4
+  const row = Math.floor(index / 4)
+  return (
+    <div
+      className={`dialogue-portrait ${side} ${speaking ? 'speaking' : ''}`}
+      style={{
+        '--portrait-sheet': `url(${dialogueCaptains})`,
+        '--portrait-x': `${column * (100 / 3)}%`,
+        '--portrait-y': `${row * 100}%`,
+      }}
+      aria-hidden="true"
+    />
+  )
+}
+
+function PortraitOnlyGate() {
+  return (
+    <aside className="portrait-required" aria-label="Orientation portrait requise">
+      <span>↻</span>
+      <strong>TOURNEZ L’ÉCRAN</strong>
+      <small>NEON SLUGGER SE JOUE EN PORTRAIT</small>
+    </aside>
+  )
+}
 
 export function Portrait({ kit, pose = 'idle', className = '', facing = 1, reducedMotion = false }) {
   const ref = useRef(null)
@@ -90,7 +128,6 @@ function Title({ onStart, trophies }) {
           </button>
           {trophies > 0 && <p className="title-trophies">✦ CHAMPION × {trophies}</p>}
         </div>
-        <div className="title-insert">TOUCH TO START</div>
       </section>
     </main>
   )
@@ -164,7 +201,6 @@ function ModeSetup({ training, onPlay, onBack, reducedMotion }) {
   const cycle = (delta) => {
     const next = (selected + delta + RIVALS.length) % RIVALS.length
     setSelected(next)
-    setVenue(next)
   }
   return (
     <main className="mode-setup" style={{ '--team-accent': rival.accent }}>
@@ -175,7 +211,7 @@ function ModeSetup({ training, onPlay, onBack, reducedMotion }) {
       <section>
         <span className="eyebrow">{training ? 'TRAINING ROOM' : 'ARCADE BATTLE'}</span>
         <h1>{training ? 'ENTRAÎNEMENT' : 'MATCH ARCADE'}</h1>
-        <div className="versus-select">
+        <div className="versus-select compact-roster">
           <Portrait kit={rosterKit(ownTeam, 0)} pose="hold" reducedMotion={reducedMotion} />
           <b>VS</b>
           <Portrait kit={rosterKit(rival, 0)} pose="taunt" facing={-1} reducedMotion={reducedMotion} />
@@ -192,12 +228,23 @@ function ModeSetup({ training, onPlay, onBack, reducedMotion }) {
           onPrev={() => cycle(-1)}
           onNext={() => cycle(1)}
         />
-        <ValueStepper
-          label="STADE"
-          value={RIVALS[venue].stadium.toUpperCase()}
-          onPrev={() => setVenue((venue - 1 + RIVALS.length) % RIVALS.length)}
-          onNext={() => setVenue((venue + 1) % RIVALS.length)}
-        />
+        <div className="stadium-picker" aria-label="Terrain sélectionné">
+          <span>TERRAIN</span>
+          <div className="stadium-card">
+            <SceneBackground arena={RIVALS[venue].arena} className="stadium-thumb" />
+            <button
+              onClick={() => setVenue((venue - 1 + RIVALS.length) % RIVALS.length)}
+              aria-label="Terrain précédent"
+            >
+              ◀
+            </button>
+            <strong>{RIVALS[venue].stadium.toUpperCase()}</strong>
+            <button onClick={() => setVenue((venue + 1) % RIVALS.length)} aria-label="Terrain suivant">
+              ▶
+            </button>
+            <small>{RIVALS[venue].name.toUpperCase()} · {String(venue + 1).padStart(2, '0')}/06</small>
+          </div>
+        </div>
         <button className="start-game compact" onClick={() => onPlay(selected, ownTeam, RIVALS[venue].arena)}>
           {training ? 'START TRAINING' : 'PLAY BALL'} <span>▶</span>
         </button>
@@ -325,13 +372,13 @@ function StoryDialog({ rival, index, reducedMotion, onPlay, onClose }) {
         <h2 id="story-title">FACE À FACE</h2>
         <div className="story-versus">
           <div className={current.side === 'riko' ? 'speaking' : ''}>
-            <Portrait kit={rosterKit(PLAYER_TEAM, 0)} pose="hold" reducedMotion={reducedMotion} />
+            <DialoguePortrait team={PLAYER_TEAM} side="left" speaking={current.side === 'riko'} />
             <b>RIKO</b>
             <small>NEON FOXES</small>
           </div>
           <span>VS</span>
           <div className={current.side === 'rival' ? 'speaking' : ''}>
-            <Portrait kit={rosterKit(rival, 0)} pose="taunt" facing={-1} reducedMotion={reducedMotion} />
+            <DialoguePortrait team={rival} side="right" speaking={current.side === 'rival'} />
             <b>{rival.players[0].name.toUpperCase()}</b>
             <small>{rival.name.toUpperCase()}</small>
           </div>
@@ -528,6 +575,7 @@ export default function App() {
   if (screen === 'match')
     return (
       <>
+        <PortraitOnlyGate />
         <MatchScreen
           key={runId}
           rival={{ ...RIVALS[idx], arena: matchArena }}
@@ -559,6 +607,7 @@ export default function App() {
     )
   return (
     <>
+      <PortraitOnlyGate />
       {screen === 'title' && <Title onStart={() => go('menu')} trophies={progress.trophies} />}{' '}
       {screen === 'menu' && (
         <ConsoleMenu

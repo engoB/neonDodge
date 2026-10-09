@@ -3005,3 +3005,430 @@ canvas.story-background {
   font: 900 13px var(--font-display);
   letter-spacing: 0.12em;
 }
+
+/* Portrait arcade v5 ----------------------------------------------------------
+   The game is a portrait cabinet: every screen fits one viewport, without scroll. */
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+body {
+  background: #020910;
+}
+.title-screen,
+.title-stage,
+.console-menu-screen,
+.mode-setup,
+.story-select,
+.game-surface {
+  width: min(100vw, 480px);
+  height: 100svh;
+  min-height: 0;
+  margin-inline: auto;
+  overflow: hidden;
+}
+.portrait-required {
+  display: none;
+}
+
+/* One clear start action; the illustration remains visible on short phones. */
+.title-stage {
+  position: relative;
+  padding: 0;
+}
+.title-stage .hero-art {
+  background-position: 53% center;
+}
+.title-lockup-minimal {
+  position: absolute;
+  z-index: 3;
+  inset: auto 16px max(24px, calc(env(safe-area-inset-bottom) + 18px));
+  width: auto;
+  transform: none;
+  text-align: center;
+}
+.title-lockup-minimal h1 {
+  margin: 0 0 8px;
+  font-size: clamp(50px, 17vw, 76px);
+  line-height: 0.84;
+}
+.title-lockup-minimal > p:not(.title-trophies) {
+  margin-bottom: 14px;
+  font-size: clamp(10px, 3vw, 13px);
+}
+.title-lockup-minimal .start-game {
+  width: min(100%, 340px);
+  min-width: 0;
+  min-height: 56px;
+  font-size: clamp(20px, 6vw, 27px);
+}
+
+/* Arcade menu: large labels and console selection arrows. */
+.console-menu-screen,
+.mode-setup,
+.story-select {
+  padding: max(50px, calc(env(safe-area-inset-top) + 34px)) 13px
+    max(12px, env(safe-area-inset-bottom));
+}
+.console-menu-panel,
+.mode-setup > section,
+.story-select > section {
+  width: 100%;
+  max-width: 440px;
+}
+.console-menu-panel h1,
+.mode-setup h1,
+.story-select h1 {
+  margin: 4px 0 12px;
+  font-size: clamp(32px, 11vw, 48px);
+}
+.console-menu-list {
+  gap: 7px;
+}
+.console-menu-list button {
+  min-height: clamp(58px, 12.2svh, 78px);
+  grid-template-columns: 26px 1fr 26px;
+  padding: 7px 10px;
+  border-width: 3px;
+  box-shadow: 4px 4px 0 #020910;
+}
+.console-menu-list b {
+  font-size: clamp(22px, 7vw, 31px);
+}
+.console-menu-list small {
+  font-size: clamp(8px, 2.6vw, 10px);
+}
+.console-back {
+  top: max(9px, env(safe-area-inset-top));
+  left: 10px;
+  min-height: 36px;
+}
+
+/* Match setup: opponent and terrain are independent; the field is a real preview. */
+.mode-setup {
+  place-items: start center;
+}
+.mode-setup > section {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+}
+.mode-setup .eyebrow {
+  flex: none;
+}
+.mode-setup h1 {
+  flex: none;
+}
+.versus-select.compact-roster {
+  flex: 1 1 104px;
+  min-height: 78px;
+  max-height: 124px;
+  margin: -6px 0 4px;
+}
+.value-stepper {
+  flex: none;
+  min-height: 45px;
+  margin: 3px 0;
+  padding: 3px 6px;
+  grid-template-columns: 82px 1fr;
+  gap: 4px;
+  border-width: 2px;
+}
+.value-stepper > span {
+  font-size: 9px;
+}
+.value-stepper > div {
+  grid-template-columns: 36px 1fr 36px;
+}
+.value-stepper button {
+  height: 34px;
+}
+.value-stepper strong {
+  font-size: clamp(13px, 4.2vw, 18px);
+}
+.stadium-picker {
+  flex: 0 0 auto;
+  margin-top: 4px;
+  text-align: left;
+}
+.stadium-picker > span {
+  display: block;
+  margin: 0 0 4px 3px;
+  color: #f9d57c;
+  font: 900 9px var(--font-display);
+  letter-spacing: 0.16em;
+}
+.stadium-card {
+  position: relative;
+  display: grid;
+  height: clamp(82px, 15svh, 116px);
+  grid-template-columns: 42px 1fr 42px;
+  grid-template-rows: 1fr 20px;
+  align-items: center;
+  overflow: hidden;
+  border: 3px solid #f5f0d9;
+  background: #07131e;
+  box-shadow: 4px 4px 0 #020910;
+}
+.stadium-card:after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #06131dd9, #06131d52, #06131dd9);
+  pointer-events: none;
+}
+.stadium-thumb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+}
+.stadium-card button,
+.stadium-card strong,
+.stadium-card small {
+  position: relative;
+  z-index: 2;
+}
+.stadium-card button {
+  align-self: stretch;
+  border: 0;
+  background: #07131dbf;
+  color: #f9d57c;
+  font-size: 21px;
+}
+.stadium-card strong {
+  text-align: center;
+  font: 900 clamp(17px, 5.4vw, 24px) var(--font-display);
+  text-shadow: 3px 3px #000;
+}
+.stadium-card small {
+  grid-column: 1 / -1;
+  align-self: stretch;
+  padding-top: 4px;
+  background: #06131de8;
+  color: #cbd9dc;
+  text-align: center;
+  font: 8px monospace;
+  letter-spacing: 0.12em;
+}
+.mode-setup .start-game {
+  flex: none;
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  margin-top: 8px;
+  font-size: clamp(17px, 5.5vw, 24px);
+}
+
+/* Story: bespoke large busts, like classic handheld sports-RPG dialogue scenes. */
+.story-card {
+  padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+}
+.story-card h2 {
+  margin: 2px 0 0;
+  font-size: clamp(31px, 10vw, 46px);
+}
+.story-versus {
+  flex: 1 1 auto;
+  min-height: 150px;
+  grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1fr);
+  margin: -3px -7px 0;
+  overflow: hidden;
+}
+.story-versus > div {
+  align-self: stretch;
+  align-content: end;
+  min-width: 0;
+}
+.dialogue-portrait {
+  width: 100%;
+  height: clamp(150px, 37svh, 330px);
+  background-image: var(--portrait-sheet);
+  background-repeat: no-repeat;
+  background-size: 400% 200%;
+  background-position: var(--portrait-x) var(--portrait-y);
+  image-rendering: pixelated;
+  transform-origin: center bottom;
+}
+.dialogue-portrait.right {
+  transform: scaleX(-1);
+}
+.story-versus > div:not(.speaking) .dialogue-portrait {
+  filter: saturate(0.55) brightness(0.65);
+}
+.story-versus b {
+  margin-top: -8px;
+  font-size: clamp(17px, 5.8vw, 25px);
+  text-shadow: 2px 2px #000;
+}
+.story-versus small {
+  font-size: 7px;
+}
+.story-versus > span {
+  font-size: 23px;
+}
+.speech-box,
+.speech-box.riko,
+.speech-box.rival {
+  flex: none;
+  align-self: stretch;
+  width: 100%;
+  min-height: 105px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 3px solid #07131e;
+  border-left-width: 9px;
+}
+.speech-box > span {
+  font-size: 12px;
+}
+.speech-box p {
+  margin-top: 6px;
+  font-size: clamp(14px, 4.3vw, 19px);
+  line-height: 1.28;
+}
+.story-dots {
+  flex: none;
+  margin: 7px 0;
+}
+.story-next {
+  flex: none;
+  width: 100%;
+  min-height: 46px;
+}
+
+/* Portrait fight HUD: fixed bands reserve space and cannot cover the court. */
+.game-surface {
+  position: relative;
+  inset: auto;
+}
+.match-hud {
+  padding: max(5px, env(safe-area-inset-top)) 7px 5px;
+}
+.scoreboard {
+  min-width: 0;
+  padding: 6px;
+  gap: 5px;
+}
+.score-name {
+  font-size: clamp(9px, 3vw, 12px);
+  letter-spacing: 0;
+}
+.score-name b {
+  font-size: 15px;
+}
+.score-middle b {
+  font-size: 16px;
+}
+.arcade-score {
+  font-size: 9px;
+}
+.match-hud .icon-button {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+}
+.match-deck {
+  gap: 5px;
+  padding: 6px 7px max(7px, env(safe-area-inset-bottom));
+}
+.action-pad,
+.pass-button,
+.jump-button {
+  min-height: 50px;
+  min-width: 0;
+}
+.action-pad {
+  flex: 1 1 auto;
+  padding-inline: 6px;
+}
+.action-pad strong,
+.pass-button,
+.jump-button {
+  font-size: clamp(12px, 4vw, 17px);
+}
+.pass-button {
+  flex: 0 0 60px;
+}
+.jump-button {
+  flex: 0 0 92px;
+}
+.arena-status {
+  width: min(180px, 54vw);
+}
+
+@media (max-height: 640px) and (orientation: portrait) {
+  .console-menu-screen,
+  .mode-setup,
+  .story-select {
+    padding-top: max(44px, calc(env(safe-area-inset-top) + 32px));
+  }
+  .console-menu-panel h1,
+  .mode-setup h1,
+  .story-select h1 {
+    font-size: 32px;
+    margin-bottom: 7px;
+  }
+  .versus-select.compact-roster {
+    max-height: 92px;
+  }
+  .value-stepper {
+    min-height: 41px;
+  }
+  .stadium-card {
+    height: 78px;
+  }
+  .story-card h2 {
+    font-size: 29px;
+  }
+  .dialogue-portrait {
+    height: 150px;
+  }
+  .speech-box,
+  .speech-box.riko,
+  .speech-box.rival {
+    min-height: 96px;
+    padding-block: 9px;
+  }
+  .story-next {
+    min-height: 42px;
+  }
+}
+
+@media (orientation: landscape) {
+  .portrait-required {
+    position: fixed;
+    z-index: 10000;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 24px;
+    background: radial-gradient(circle at center, #153542, #020910 70%);
+    color: #f5f0d9;
+    text-align: center;
+  }
+  .portrait-required span {
+    color: #f9d57c;
+    font: 64px var(--font-display);
+  }
+  .portrait-required strong {
+    font: 900 clamp(28px, 7vw, 54px) var(--font-display);
+    letter-spacing: 0.06em;
+  }
+  .portrait-required small {
+    color: #5de7cd;
+    font: 900 11px monospace;
+    letter-spacing: 0.14em;
+  }
+}
