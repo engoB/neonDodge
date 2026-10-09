@@ -152,6 +152,7 @@ test('coupe : premier match accessible, suivants verrouillés et commandes visib
   await page.getByRole('button', { name: /MATCH !/ }).click()
   await expect(page.locator('.story-dialog')).toBeVisible()
   await expect(page.locator('.story-versus .dialogue-portrait')).toHaveCount(2)
+  await expect(page.locator('.story-dialog').getByRole('button', { name: 'RETOUR' })).toBeVisible()
   await expect(page.locator('.speech-box.riko')).toBeVisible()
   await screenshot(page, info, 'histoire-gauche')
   await page.getByRole('button', { name: /SUIVANT/ }).click()
