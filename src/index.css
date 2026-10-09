@@ -3664,6 +3664,8 @@ canvas,
   margin: 0;
 }
 .story-actions {
+  position: relative;
+  z-index: 2;
   display: grid;
   grid-template-columns: minmax(92px, 0.7fr) 1.3fr;
   gap: 9px;

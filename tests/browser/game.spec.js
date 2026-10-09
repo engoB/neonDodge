@@ -207,7 +207,7 @@ test('commandes directes : le tir sauté se déclenche en une touche', async ({ 
   await expect(jump).toBeDisabled({ timeout: 2500 })
 })
 
-test('fin : le terrain reste visible avant la fiche de résultat', async ({ page }) => {
+test('fin : le terrain reste visible avant la fiche de résultat', async ({ page }, info) => {
   await page.goto('/?debug')
   await start(page)
   await page.evaluate(() => {
@@ -221,6 +221,7 @@ test('fin : le terrain reste visible avant la fiche de résultat', async ({ page
   await page.getByRole('button', { name: 'CONTINUER' }).click()
   await expect(page.locator('.result-dialog')).toBeVisible()
   await expect(page.locator('.result-versus img')).toHaveCount(2)
+  await screenshot(page, info, 'resultat')
 })
 
 test('paysage : le jeu demande explicitement le retour au portrait', async ({ page }, info) => {
