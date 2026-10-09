@@ -325,7 +325,8 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
     const n = Math.ceil(m.introT / 40)
     banner(ctx, cxs, cys, n > 3 ? 'PLAY BALL !' : n > 0 ? String(n) : 'GO !', n > 3 ? 28 : 46)
   }
-  if (m.state === 'end') banner(ctx, cxs, cys, m.winner === 0 ? 'VICTOIRE !' : 'DÉFAITE…', 40)
+  if (m.state === 'end' && m.endT < 120)
+    banner(ctx, cxs, viewH - 18, m.winner === 0 ? 'VICTOIRE !' : 'DÉFAITE…', 24)
   if (m.superBanner) specialBanner(ctx, m.superBanner, m.viewW, viewH)
 }
 
@@ -438,20 +439,20 @@ function specialBanner(ctx, callout, width, height) {
   ctx.globalAlpha = alpha
   ctx.translate((1 - enter) * (callout.team === 0 ? -cardW : cardW), 0)
   ctx.fillStyle = '#060d18df'
-  ctx.fillRect(x, y, cardW, 54)
+  ctx.fillRect(x, y, cardW, 38)
   ctx.fillStyle = accent
   ctx.fillRect(x, y, cardW, 3)
-  ctx.fillRect(x, y + 51, cardW, 3)
+  ctx.fillRect(x, y + 35, cardW, 3)
   ctx.textAlign = 'center'
   ctx.font = '900 7px monospace'
   ctx.fillStyle = '#f5f0d9'
-  ctx.fillText(callout.kicker, width / 2, y + 15)
-  const size = Math.max(21, Math.min(31, cardW / 13))
+  ctx.fillText(callout.kicker, width / 2, y + 11)
+  const size = Math.max(16, Math.min(23, cardW / 18))
   ctx.font = `900 italic ${size}px Impact, sans-serif`
   ctx.lineWidth = Math.max(3, size / 8)
   ctx.strokeStyle = '#111827'
-  ctx.strokeText(callout.name, width / 2, y + 43)
+  ctx.strokeText(callout.name, width / 2, y + 30)
   ctx.fillStyle = accent
-  ctx.fillText(callout.name, width / 2, y + 43)
+  ctx.fillText(callout.name, width / 2, y + 30)
   ctx.restore()
 }

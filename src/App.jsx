@@ -159,11 +159,16 @@ function ModeSetup({ training, onPlay, onBack, reducedMotion }) {
   const [club, setClub] = useState(0)
   const ownTeam = clubs[club]
   const [selected, setSelected] = useState(0)
+  const [venue, setVenue] = useState(0)
   const rival = RIVALS[selected]
-  const cycle = (delta) => setSelected((selected + delta + RIVALS.length) % RIVALS.length)
+  const cycle = (delta) => {
+    const next = (selected + delta + RIVALS.length) % RIVALS.length
+    setSelected(next)
+    setVenue(next)
+  }
   return (
     <main className="mode-setup" style={{ '--team-accent': rival.accent }}>
-      <SceneBackground arena={rival.arena} className={`mode-backdrop arena-${rival.arena}`} />
+      <SceneBackground arena={RIVALS[venue].arena} className={`mode-backdrop arena-${RIVALS[venue].arena}`} />
       <button className="console-back" onClick={onBack}>
         ← MENU
       </button>
@@ -189,11 +194,11 @@ function ModeSetup({ training, onPlay, onBack, reducedMotion }) {
         />
         <ValueStepper
           label="STADE"
-          value={rival.stadium.toUpperCase()}
-          onPrev={() => cycle(-1)}
-          onNext={() => cycle(1)}
+          value={RIVALS[venue].stadium.toUpperCase()}
+          onPrev={() => setVenue((venue - 1 + RIVALS.length) % RIVALS.length)}
+          onNext={() => setVenue((venue + 1) % RIVALS.length)}
         />
-        <button className="start-game compact" onClick={() => onPlay(selected, ownTeam)}>
+        <button className="start-game compact" onClick={() => onPlay(selected, ownTeam, RIVALS[venue].arena)}>
           {training ? 'START TRAINING' : 'PLAY BALL'} <span>▶</span>
         </button>
       </section>
@@ -488,20 +493,28 @@ export default function App() {
     [settingsOpen, setSettingsOpen] = useState(false),
     [briefing, setBriefing] = useState(null),
     [mode, setMode] = useState('story'),
-    [playerTeam, setPlayerTeam] = useState(PLAYER_TEAM)
+    [playerTeam, setPlayerTeam] = useState(PLAYER_TEAM),
+    [matchArena, setMatchArena] = useState(RIVALS[0].arena)
   useEffect(() => {
     save(progress)
     setSound(progress.settings.sound)
     setMusic(progress.settings.music)
     document.documentElement.dataset.motion = progress.settings.reducedMotion ? 'reduced' : 'full'
   }, [progress])
-  const play = (i, inTournament = true, nextMode = inTournament ? 'story' : 'arcade', club = PLAYER_TEAM) => {
+  const play = (
+    i,
+    inTournament = true,
+    nextMode = inTournament ? 'story' : 'arcade',
+    club = PLAYER_TEAM,
+    arena = RIVALS[i].arena,
+  ) => {
     unlockAudio()
     sfx.click()
     setIdx(i)
     setTournament(inTournament)
     setMode(nextMode)
     setPlayerTeam(club)
+    setMatchArena(arena)
     setResult(null)
     setRunId((n) => n + 1)
     setScreen('match')
@@ -517,7 +530,7 @@ export default function App() {
       <>
         <MatchScreen
           key={runId}
-          rival={RIVALS[idx]}
+          rival={{ ...RIVALS[idx], arena: matchArena }}
           settings={progress.settings}
           label={`${tournament ? `Neon Cup · match ${idx + 1}` : 'Match express'} · ${RIVALS[idx].name}`}
           training={mode === 'training'}
@@ -538,7 +551,7 @@ export default function App() {
               go('tournament')
               setBriefing(idx + 1)
             }}
-            onRetry={() => play(idx, tournament, mode, playerTeam)}
+            onRetry={() => play(idx, tournament, mode, playerTeam, matchArena)}
             onMenu={() => go(tournament ? 'tournament' : 'menu')}
           />
         )}
@@ -567,7 +580,7 @@ export default function App() {
       {screen === 'arcade' && (
         <ModeSetup
           onBack={() => go('menu')}
-          onPlay={(i, club) => play(i, false, 'arcade', club)}
+          onPlay={(i, club, arena) => play(i, false, 'arcade', club, arena)}
           reducedMotion={progress.settings.reducedMotion}
         />
       )}{' '}
@@ -575,7 +588,7 @@ export default function App() {
         <ModeSetup
           training
           onBack={() => go('menu')}
-          onPlay={(i, club) => play(i, false, 'training', club)}
+          onPlay={(i, club, arena) => play(i, false, 'training', club, arena)}
           reducedMotion={progress.settings.reducedMotion}
         />
       )}{' '}

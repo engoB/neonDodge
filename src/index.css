@@ -2923,10 +2923,6 @@ kbd {
     height: 57px;
   }
 }
-.match-arena {
-  top: 92px;
-  bottom: 166px;
-}
 .pause-dialog {
   padding: 0;
   border: 0;
@@ -2940,19 +2936,11 @@ kbd {
   backdrop-filter: blur(8px);
 }
 @media (max-width: 650px) and (orientation: portrait) {
-  .match-arena {
-    top: 105px;
-    bottom: 198px;
-  }
   .match-label span {
     display: none;
   }
 }
 @media (orientation: landscape) and (max-height: 530px) {
-  .match-arena {
-    top: 61px;
-    bottom: 69px;
-  }
   .match-label {
     top: 53px;
   }
