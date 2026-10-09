@@ -4,6 +4,7 @@ import { PLAYER_TEAM, RIVALS, SPECIALS, rosterKit } from './game/teams.js'
 import { load, save, recordMatch } from './game/storage.js'
 import { setSound, setMusic, unlockAudio, sfx } from './game/audio.js'
 import { drawAthlete, preloadSprites } from './game/sprites.js'
+import { SCENES } from './game/scenery.js'
 
 export function Portrait({ kit, pose = 'idle', className = '', facing = 1, reducedMotion = false }) {
   const ref = useRef(null)
@@ -50,297 +51,186 @@ export function Portrait({ kit, pose = 'idle', className = '', facing = 1, reduc
   return <canvas ref={ref} className={`portrait ${className}`} aria-hidden="true" />
 }
 
-function Brand({ onClick }) {
-  return (
-    <button className="brand" onClick={onClick} aria-label="Neon Slugger, accueil">
-      <span className="brand-ball">◈</span>
-      <span>
-        NEON
-        <span className="brand-bottom">
-          SLUGGER<span className="brand-dot">✦</span>
-        </span>
-      </span>
-    </button>
-  )
+function SceneBackground({ arena, className }) {
+  const ref = useRef(null)
+  useEffect(() => {
+    let active = true
+    const draw = () => {
+      if (!active) return
+      const canvas = ref.current
+      const width = 960,
+        height = 540
+      canvas.width = width
+      canvas.height = height
+      SCENES[arena].bg(canvas.getContext('2d'), 240, width, 0, height, 0)
+    }
+    preloadSprites()
+      .then(draw)
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [arena])
+  return <canvas ref={ref} className={className} aria-hidden="true" />
 }
 
-function Header({ screen, go, onSettings }) {
-  return (
-    <header className="site-header">
-      <Brand onClick={() => go('title')} />
-      {screen !== 'title' && (
-        <nav aria-label="Navigation principale">
-          {[
-            ['tournament', 'Histoire'],
-            ['roster', 'Équipe'],
-            ['howto', 'Commandes'],
-          ].map(([id, label]) => (
-            <button key={id} className={screen === id ? 'active' : ''} onClick={() => go(id)}>
-              {label}
-            </button>
-          ))}
-        </nav>
-      )}
-      <button className="icon-button" onClick={onSettings} aria-label="Réglages">
-        ⚙
-      </button>
-    </header>
-  )
-}
-
-function Title({ onTournament, onQuick, onRoster, onHowTo, trophies, progress }) {
+function Title({ onStart, trophies }) {
   return (
     <main className="title-screen">
       <section className="title-stage" aria-labelledby="hero-title">
         <div className="hero-art" />
         <div className="hero-grid" />
-        <div className="title-lockup">
-          <div className="eyebrow">BASEBALL × DODGEBALL</div>
+        <div className="title-lockup title-lockup-minimal">
           <h1 id="hero-title">
             <span>NEON</span>SLUGGER<span className="title-star">✦</span>
           </h1>
-          <nav className="arcade-menu" aria-label="Menu du jeu">
-            <button className="active" onClick={onTournament}>
-              <span>01</span>
-              <b>MODE HISTOIRE</b>
-              <small>{progress.beaten > 0 ? `CONTINUER · ${progress.beaten}/6` : 'NOUVELLE SAISON'}</small>
-              <i>▶</i>
-            </button>
-            <button onClick={onQuick}>
-              <span>02</span>
-              <b>MATCH ARCADE</b>
-              <small>JOUER MAINTENANT</small>
-              <i>▶</i>
-            </button>
-            <button onClick={onRoster}>
-              <span>03</span>
-              <b>ÉQUIPE</b>
-              <small>NEON FOXES</small>
-              <i>▶</i>
-            </button>
-            <button onClick={onHowTo}>
-              <span>04</span>
-              <b>COMMANDES</b>
-              <small>PLAYBOOK</small>
-              <i>▶</i>
-            </button>
-          </nav>
+          <p>BASEBALL × DODGEBALL</p>
+          <button className="start-game" onClick={onStart}>
+            START GAME <span>▶</span>
+          </button>
           {trophies > 0 && <p className="title-trophies">✦ CHAMPION × {trophies}</p>}
         </div>
-        <div className="title-insert">PRESS START · ONE TOUCH ARCADE</div>
+        <div className="title-insert">TOUCH TO START</div>
       </section>
     </main>
   )
 }
 
-function Tournament({ progress, onPick, reducedMotion }) {
+function ConsoleMenu({ onStory, onArcade, onTraining, onOptions, progress }) {
+  const items = [
+    [
+      'HISTOIRE',
+      progress.beaten ? `CHAPITRE ${Math.min(6, progress.beaten + 1)}` : 'NOUVELLE PARTIE',
+      onStory,
+    ],
+    ['ARCADE', 'MATCH RAPIDE', onArcade],
+    ['TRAINING', 'ENTRAÎNEMENT', onTraining],
+    ['OPTIONS', 'SON · IMAGE · VIBRATIONS', onOptions],
+  ]
   return (
-    <main className="page-shell">
-      <div className="page-heading">
-        <div className="eyebrow">MODE HISTOIRE · SAISON 01 · NEON CUP</div>
-        <h1>
-          La route vers la coupe<span>.</span>
-        </h1>
-        <p>Six clubs à battre. Une place sous les projecteurs.</p>
-      </div>
-      <div className="season-progress">
-        <span>{Math.min(progress.beaten, 6)} / 6 VICTOIRES</span>
-        <div>
-          <i style={{ width: `${(Math.min(progress.beaten, 6) / 6) * 100}%` }} />
-        </div>
-        <b>{progress.beaten >= 6 ? 'CHAMPIONS ✦' : 'LA SAISON CONTINUE'}</b>
-      </div>
-      <div className="fixture-grid">
-        {RIVALS.map((r, i) => {
-          const open = i <= progress.beaten,
-            done = i < progress.beaten
-          return (
-            <button
-              key={r.id}
-              disabled={!open}
-              className={`fixture ${done ? 'completed' : ''}`}
-              style={{ '--team-accent': r.accent }}
-              onClick={() => onPick(i)}
-            >
-              <div className="fixture-top">
-                <span>
-                  CHAPITRE 0{i + 1} · MATCH 0{i + 1} {i === 5 ? '· FINALE' : ''}
-                </span>
-                <span>{done ? '✦ GAGNÉ' : open ? 'À VOUS DE JOUER' : 'VERROUILLÉ'}</span>
-              </div>
-              <div className="fixture-body">
-                <Portrait
-                  kit={rosterKit(r, 0)}
-                  pose={done ? 'cheer' : 'idle'}
-                  facing={-1}
-                  reducedMotion={reducedMotion || !open}
-                />
-                <div>
-                  <span className="eyebrow">{r.stadium}</span>
-                  <h2>{r.name}</h2>
-                  <p>{r.description}</p>
-                </div>
-              </div>
-              <div className="fixture-bottom">
-                <span>
-                  {done
-                    ? `RECORD ${progress.best[i] || 0}`
-                    : ['DÉCOUVERTE', 'ÉCHAUFFEMENT', 'CONFIRMATION', 'EXPERT', 'ÉLITE', 'LÉGENDE'][i]}
-                </span>
-                <b>{open ? 'JOUER ↗' : '◈'}</b>
-              </div>
+    <main className="console-menu-screen">
+      <div className="console-menu-bg" />
+      <section className="console-menu-panel" aria-labelledby="main-menu-title">
+        <span className="eyebrow">NEON SLUGGER</span>
+        <h1 id="main-menu-title">SELECT MODE</h1>
+        <nav className="console-menu-list" aria-label="Menu principal">
+          {items.map(([title, detail, action], i) => (
+            <button key={title} onClick={action} className={i === 0 ? 'selected' : ''}>
+              <i>◀</i>
+              <span>
+                <b>{title}</b>
+                <small>{detail}</small>
+              </span>
+              <i>▶</i>
             </button>
-          )
-        })}
-      </div>
+          ))}
+        </nav>
+      </section>
     </main>
   )
 }
 
-function Roster({ reducedMotion }) {
-  const [selected, setSelected] = useState(0),
-    [pose, setPose] = useState('idle')
-  const p = PLAYER_TEAM.players[selected]
+function ValueStepper({ label, value, onPrev, onNext }) {
   return (
-    <main className="page-shell">
-      <div className="page-heading">
-        <div className="eyebrow">LE CLUB · NEON FOXES</div>
-        <h1>
-          Sept joueurs. Zéro figurant<span>.</span>
-        </h1>
-        <p>Chaque joueur a son style, son rythme et son tir signature.</p>
-      </div>
-      <div className="roster-layout">
-        <section className="player-showcase">
-          <div className="player-number">0{selected + 1}</div>
-          <Portrait kit={rosterKit(PLAYER_TEAM, selected)} pose={pose} reducedMotion={reducedMotion} />
-          <span className="eyebrow">
-            {selected === 0 ? 'CAPITAINE' : selected < 4 ? 'INTÉRIEUR' : 'EXTÉRIEUR'}
-          </span>
-          <h2>{p.name}</h2>
-          <p>
-            {SPECIALS[p.special].name} · {SPECIALS[p.special].desc}
-          </p>
-          <div className="pose-switch" aria-label="Animations du joueur">
-            {[
-              ['idle', 'Repos'],
-              ['run', 'Course'],
-              ['windup', 'Lancer'],
-              ['catch', 'Réception'],
-              ['cheer', 'Victoire'],
-            ].map(([id, l]) => (
-              <button key={id} aria-pressed={pose === id} onClick={() => setPose(id)}>
-                {l}
-              </button>
-            ))}
-          </div>
-        </section>
-        <section className="roster-detail">
-          <div className="roster-list">
-            {PLAYER_TEAM.players.map((player, i) => (
-              <button key={player.name} aria-pressed={selected === i} onClick={() => setSelected(i)}>
-                <Portrait kit={rosterKit(PLAYER_TEAM, i)} reducedMotion={reducedMotion} />
-                <span>
-                  {player.name}
-                  <small>{i < 4 ? 'Intérieur' : 'Extérieur'}</small>
-                </span>
-                <b>0{i + 1}</b>
-              </button>
-            ))}
-          </div>
-          <div className="stat-list">
-            {[
-              ['force', 'Force'],
-              ['power', 'Puissance'],
-              ['speed', 'Vitesse'],
-              ['jump', 'Saut'],
-              ['catching', 'Réception'],
-              ['defense', 'Défense'],
-            ].map(([key, l]) => (
-              <div key={key}>
-                <span>{l}</span>
-                <div>
-                  <i style={{ width: `${(p.stats[key] / 11) * 100}%` }} />
-                </div>
-                <b>
-                  {p.stats[key]}
-                  <small>/11</small>
-                </b>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
-    </main>
-  )
-}
-
-function HowTo({ onQuick }) {
-  return (
-    <main className="page-shell">
-      <div className="page-heading">
-        <div className="eyebrow">LE PLAYBOOK · UN SEUL DOIGT</div>
-        <h1>
-          Le bon geste. Au bon moment<span>.</span>
-        </h1>
-        <p>Mettez KO les quatre intérieurs adverses. Vos trois extérieurs jouent depuis les bords.</p>
-      </div>
-      <div className="rules-grid">
-        {[
-          [
-            '01',
-            '↗',
-            'Chargez le lancer',
-            'Balle en main : maintenez pour prendre votre élan. Relâchez pour lancer sur la cible orange.',
-          ],
-          [
-            '02',
-            '✦',
-            'Trouvez la fenêtre',
-            'La jauge devient dorée après 0,4 seconde. Relâchez pendant la fenêtre dorée pour un tir signature. Trop tard ? Le tir reste normal.',
-          ],
-          [
-            '03',
-            '↑',
-            'Passez en une touche',
-            'Appuyez sur Passe : le meilleur partenaire est choisi automatiquement. Une passe chargée arme son tir signature.',
-          ],
-          [
-            '04',
-            '◎',
-            'Lisez la balle',
-            'Le joueur ciblé est entouré de cyan. Touchez juste avant l’impact pour réceptionner. Seule une réception parfaite arrête un tir signature.',
-          ],
-          [
-            '05',
-            '↗',
-            'Déclenchez le Jump Shot',
-            'Balle en main : appuyez sur Jump Shot, le joueur saute et lance automatiquement au sommet. En défense, maintenez pour esquiver.',
-          ],
-          [
-            '06',
-            '◈',
-            'Faites vivre le club',
-            'Les joueurs se déplacent et récupèrent les balles seuls. Vous décidez des tirs, des passes et des réceptions.',
-          ],
-        ].map(([n, icon, title, text]) => (
-          <article className="rule-card" key={n}>
-            <span className="card-index">GESTE {n}</span>
-            <span className="feature-symbol">{icon}</span>
-            <h2>{title}</h2>
-            <p>{text}</p>
-          </article>
-        ))}
-      </div>
-      <div className="playbook-footer">
-        <span>
-          CLAVIER <kbd>Espace</kbd> Tir / réception <kbd>↑</kbd> Passe <kbd>X</kbd> Jump Shot <kbd>Échap</kbd>{' '}
-          Pause
-        </span>
-        <button className="button primary" onClick={onQuick}>
-          À VOUS DE JOUER <span>↗</span>
+    <div className="value-stepper">
+      <span>{label}</span>
+      <div>
+        <button onClick={onPrev} aria-label={`${label}, valeur précédente`}>
+          ◀
+        </button>
+        <strong>{value}</strong>
+        <button onClick={onNext} aria-label={`${label}, valeur suivante`}>
+          ▶
         </button>
       </div>
+    </div>
+  )
+}
+
+function ModeSetup({ training, onPlay, onBack, reducedMotion }) {
+  const clubs = [PLAYER_TEAM, ...RIVALS]
+  const [club, setClub] = useState(0)
+  const ownTeam = clubs[club]
+  const [selected, setSelected] = useState(0)
+  const rival = RIVALS[selected]
+  const cycle = (delta) => setSelected((selected + delta + RIVALS.length) % RIVALS.length)
+  return (
+    <main className="mode-setup" style={{ '--team-accent': rival.accent }}>
+      <SceneBackground arena={rival.arena} className={`mode-backdrop arena-${rival.arena}`} />
+      <button className="console-back" onClick={onBack}>
+        ← MENU
+      </button>
+      <section>
+        <span className="eyebrow">{training ? 'TRAINING ROOM' : 'ARCADE BATTLE'}</span>
+        <h1>{training ? 'ENTRAÎNEMENT' : 'MATCH ARCADE'}</h1>
+        <div className="versus-select">
+          <Portrait kit={rosterKit(ownTeam, 0)} pose="hold" reducedMotion={reducedMotion} />
+          <b>VS</b>
+          <Portrait kit={rosterKit(rival, 0)} pose="taunt" facing={-1} reducedMotion={reducedMotion} />
+        </div>
+        <ValueStepper
+          label="ÉQUIPE"
+          value={ownTeam.name.toUpperCase()}
+          onPrev={() => setClub((club - 1 + clubs.length) % clubs.length)}
+          onNext={() => setClub((club + 1) % clubs.length)}
+        />
+        <ValueStepper
+          label="ADVERSAIRE"
+          value={rival.name.toUpperCase()}
+          onPrev={() => cycle(-1)}
+          onNext={() => cycle(1)}
+        />
+        <ValueStepper
+          label="STADE"
+          value={rival.stadium.toUpperCase()}
+          onPrev={() => cycle(-1)}
+          onNext={() => cycle(1)}
+        />
+        <button className="start-game compact" onClick={() => onPlay(selected, ownTeam)}>
+          {training ? 'START TRAINING' : 'PLAY BALL'} <span>▶</span>
+        </button>
+      </section>
+    </main>
+  )
+}
+
+function Tournament({ progress, onPick, reducedMotion, onBack }) {
+  const [selected, setSelected] = useState(Math.min(progress.beaten, RIVALS.length - 1))
+  const rival = RIVALS[selected]
+  const open = selected <= progress.beaten
+  return (
+    <main className="story-select" style={{ '--team-accent': rival.accent }}>
+      <SceneBackground arena={rival.arena} className={`mode-backdrop arena-${rival.arena}`} />
+      <button className="console-back" onClick={onBack}>
+        ← MENU
+      </button>
+      <section>
+        <span className="eyebrow">STORY MODE · NEON CUP</span>
+        <h1>CHAPITRE {String(selected + 1).padStart(2, '0')}</h1>
+        <div className="chapter-opponent">
+          <button
+            onClick={() => setSelected((selected - 1 + RIVALS.length) % RIVALS.length)}
+            aria-label="Chapitre précédent"
+          >
+            ◀
+          </button>
+          <Portrait
+            kit={rosterKit(rival, 0)}
+            pose={open ? 'taunt' : 'idle'}
+            facing={-1}
+            reducedMotion={reducedMotion}
+          />
+          <button onClick={() => setSelected((selected + 1) % RIVALS.length)} aria-label="Chapitre suivant">
+            ▶
+          </button>
+        </div>
+        <h2>{rival.name}</h2>
+        <p>{rival.stadium}</p>
+        <div className="chapter-progress">{Math.min(progress.beaten, 6)} / 6 VICTOIRES</div>
+        <button className="start-game compact" disabled={!open} onClick={() => onPick(selected)}>
+          {open ? 'START CHAPTER' : 'LOCKED'} <span>{open ? '▶' : '◆'}</span>
+        </button>
+      </section>
     </main>
   )
 }
@@ -390,9 +280,9 @@ function StoryDialog({ rival, index, reducedMotion, onPlay, onClose }) {
   const beat = STORY_BEATS[index]
   const lines = [
     {
-      speaker: 'Coach Nova',
-      text: `Chapitre ${index + 1}. ${rival.stadium}. ${rival.description}`,
-      side: 'coach',
+      speaker: 'Riko',
+      text: `${rival.stadium}. Les Foxes sont prêts. On joue notre baseball, jusqu’au dernier impact.`,
+      side: 'riko',
     },
     { speaker: beat[0], text: beat[1], side: 'rival' },
     { speaker: beat[2], text: beat[3], side: 'riko' },
@@ -412,7 +302,8 @@ function StoryDialog({ rival, index, reducedMotion, onPlay, onClose }) {
         onClose()
       }}
     >
-      <section className="story-card" style={{ '--rival-accent': rival.accent }}>
+      <section className={`story-card arena-${rival.arena}`} style={{ '--rival-accent': rival.accent }}>
+        <SceneBackground arena={rival.arena} className="story-background" />
         <div className="story-topline">
           <span>MODE HISTOIRE · CHAPITRE 0{index + 1}</span>
           <button className="icon-button" onClick={onClose} aria-label="Fermer le dialogue">
@@ -435,7 +326,8 @@ function StoryDialog({ rival, index, reducedMotion, onPlay, onClose }) {
         </div>
         <div className={`speech-box ${current.side}`}>
           <span>{current.speaker}</span>
-          <p>« {current.text} »</p>
+          <p>{current.text}</p>
+          <i>▼</i>
         </div>
         <div className="story-dots" aria-label={`Dialogue ${line + 1} sur ${lines.length}`}>
           {lines.map((_, i) => (
@@ -446,7 +338,7 @@ function StoryDialog({ rival, index, reducedMotion, onPlay, onClose }) {
           className="button primary story-next"
           onClick={() => (line < lines.length - 1 ? setLine(line + 1) : onPlay())}
         >
-          {line < lines.length - 1 ? 'CONTINUER' : 'PLAY BALL !'} <span>↗</span>
+          {line < lines.length - 1 ? 'NEXT' : 'PLAY BALL !'} <span>▶</span>
         </button>
       </section>
     </dialog>
@@ -471,35 +363,40 @@ function Settings({ settings, setSettings, onClose }) {
     >
       <div className="dialog-heading">
         <div>
-          <span className="eyebrow">VOTRE EXPÉRIENCE</span>
-          <h2>Réglages</h2>
+          <span className="eyebrow">NEON SLUGGER</span>
+          <h2>OPTIONS</h2>
         </div>
         <button className="icon-button" onClick={onClose} aria-label="Fermer les réglages">
           ×
         </button>
       </div>
       {[
-        ['sound', 'Effets sonores', 'Lancers, impacts et réceptions.'],
-        ['music', 'Musique', 'La bande-son de chaque stade.'],
-        ['haptics', 'Vibrations', 'Le timing au bout des doigts, si disponible.'],
-        ['reducedMotion', 'Animations réduites', 'Moins de mouvements et de secousses.'],
-      ].map(([key, title, text]) => (
-        <button
-          key={key}
-          role="switch"
-          aria-checked={settings[key]}
-          className="setting-row"
-          onClick={() => setSettings({ ...settings, [key]: !settings[key] })}
-        >
-          <span>
-            <b>{title}</b>
-            <small>{text}</small>
-          </span>
-          <i className={settings[key] ? 'on' : ''} />
-        </button>
+        ['sound', 'EFFETS SONORES'],
+        ['music', 'MUSIQUE'],
+        ['haptics', 'VIBRATIONS'],
+        ['reducedMotion', 'ANIMATIONS RÉDUITES'],
+      ].map(([key, title]) => (
+        <div key={key} className="option-stepper" role="group" aria-label={title}>
+          <span>{title}</span>
+          <div>
+            <button
+              onClick={() => setSettings({ ...settings, [key]: !settings[key] })}
+              aria-label={`${title}, précédent`}
+            >
+              ◀
+            </button>
+            <b>{settings[key] ? 'ON' : 'OFF'}</b>
+            <button
+              onClick={() => setSettings({ ...settings, [key]: !settings[key] })}
+              aria-label={`${title}, suivant`}
+            >
+              ▶
+            </button>
+          </div>
+        </div>
       ))}
-      <button className="button primary" onClick={onClose}>
-        C’EST PARTI <span>↗</span>
+      <button className="start-game compact" onClick={onClose}>
+        VALIDATE <span>▶</span>
       </button>
     </dialog>
   )
@@ -582,18 +479,22 @@ export default function App() {
     [result, setResult] = useState(null),
     [runId, setRunId] = useState(0),
     [settingsOpen, setSettingsOpen] = useState(false),
-    [briefing, setBriefing] = useState(null)
+    [briefing, setBriefing] = useState(null),
+    [mode, setMode] = useState('story'),
+    [playerTeam, setPlayerTeam] = useState(PLAYER_TEAM)
   useEffect(() => {
     save(progress)
     setSound(progress.settings.sound)
     setMusic(progress.settings.music)
     document.documentElement.dataset.motion = progress.settings.reducedMotion ? 'reduced' : 'full'
   }, [progress])
-  const play = (i, inTournament = true) => {
+  const play = (i, inTournament = true, nextMode = inTournament ? 'story' : 'arcade', club = PLAYER_TEAM) => {
     unlockAudio()
     sfx.click()
     setIdx(i)
     setTournament(inTournament)
+    setMode(nextMode)
+    setPlayerTeam(club)
     setResult(null)
     setRunId((n) => n + 1)
     setScreen('match')
@@ -604,8 +505,6 @@ export default function App() {
     setScreen(s)
     window.scrollTo(0, 0)
   }
-  const quick = () =>
-    play(Math.floor(Math.random() * (Math.min(progress.beaten, RIVALS.length - 1) + 1)), false)
   if (screen === 'match')
     return (
       <>
@@ -614,11 +513,13 @@ export default function App() {
           rival={RIVALS[idx]}
           settings={progress.settings}
           label={`${tournament ? `Neon Cup · match ${idx + 1}` : 'Match express'} · ${RIVALS[idx].name}`}
+          training={mode === 'training'}
+          playerTeam={playerTeam}
           onEnd={(r) => {
             if (tournament) setProgress((p) => recordMatch(p, idx, RIVALS.length, r))
             setResult(r)
           }}
-          onQuit={() => go(tournament ? 'tournament' : 'title')}
+          onQuit={() => go(tournament ? 'tournament' : 'menu')}
         />
         {result && (
           <Results
@@ -626,24 +527,26 @@ export default function App() {
             rival={RIVALS[idx]}
             isFinal={idx === RIVALS.length - 1}
             inTournament={tournament}
-            onNext={() => play(idx + 1)}
-            onRetry={() => play(idx, tournament)}
-            onMenu={() => go(tournament ? 'tournament' : 'title')}
+            onNext={() => {
+              go('tournament')
+              setBriefing(idx + 1)
+            }}
+            onRetry={() => play(idx, tournament, mode, playerTeam)}
+            onMenu={() => go(tournament ? 'tournament' : 'menu')}
           />
         )}
       </>
     )
   return (
     <>
-      <Header screen={screen} go={go} onSettings={() => setSettingsOpen(true)} />
-      {screen === 'title' && (
-        <Title
-          onTournament={() => go('tournament')}
-          onQuick={quick}
-          onRoster={() => go('roster')}
-          onHowTo={() => go('howto')}
-          trophies={progress.trophies}
+      {screen === 'title' && <Title onStart={() => go('menu')} trophies={progress.trophies} />}{' '}
+      {screen === 'menu' && (
+        <ConsoleMenu
           progress={progress}
+          onStory={() => go('tournament')}
+          onArcade={() => go('arcade')}
+          onTraining={() => go('training')}
+          onOptions={() => setSettingsOpen(true)}
         />
       )}{' '}
       {screen === 'tournament' && (
@@ -651,10 +554,24 @@ export default function App() {
           progress={progress}
           onPick={(i) => setBriefing(i)}
           reducedMotion={progress.settings.reducedMotion}
+          onBack={() => go('menu')}
         />
       )}{' '}
-      {screen === 'roster' && <Roster reducedMotion={progress.settings.reducedMotion} />}{' '}
-      {screen === 'howto' && <HowTo onQuick={quick} />}{' '}
+      {screen === 'arcade' && (
+        <ModeSetup
+          onBack={() => go('menu')}
+          onPlay={(i, club) => play(i, false, 'arcade', club)}
+          reducedMotion={progress.settings.reducedMotion}
+        />
+      )}{' '}
+      {screen === 'training' && (
+        <ModeSetup
+          training
+          onBack={() => go('menu')}
+          onPlay={(i, club) => play(i, false, 'training', club)}
+          reducedMotion={progress.settings.reducedMotion}
+        />
+      )}{' '}
       {settingsOpen && (
         <Settings
           settings={progress.settings}
@@ -672,7 +589,7 @@ export default function App() {
           onPlay={() => {
             const selected = briefing
             setBriefing(null)
-            play(selected, true)
+            play(selected, true, 'story')
           }}
         />
       )}

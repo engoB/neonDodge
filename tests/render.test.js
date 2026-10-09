@@ -103,8 +103,8 @@ test('les dix silhouettes et les treize poses se dessinent sans sortir des cellu
     }
 })
 
-test('les quatre stades remplissent le canvas en portrait et en paysage', () => {
-  for (const rival of [RIVALS[0], RIVALS[1], RIVALS[2], RIVALS[5]]) {
+test('les six stades remplissent le canvas en portrait et en paysage', () => {
+  for (const rival of RIVALS) {
     for (const [width, height, viewW] of [
       [844, 300, 560],
       [390, 541, 360],

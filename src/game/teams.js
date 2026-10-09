@@ -126,7 +126,7 @@ export const RIVALS = [
   team(
     'cactus',
     'Wild Coyotes',
-    'roof',
+    'desert',
     '#84cc16',
     {
       jersey: '#65a30d',
@@ -144,7 +144,7 @@ export const RIVALS = [
   team(
     'requins',
     'Iron Bulls',
-    'beach',
+    'foundry',
     '#0ea5e9',
     {
       jersey: '#0f172a',
@@ -207,7 +207,14 @@ export function rosterKit(teamDef, i) {
   }
 }
 
-const STADIUMS = { gym: 'Fox Yard', roof: 'Skyline Park', beach: 'Harbor Field', neon: 'Neon Dome' }
+const STADIUMS = {
+  gym: 'Fox Yard',
+  roof: 'Skyline Park',
+  beach: 'Harbor Field',
+  desert: 'Coyote Canyon',
+  foundry: 'Iron Foundry',
+  neon: 'Neon Dome',
+}
 const DESCRIPTIONS = [
   'Le club historique. Des lancers droits, du cœur et du caractère.',
   'Du sang-froid, des lunettes et des balles qui changent de direction.',

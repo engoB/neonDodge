@@ -7,23 +7,36 @@ export function playMatch(rival, seed, { skill = 0.7, maxFrames = 60 * 60 * 10 }
   const m = new Match({ rival, seed, onEnd: (r) => (out = r) })
   m.setView(560)
   let r = seed * 7919
-  const rand = () => ((r = (r * 16807) % 2147483647) / 2147483647)
+  const rand = () => (r = (r * 16807) % 2147483647) / 2147483647
   // erreur de timing d'un doigt humain : loi normale, écart-type (1 - adresse) × 4 images
   const gauss = () => Math.sqrt(-2 * Math.log(rand() + 1e-9)) * Math.cos(2 * Math.PI * rand())
   const sd = (1 - skill) * 4
-  let holdUntil = -1
+  let meterAim = null
   let plannedCatch = null
   for (let f = 0; f < maxFrames && !out; f++) {
     if (m.state === 'play') {
       const c = m.controlled
       const h = m.holder
       if (h && c === h) {
-        if (!m.input.pressed && h.state === 'hold') {
+        if (!m.shotMeter && h.state === 'hold') {
           m.press()
-          // un joueur appliqué court jusqu'au super tir, sinon tir rapide
-          // vise le milieu de la zone du super tir, avec l'erreur humaine
-          holdUntil = f + Math.round(C.SUPER_CHARGE + C.SUPER_ZONE / 2 + gauss() * sd * 2)
-        } else if (m.input.pressed && f >= holdUntil) m.release()
+          m.release()
+          meterAim = null
+        } else if (m.shotMeter) {
+          if (meterAim?.stage !== m.shotMeter.stage)
+            meterAim = {
+              stage: m.shotMeter.stage,
+              value: 0.5 + gauss() * (1 - skill) * 0.22,
+            }
+          if (m.shotMeter.value >= meterAim.value) {
+            if (m.input.pressed) m.release()
+            else {
+              m.press()
+              m.release()
+            }
+            meterAim = null
+          }
+        }
       } else if (c) {
         const ftc = m.framesToContact(c)
         if (ftc !== null && plannedCatch === null && ftc < 30) {

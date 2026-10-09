@@ -4,7 +4,9 @@ const action = (page) => page.locator('[data-game-action="true"]')
 const pause = (page) => page.getByRole('button', { name: 'Pause', exact: true })
 
 async function start(page) {
-  await page.getByRole('button', { name: /MATCH ARCADE/ }).click()
+  await page.getByRole('button', { name: /START GAME/ }).click()
+  await page.getByRole('button', { name: /ARCADE/ }).click()
+  await page.getByRole('button', { name: /PLAY BALL/ }).click()
   await expect(action(page)).toBeEnabled()
   await expect(page.locator('.game-surface')).toBeVisible()
 }
@@ -66,8 +68,8 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/')
 })
 
-test('accueil : menu arcade, illustration chargée et titre lisible', async ({ page }, info) => {
-  await expect(page.locator('.arcade-menu button')).toHaveCount(4)
+test('accueil : écran titre épuré puis menu console', async ({ page }, info) => {
+  await expect(page.getByRole('button', { name: /START GAME/ })).toBeVisible()
   await expect(page.getByRole('heading', { name: /NEON.*SLUGGER/ })).toBeVisible()
   const visual = await page.locator('.hero-art').evaluate(async (el) => {
     const source = getComputedStyle(el).backgroundImage.match(/url\(["']?(.*?)["']?\)/)?.[1]
@@ -81,34 +83,32 @@ test('accueil : menu arcade, illustration chargée et titre lisible', async ({ p
   expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize().width + 1)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   await screenshot(page, info, 'accueil')
+  await page.getByRole('button', { name: /START GAME/ }).click()
+  await expect(page.locator('.console-menu-list button')).toHaveCount(4)
+  await expect(page.getByRole('heading', { name: 'SELECT MODE' })).toBeVisible()
 })
 
-test('club et règles : sélection, animations et navigation', async ({ page }, info) => {
-  await page.getByRole('button', { name: /ÉQUIPE/ }).click()
-  await expect(page.locator('.roster-list button')).toHaveCount(7)
-  await page.getByRole('button', { name: /Tao Intérieur/ }).click()
-  await expect(page.locator('.player-showcase h2')).toHaveText('Tao')
-  await page.getByRole('button', { name: 'Course', exact: true }).click()
-  await expect(page.getByRole('button', { name: 'Course', exact: true })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
+test('arcade : sélection aux flèches et lancement plein écran', async ({ page }, info) => {
+  await page.getByRole('button', { name: /START GAME/ }).click()
+  await page.getByRole('button', { name: /ARCADE/ }).click()
+  await expect(page.getByText('RED BATS', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: /ADVERSAIRE, valeur suivante/ }).click()
+  await expect(page.getByText('GOLD OWLS', { exact: true })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
-  await screenshot(page, info, 'club')
-  await page.getByRole('button', { name: 'Commandes', exact: true }).click()
-  await expect(page.locator('.rule-card')).toHaveCount(6)
-  await page.getByRole('button', { name: /À VOUS DE JOUER/ }).click()
+  await screenshot(page, info, 'arcade-select')
+  await page.getByRole('button', { name: /PLAY BALL/ }).click()
   await expect(action(page)).toBeEnabled()
 })
 
 test('réglages : dialogue modal, fermeture clavier et sauvegarde', async ({ page }) => {
-  await page.getByRole('button', { name: 'Réglages', exact: true }).click()
+  await page.getByRole('button', { name: /START GAME/ }).click()
+  await page.getByRole('button', { name: /OPTIONS/ }).click()
   const dialog = page.locator('.settings-dialog')
   await expect(dialog).toBeVisible()
-  const sound = page.getByRole('switch', { name: /Effets sonores/ })
-  await expect(sound).toHaveAttribute('aria-checked', 'false')
-  await sound.click()
-  await expect(sound).toHaveAttribute('aria-checked', 'true')
+  const sound = page.getByRole('group', { name: 'EFFETS SONORES' })
+  await expect(sound).toContainText('OFF')
+  await sound.getByRole('button', { name: /suivant/ }).click()
+  await expect(sound).toContainText('ON')
   await page.keyboard.press('Escape')
   await expect(dialog).toHaveCount(0)
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('neon-dodge-v1')).settings.sound)).toBe(
@@ -119,40 +119,33 @@ test('réglages : dialogue modal, fermeture clavier et sauvegarde', async ({ pag
 test('coupe : premier match accessible, suivants verrouillés et commandes visibles', async ({
   page,
 }, info) => {
-  await page.getByRole('button', { name: /MODE HISTOIRE/ }).click()
-  await expect(page.locator('.fixture')).toHaveCount(6)
-  await expect(page.locator('.fixture:disabled')).toHaveCount(5)
-  await page.getByRole('button', { name: /MATCH 01/ }).click()
+  await page.getByRole('button', { name: /START GAME/ }).click()
+  await page.getByRole('button', { name: /HISTOIRE/ }).click()
+  await expect(page.getByRole('heading', { name: /CHAPITRE 01/ })).toBeVisible()
+  await page.getByRole('button', { name: /START CHAPTER/ }).click()
   await expect(page.locator('.story-dialog')).toBeVisible()
   await expect(page.locator('.story-versus canvas')).toHaveCount(2)
-  await page.getByRole('button', { name: /CONTINUER/ }).click()
-  await page.getByRole('button', { name: /CONTINUER/ }).click()
+  await page.getByRole('button', { name: /NEXT/ }).click()
+  await page.getByRole('button', { name: /NEXT/ }).click()
   await page.getByRole('button', { name: /PLAY BALL/ }).click()
   await expect(action(page)).toBeEnabled()
   await expectMatchFits(page)
   await screenshot(page, info, 'match')
 })
 
-test('clavier : pause, reprise avec focus sur l’action et lancer', async ({ page }) => {
+test('tactile : pause, reprise et jauge avec validation séparée', async ({ page }) => {
   await start(page)
   await pause(page).click()
   await expect(page.locator('.pause-dialog')).toBeVisible()
   await page.getByRole('button', { name: /REPRENDRE LE MATCH/ }).click()
   await expect(page.locator('.pause-dialog')).not.toBeVisible()
-  await expect(action(page)).toBeFocused()
-  await page.keyboard.down('Space')
-  await expect(action(page)).toHaveClass(/pressing/)
-  await expect(page.getByRole('progressbar', { name: 'Charge du tir' })).not.toHaveAttribute(
-    'aria-valuenow',
-    '0',
-  )
-  await page.keyboard.up('Space')
-  await expect(action(page)).not.toHaveClass(/pressing/)
-  await expect(page.locator('.arena-status')).toContainText('DÉFENSE')
-  await page.keyboard.press('Escape')
-  await expect(page.locator('.pause-dialog')).toBeVisible()
-  await page.keyboard.press('Escape')
-  await expect(page.locator('.pause-dialog')).not.toBeVisible()
+  await action(page).click()
+  await expect(page.getByRole('progressbar', { name: /Jauge de tir 1 sur 3/ })).toBeVisible()
+  await expect(page.locator('.arena-status')).toContainText('ATTAQUE')
+  await pause(page).click()
+  await page.getByRole('button', { name: /REPRENDRE LE MATCH/ }).click()
+  await expect(page.locator('.shot-meter')).toHaveCount(0)
+  await expect(page.locator('.arena-status')).toContainText('ATTAQUE')
 })
 
 test('pointeur : annulation sans lancer, passe et reprise', async ({ page }) => {
@@ -189,5 +182,17 @@ test('rotation : un match en cours conserve les commandes et son état', async (
   await screenshot(page, info, 'rotation')
   await pause(page).click()
   await page.getByRole('button', { name: /Retour au club/ }).click()
-  await expect(page.getByRole('heading', { name: /NEON.*SLUGGER/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'SELECT MODE' })).toBeVisible()
+})
+
+test('training : équipe sélectionnée, vies restaurées et retour menu', async ({ page }, info) => {
+  await page.getByRole('button', { name: /START GAME/ }).click()
+  await page.getByRole('button', { name: /TRAINING/ }).click()
+  await page.getByRole('button', { name: /ÉQUIPE, valeur suivante/ }).click()
+  await expect(page.getByText('RED BATS', { exact: true })).toHaveCount(2)
+  await page.getByRole('button', { name: /START TRAINING/ }).click()
+  await expect(action(page)).toBeEnabled()
+  await expect(page.locator('.score-team.left')).toContainText('Red Bats')
+  await expectMatchFits(page)
+  await screenshot(page, info, 'training')
 })
