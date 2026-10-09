@@ -5030,3 +5030,44 @@ canvas.story-background {
     min-height: 62px;
   }
 }
+
+@media (max-width: 350px) and (orientation: portrait) {
+  .result-card {
+    gap: 7px;
+    padding: 13px;
+  }
+  .result-versus {
+    grid-template-columns: 48px minmax(0, 1fr) 48px;
+    gap: 5px;
+  }
+  .result-versus .team-emblem {
+    width: 46px;
+    height: 46px;
+  }
+  .result-versus b {
+    font-size: 9px;
+  }
+  .result-card h1 {
+    max-width: 100%;
+    font-size: clamp(20px, 7.2vw, 24px);
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  .result-score strong {
+    font-size: 30px;
+  }
+  .result-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 8px;
+  }
+  .result-stats dt {
+    overflow: hidden;
+    font-size: 7px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .result-stats dd {
+    margin-top: 4px;
+    font-size: 16px;
+  }
+}

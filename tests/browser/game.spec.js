@@ -221,6 +221,19 @@ test('fin : le terrain reste visible avant la fiche de résultat', async ({ page
   await page.getByRole('button', { name: 'CONTINUER' }).click()
   await expect(page.locator('.result-dialog')).toBeVisible()
   await expect(page.locator('.result-versus img')).toHaveCount(2)
+  expect(
+    await page.locator('.result-card').evaluate((card) => {
+      const bounds = card.getBoundingClientRect()
+      const elements = card.querySelectorAll('.result-versus img, h1, .result-stats, .result-actions')
+      return (
+        card.scrollWidth <= card.clientWidth &&
+        [...elements].every((element) => {
+          const rect = element.getBoundingClientRect()
+          return rect.left >= bounds.left - 1 && rect.right <= bounds.right + 1
+        })
+      )
+    }),
+  ).toBe(true)
   await screenshot(page, info, 'resultat')
 })
 
