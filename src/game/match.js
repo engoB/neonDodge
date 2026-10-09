@@ -590,6 +590,7 @@ export class Match {
     b.bounces = 0
     if (p.hp <= 0) {
       p.ko = true
+      this.lastKO = p
       p.state = 'ko'
       p.vz = 3
       p.kx = Math.sign(b.vx) * -2.2
@@ -1187,8 +1188,8 @@ export class Match {
       wantedZoom = remaining < 150 ? 1.48 : 1.36
     } else if (b.state === 'loose') wantedZoom = 1.26
     if ((this.state === 'intro' || this.state === 'end') && !this.impactFocus) {
-      focus = C.MID
-      wantedZoom = this.state === 'intro' ? 1.14 : 1.2
+      focus = this.state === 'end' && this.lastKO ? this.lastKO.x : C.MID
+      wantedZoom = this.state === 'intro' ? 1.14 : 1.36
     }
     wantedZoom = Math.min(
       w < 420 ? (this.impactFocus ? 1.62 : 1.42) : this.impactFocus ? 1.82 : 1.52,

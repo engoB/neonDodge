@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import MatchScreen from './components/MatchScreen.jsx'
-import { PLAYER_TEAM, RIVALS, SPECIALS, rosterKit } from './game/teams.js'
+import { PLAYER_TEAM, RIVALS, rosterKit } from './game/teams.js'
 import { load, save, recordMatch } from './game/storage.js'
 import { setSound, setMusic, unlockAudio, sfx } from './game/audio.js'
 import { drawAthlete, preloadSprites } from './game/sprites.js'
@@ -97,6 +97,7 @@ function Title({ onStart, trophies }) {
 }
 
 function ConsoleMenu({ onStory, onArcade, onTraining, onOptions, progress }) {
+  const [selected, setSelected] = useState(0)
   const items = [
     [
       'HISTOIRE',
@@ -115,7 +116,13 @@ function ConsoleMenu({ onStory, onArcade, onTraining, onOptions, progress }) {
         <h1 id="main-menu-title">SELECT MODE</h1>
         <nav className="console-menu-list" aria-label="Menu principal">
           {items.map(([title, detail, action], i) => (
-            <button key={title} onClick={action} className={i === 0 ? 'selected' : ''}>
+            <button
+              key={title}
+              onClick={action}
+              onPointerEnter={() => setSelected(i)}
+              onFocus={() => setSelected(i)}
+              className={i === selected ? 'selected' : ''}
+            >
               <i>◀</i>
               <span>
                 <b>{title}</b>
