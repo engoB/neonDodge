@@ -3525,7 +3525,7 @@ canvas,
 .chapter-stage button {
   position: absolute;
   z-index: 2;
-  top: 50%;
+  top: calc(50% - 31px);
   width: 46px;
   height: 62px;
   border: 3px solid var(--pixel-paper);
@@ -3533,7 +3533,6 @@ canvas,
   background: #07101ad9;
   color: var(--pixel-yellow);
   font: 400 18px var(--font-display);
-  transform: translateY(-50%);
 }
 .chapter-stage .chapter-prev {
   left: 8px;
