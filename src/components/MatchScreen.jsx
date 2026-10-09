@@ -303,7 +303,7 @@ export default function MatchScreen({
             aria-label={
               holding
                 ? meter
-                  ? 'Valider le timing du tir'
+                  ? 'Valider le rythme du tir'
                   : 'Préparer un tir'
                 : 'Réceptionner ou maintenir pour sauter'
             }

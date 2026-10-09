@@ -500,7 +500,7 @@ export class Match {
       sfx.superShot()
       this.shake = 8
       this.superBanner = {
-        name: special ? specialName(special) : 'SUPER SLUGGER',
+        name: special ? specialName(special) : 'SUPER FRAPPE',
         kicker: `${p.name.toUpperCase()} DÉCHAÎNE`,
         team: p.team,
         t: 84,
@@ -599,8 +599,8 @@ export class Match {
           t: this.reducedMotion ? 24 : 78,
         }
         this.superBanner = {
-          name: 'GRAND SLAM KO',
-          kicker: 'FATAL FINISH · BATTE FANTÔME',
+          name: 'COUP DE CIRCUIT KO',
+          kicker: 'FRAPPE FINALE · BATTE FANTÔME',
           team: b.team,
           t: 96,
         }
