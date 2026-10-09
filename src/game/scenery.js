@@ -145,12 +145,12 @@ function stadium(arena, ctx, camX, w, top, bottom, t) {
     const sx = Math.max(0, Math.min(panorama.width - sw, (panorama.width - sw) / 2 + (camX - 240) * 0.35))
     ctx.drawImage(panorama, sx, panorama.height - sh, sw, sh, 0, top, w, h)
     const tint = {
-      gym: '#0c405510',
-      roof: '#c46a3220',
-      beach: '#1bc4b52b',
-      desert: '#c5532f38',
-      foundry: '#53170f52',
-      neon: '#602c8d40',
+      gym: '#0c405508',
+      roof: '#dc733312',
+      beach: '#1bdacb16',
+      desert: '#e76a3520',
+      foundry: '#6620102c',
+      neon: '#7438a826',
     }[arena]
     ctx.fillStyle = tint
     ctx.fillRect(0, top, w, h)
