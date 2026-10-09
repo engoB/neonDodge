@@ -4851,6 +4851,7 @@ canvas.story-background {
 .story-versus > div,
 .story-versus > div.speaking {
   display: grid;
+  align-self: end;
   align-content: end;
   min-width: 0;
   padding: 4px 4px 7px;
@@ -4909,6 +4910,10 @@ canvas.story-background {
 }
 .story-next {
   font: 400 clamp(9px, 3vw, 12px) var(--font-display);
+}
+.story-actions .button {
+  width: 100%;
+  justify-content: center;
 }
 .scoreboard {
   min-height: 92px;

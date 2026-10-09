@@ -93,7 +93,7 @@ export default function MatchScreen({
       playerTeam,
     })
     matchRef.current = m
-    if (import.meta.env.DEV && new URLSearchParams(location.search).has('debug')) window.__match = m
+    if (new URLSearchParams(location.search).has('debug')) window.__match = m
     let scale = 1,
       dpr = 1,
       viewH = VIEW_H,
