@@ -501,7 +501,7 @@ export class Match {
       this.shake = 8
       this.superBanner = {
         name: special ? specialName(special) : 'SUPER FRAPPE',
-        kicker: `${p.name.toUpperCase()} DÉCHAÎNE`,
+        kicker: 'FRAPPE SIGNATURE',
         team: p.team,
         t: 84,
       }
@@ -600,7 +600,7 @@ export class Match {
         }
         this.superBanner = {
           name: 'COUP DE CIRCUIT KO',
-          kicker: 'FRAPPE FINALE · BATTE FANTÔME',
+          kicker: 'FRAPPE FINALE',
           team: b.team,
           t: 96,
         }
@@ -646,17 +646,15 @@ export class Match {
         for (const p of this.players) p.anim += 1 / 240
         this.updateFx()
         this.updateCamera()
-        this.emitHud()
         return
       }
     }
     if (this.slowMo > 0) {
       this.slowMo--
       if (this.impactFocus) this.impactFocus.t = this.slowMo
-      if (this.frame % 3 !== 0) {
+      if (this.frame % 2 !== 0) {
         this.updateFx()
         this.updateCamera()
-        this.emitHud()
         return
       }
     }

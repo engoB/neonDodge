@@ -24,7 +24,7 @@ const s = (force, power, speed, jump, catching, defense, hp) => ({
 
 export const PLAYER_TEAM = {
   id: 'neons',
-  name: 'Renards Néon',
+  name: 'Neon Foxes',
   arena: 'gym',
   accent: '#5de7cd',
   kit: {
@@ -69,7 +69,7 @@ function team(id, name, arena, accent, kit, roster, specials, level) {
 export const RIVALS = [
   team(
     'chaussettes',
-    'Battes Rouges',
+    'Red Bats',
     'gym',
     '#ff596d',
     {
@@ -88,7 +88,7 @@ export const RIVALS = [
   ),
   team(
     'corbeaux',
-    'Hiboux Dorés',
+    'Gold Owls',
     'roof',
     '#f9d57c',
     {
@@ -107,7 +107,7 @@ export const RIVALS = [
   ),
   team(
     'mouettes',
-    'Requins du Port',
+    'Harbor Sharks',
     'beach',
     '#22d3ee',
     {
@@ -125,7 +125,7 @@ export const RIVALS = [
   ),
   team(
     'cactus',
-    'Coyotes Sauvages',
+    'Wild Coyotes',
     'desert',
     '#84cc16',
     {
@@ -143,7 +143,7 @@ export const RIVALS = [
   ),
   team(
     'requins',
-    'Taureaux de Fer',
+    'Iron Bulls',
     'foundry',
     '#0ea5e9',
     {
@@ -161,7 +161,7 @@ export const RIVALS = [
   ),
   team(
     'eclairs',
-    'Fantômes Violets',
+    'Violet Phantoms',
     'neon',
     '#e879f9',
     {

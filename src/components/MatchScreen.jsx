@@ -3,14 +3,15 @@ import { Match } from '../game/match.js'
 import { drawMatch, VIEW_H } from '../game/render.js'
 import { preloadSprites } from '../game/sprites.js'
 import { PLAYER_TEAM } from '../game/teams.js'
+import { teamEmblem } from '../game/art.js'
 import { unlockAudio, startMusic, stopMusic } from '../game/audio.js'
 
 const ARENA_MUSIC = { gym: 0, roof: 1, beach: 2, desert: 1, foundry: 2, neon: 3 }
-function TeamBar({ name, players, side, accent }) {
+function TeamBar({ team, players, side }) {
   return (
-    <div className={`score-team ${side}`} style={{ '--team-accent': accent }}>
+    <div className={`score-team ${side}`} style={{ '--team-accent': team.accent }}>
       <div className="score-name">
-        <span>{name}</span>
+        <img src={teamEmblem(team)} alt={team.name} />
         <b>{players.filter((p) => !p.ko).length}</b>
       </div>
       <div className="health-line">
@@ -48,7 +49,8 @@ export default function MatchScreen({
   const [hud, setHud] = useState(null),
     [paused, setPaused] = useState(false),
     [attempt, setAttempt] = useState(0),
-    [pressing, setPressing] = useState(false)
+    [pressing, setPressing] = useState(false),
+    [pendingResult, setPendingResult] = useState(null)
   const [assetStatus, setAssetStatus] = useState('loading')
   function clearInput() {
     pointer.current = null
@@ -77,6 +79,7 @@ export default function MatchScreen({
     else pause()
   }
   useEffect(() => {
+    setPendingResult(null)
     const canvas = canvasRef.current,
       arena = arenaRef.current,
       ctx = canvas.getContext('2d', { alpha: false })
@@ -85,12 +88,12 @@ export default function MatchScreen({
       seed: Math.floor(Math.random() * 2 ** 32),
       reducedMotion: settings.reducedMotion,
       onHud: setHud,
-      onEnd,
+      onEnd: setPendingResult,
       training,
       playerTeam,
     })
     matchRef.current = m
-    if (import.meta.env.DEV && new URLSearchParams(location.search).has('debug')) window.__match = m
+    if (new URLSearchParams(location.search).has('debug')) window.__match = m
     let scale = 1,
       dpr = 1,
       viewH = VIEW_H,
@@ -207,18 +210,6 @@ export default function MatchScreen({
   }
   const holding = hud?.holding,
     meter = hud?.shotMeter
-  const title =
-    hud?.state === 'intro'
-      ? 'À VOUS DE JOUER'
-      : holding
-        ? meter
-          ? `FRAPPE ${meter.stage} / 3`
-          : hud.armed
-            ? 'SUPER PRÊT'
-            : 'PRÉPAREZ LE TIR'
-        : hud?.threat !== null
-          ? 'ATTRAPEZ !'
-          : 'SUIVEZ LA BALLE'
   return (
     <div
       className="game-surface"
@@ -241,29 +232,29 @@ export default function MatchScreen({
             )}
           </div>
         )}
-        {hud && ['intro', 'play'].includes(hud.state) && (
-          <div className="arena-status">
-            <span>
-              {holding ? 'ATTAQUE' : 'DÉFENSE'} · {hud.ctrl}
-            </span>
-            <strong>{title}</strong>
-            {meter && (
-              <div
-                className="shot-meter-accessible"
-                role="progressbar"
-                aria-label={`Jauge de tir ${meter.stage} sur 3`}
-                aria-valuenow={Math.round(meter.value * 100)}
-                aria-valuemin={0}
-                aria-valuemax={100}
-              ></div>
-            )}
+        {meter && (
+          <div
+            className="shot-meter-accessible"
+            role="progressbar"
+            aria-label={`Jauge de tir ${meter.stage} sur 3`}
+            aria-valuenow={Math.round(meter.value * 100)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          />
+        )}
+        {pendingResult && (
+          <div className="match-end-confirm" role="status">
+            <strong>{pendingResult.win ? 'VICTOIRE !' : 'FIN DU MATCH'}</strong>
+            <button className="button primary" onClick={() => onEnd(pendingResult)}>
+              CONTINUER
+            </button>
           </div>
         )}
       </div>
       {hud && (
         <div className="match-hud">
           <div className="scoreboard">
-            <TeamBar name={playerTeam.name} players={hud.us} side="left" accent={playerTeam.accent} />
+            <TeamBar team={playerTeam} players={hud.us} side="left" />
             <div className="score-middle">
               <small className="arcade-score" aria-label="Score">
                 {String(hud.score).padStart(5, '0')}
@@ -275,7 +266,7 @@ export default function MatchScreen({
                 {Math.floor(hud.seconds / 60)}:{String(hud.seconds % 60).padStart(2, '0')}
               </b>
             </div>
-            <TeamBar name={rival.name} players={hud.them} side="right" accent={rival.accent} />
+            <TeamBar team={rival} players={hud.them} side="right" />
           </div>
           <button className="icon-button" onClick={togglePause} aria-label="Pause">
             Ⅱ
@@ -308,7 +299,9 @@ export default function MatchScreen({
                 : 'Réceptionner ou maintenir pour sauter'
             }
           >
-            <strong>{holding ? (meter ? `FRAPPE ${meter.stage}` : 'TIR') : 'ATTRAPER / SAUT'}</strong>
+            <span className="control-icon main" aria-hidden="true">
+              ●
+            </span>
           </button>
           <button
             className="pass-button"
@@ -320,7 +313,9 @@ export default function MatchScreen({
             }}
             aria-label="Passer la balle"
           >
-            <span>↑</span>PASSE
+            <span className="control-icon" aria-hidden="true">
+              ⇧
+            </span>
           </button>
           <button
             className="jump-button"
@@ -332,7 +327,9 @@ export default function MatchScreen({
             }}
             aria-label="Faire un tir en saut"
           >
-            <span>↗</span>TIR SAUTÉ
+            <span className="control-icon" aria-hidden="true">
+              ↗
+            </span>
           </button>
         </div>
       )}
@@ -353,7 +350,7 @@ export default function MatchScreen({
             {training ? 'Entraînement libre · vies restaurées' : ''}
           </p>
           <button className="button primary" onClick={resume}>
-            REPRENDRE LE MATCH <span>▶</span>
+            REPRENDRE
           </button>
           <button
             className="button secondary"
@@ -363,10 +360,10 @@ export default function MatchScreen({
               setAttempt((a) => a + 1)
             }}
           >
-            RECOMMENCER <span>↺</span>
+            RECOMMENCER
           </button>
           <button className="text-button" onClick={onQuit}>
-            Retour au club →
+            RETOUR AU CLUB
           </button>
         </section>
       </dialog>
