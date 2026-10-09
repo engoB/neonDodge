@@ -2,6 +2,10 @@
 import * as C from './constants.js'
 import { drawAthlete, drawBall, rr } from './sprites.js'
 import { SCENES } from './scenery.js'
+import { SUPER_IMPACT } from './art.js'
+
+const superImpactImage = typeof Image === 'undefined' ? null : new Image()
+if (superImpactImage) superImpactImage.src = SUPER_IMPACT
 
 export const VIEW_H = 270
 const FLOOR_Y = 150 // y écran du fond du terrain (profondeur 0)
@@ -245,8 +249,6 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
     const p = it.p
     const [sx, sy] = toScreen(p.x, p.y, p.z)
     const pose = poseOf(m, p)
-    if (p === holder && p.team === 0 && m.shotMeter)
-      shotMeterRing(ctx, sx, sy + p.z, m.shotMeter, m.meterWindow(m.shotMeter))
     drawAthlete(ctx, {
       x: sx,
       y: sy,
@@ -292,6 +294,11 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
     if (p === ctrl || p === target || (p.state === 'hit' && !p.ko))
       nameTag(ctx, p, sx, sy - 50 - (p === holder && p.state === 'dash' ? 10 : 0))
   }
+  // Toujours au-dessus des silhouettes : aucun joueur ne peut masquer le timing.
+  if (holder && holder.team === 0 && m.shotMeter) {
+    const [mx, my] = toScreen(holder.x, holder.y, holder.z)
+    shotMeterRing(ctx, mx, my + holder.z, m.shotMeter, m.meterWindow(m.shotMeter))
+  }
   // particules et textes
   for (const q of m.parts) {
     const [x, y] = toScreen(q.x, q.y, q.z)
@@ -312,7 +319,6 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
     ctx.fillText(tx.text, x, y)
   }
   ctx.globalAlpha = 1
-  if (m.finisher) drawBatFinisher(ctx, m.finisher)
   // superpositions écran
   ctx.restore()
   ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0)
@@ -351,69 +357,6 @@ export function poseOf(m, p) {
   if (p.state === 'dash') return 'run'
   if (p.state === 'walk') return m.holder === p ? 'hold' : 'walk'
   return m.holder === p ? 'hold' : 'idle'
-}
-
-function drawBatFinisher(ctx, finisher) {
-  const [x, y] = toScreen(finisher.x, finisher.y, 26)
-  const enter = Math.min(1, (78 - finisher.t) / 12)
-  const angle = (-1.15 + enter * 2.05) * finisher.facing
-  ctx.save()
-  ctx.translate(x - finisher.facing * 22, y - 10)
-  ctx.rotate(angle)
-  ctx.scale(finisher.facing, 1)
-  ctx.shadowColor = finisher.team === 0 ? '#67e8f9' : '#fb7185'
-  ctx.shadowBlur = 18
-  ctx.lineJoin = 'round'
-  ctx.lineWidth = 4
-  ctx.strokeStyle = '#261628'
-  ctx.fillStyle = '#e49a3b'
-  ctx.beginPath()
-  ctx.moveTo(-42, -4)
-  ctx.lineTo(-42, 4)
-  ctx.lineTo(-35, 6)
-  ctx.lineTo(-31, 3)
-  ctx.lineTo(-7, 6)
-  ctx.bezierCurveTo(7, 10, 46, 14, 66, 11)
-  ctx.bezierCurveTo(76, 9, 76, -9, 66, -11)
-  ctx.bezierCurveTo(46, -14, 7, -10, -7, -6)
-  ctx.lineTo(-31, -3)
-  ctx.lineTo(-35, -6)
-  ctx.closePath()
-  ctx.fill()
-  ctx.stroke()
-  ctx.shadowBlur = 0
-  // Poignée, veinage et reflet rendent la batte immédiatement lisible.
-  ctx.fillStyle = '#61351f'
-  ctx.fillRect(-34, -4, 25, 8)
-  ctx.fillStyle = '#fff0ad'
-  ctx.fillRect(-30, -2, 19, 2)
-  ctx.strokeStyle = '#9b5928'
-  ctx.lineWidth = 2
-  for (const bx of [10, 27, 44, 59]) {
-    ctx.beginPath()
-    ctx.moveTo(bx, -8)
-    ctx.lineTo(bx + 4, 8)
-    ctx.stroke()
-  }
-  ctx.strokeStyle = '#fff3c4'
-  ctx.lineWidth = 3
-  ctx.beginPath()
-  ctx.moveTo(2, -6)
-  ctx.bezierCurveTo(24, -10, 49, -11, 65, -8)
-  ctx.stroke()
-  ctx.restore()
-  ctx.save()
-  ctx.translate(x, y)
-  ctx.strokeStyle = '#f9d57c'
-  ctx.lineWidth = 3
-  for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * Math.PI * 2
-    ctx.beginPath()
-    ctx.moveTo(Math.cos(a) * 12, Math.sin(a) * 8)
-    ctx.lineTo(Math.cos(a) * 30, Math.sin(a) * 21)
-    ctx.stroke()
-  }
-  ctx.restore()
 }
 
 function shotMeterRing(ctx, x, y, meter, window) {
@@ -508,27 +451,43 @@ function specialBanner(ctx, callout, width, height) {
   const leave = Math.min(1, life / 14)
   const alpha = Math.min(enter, leave)
   const accent = callout.team === 0 ? '#67e8f9' : '#fb7185'
-  const cardW = Math.min(width - 24, 460)
+  const cardW = Math.min(width - 18, 460)
   const x = (width - cardW) / 2
-  const y = Math.max(10, Math.min(22, height * 0.08))
+  const cardH = Math.min(96, cardW / 3.15)
+  const y = Math.max(9, Math.min(20, height * 0.06))
   ctx.save()
   ctx.globalAlpha = alpha
-  ctx.translate((1 - enter) * (callout.team === 0 ? -cardW : cardW), 0)
-  ctx.fillStyle = '#060d18df'
-  ctx.fillRect(x, y, cardW, 38)
-  ctx.fillStyle = accent
-  ctx.fillRect(x, y, cardW, 3)
-  ctx.fillRect(x, y + 35, cardW, 3)
+  const pop = 0.92 + enter * 0.08
+  ctx.translate(width / 2, y + cardH / 2)
+  ctx.scale(pop, pop)
+  ctx.translate(-width / 2, -(y + cardH / 2))
+  ctx.fillStyle = '#060d18f2'
+  rr(ctx, x, y, cardW, cardH, 10)
+  ctx.fill()
+  ctx.strokeStyle = accent
+  ctx.lineWidth = 3
+  ctx.stroke()
+  if (superImpactImage?.complete && superImpactImage.naturalWidth) {
+    ctx.globalAlpha = alpha * 0.78
+    ctx.drawImage(superImpactImage, x + 7, y + 5, cardW - 14, cardH - 10)
+    ctx.globalAlpha = alpha
+  }
+  const shade = ctx.createLinearGradient(0, y, 0, y + cardH)
+  shade.addColorStop(0, '#06101b22')
+  shade.addColorStop(1, '#06101bd9')
+  ctx.fillStyle = shade
+  rr(ctx, x, y, cardW, cardH, 10)
+  ctx.fill()
   ctx.textAlign = 'center'
   ctx.font = '900 7px monospace'
   ctx.fillStyle = '#f5f0d9'
-  ctx.fillText(callout.kicker, width / 2, y + 11)
-  const size = Math.max(16, Math.min(23, cardW / 18))
+  ctx.fillText(callout.kicker, width / 2, y + cardH - 10)
+  const size = Math.max(17, Math.min(25, cardW / 15))
   ctx.font = `900 italic ${size}px Impact, sans-serif`
   ctx.lineWidth = Math.max(3, size / 8)
   ctx.strokeStyle = '#111827'
-  ctx.strokeText(callout.name, width / 2, y + 30)
-  ctx.fillStyle = accent
-  ctx.fillText(callout.name, width / 2, y + 30)
+  ctx.strokeText(callout.name, width / 2, y + cardH - 23)
+  ctx.fillStyle = '#ffe86b'
+  ctx.fillText(callout.name, width / 2, y + cardH - 23)
   ctx.restore()
 }

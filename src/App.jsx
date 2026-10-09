@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import MatchScreen from './components/MatchScreen.jsx'
-import { PLAYER_TEAM, RIVALS, rosterKit } from './game/teams.js'
+import { PLAYER_TEAM, RIVALS } from './game/teams.js'
 import { load, save, recordMatch } from './game/storage.js'
 import { setSound, setMusic, unlockAudio, sfx } from './game/audio.js'
 import { drawAthlete, preloadSprites } from './game/sprites.js'
 import { SCENES } from './game/scenery.js'
+import { storyStage, teamEmblem } from './game/art.js'
 import dialogueCaptains from '../assets/dialogue-captains-v2.webp'
 
 const DIALOGUE_PORTRAITS = {
@@ -32,6 +33,10 @@ function DialoguePortrait({ team, side, speaking }) {
       aria-hidden="true"
     />
   )
+}
+
+function TeamEmblem({ team, className = '' }) {
+  return <img className={`team-emblem ${className}`} src={teamEmblem(team)} alt={`Emblème ${team.name}`} />
 }
 
 function PortraitOnlyGate() {
@@ -124,7 +129,7 @@ function Title({ onStart, trophies }) {
           </h1>
           <p>BASEBALL × BALLE AU PRISONNIER</p>
           <button className="start-game" onClick={onStart}>
-            JOUER <span>▶</span>
+            JOUER
           </button>
           {trophies > 0 && <p className="title-trophies">✦ CHAMPION × {trophies}</p>}
         </div>
@@ -148,9 +153,8 @@ function ConsoleMenu({ onStory, onArcade, onTraining, onOptions, progress }) {
   return (
     <main className="console-menu-screen">
       <div className="console-menu-bg" />
-      <section className="console-menu-panel" aria-labelledby="main-menu-title">
+      <section className="console-menu-panel" aria-label="Menu principal">
         <span className="eyebrow">NEON SLUGGER</span>
-        <h1 id="main-menu-title">CHOISISSEZ UN MODE</h1>
         <nav className="console-menu-list" aria-label="Menu principal">
           {items.map(([title, detail, action], i) => (
             <button
@@ -160,12 +164,10 @@ function ConsoleMenu({ onStory, onArcade, onTraining, onOptions, progress }) {
               onFocus={() => setSelected(i)}
               className={i === selected ? 'selected' : ''}
             >
-              <i>◀</i>
               <span>
                 <b>{title}</b>
                 <small>{detail}</small>
               </span>
-              <i>▶</i>
             </button>
           ))}
         </nav>
@@ -204,17 +206,17 @@ function ModeSetup({ training, onPlay, onBack, reducedMotion }) {
   }
   return (
     <main className="mode-setup" style={{ '--team-accent': rival.accent }}>
-      <SceneBackground arena={RIVALS[venue].arena} className={`mode-backdrop arena-${RIVALS[venue].arena}`} />
+      <SceneBackground arena="gym" className="mode-backdrop arena-gym" />
       <button className="console-back" onClick={onBack}>
-        ← MENU
+        MENU
       </button>
       <section>
         <span className="eyebrow">{training ? 'SALLE D’ENTRAÎNEMENT' : 'DUEL ARCADE'}</span>
         <h1>{training ? 'ENTRAÎNEMENT' : 'MATCH ARCADE'}</h1>
-        <div className="versus-select compact-roster">
-          <Portrait kit={rosterKit(ownTeam, 0)} pose="hold" reducedMotion={reducedMotion} />
+        <div className="versus-select emblem-versus">
+          <TeamEmblem team={ownTeam} />
           <b>VS</b>
-          <Portrait kit={rosterKit(rival, 0)} pose="taunt" facing={-1} reducedMotion={reducedMotion} />
+          <TeamEmblem team={rival} />
         </div>
         <ValueStepper
           label="ÉQUIPE"
@@ -248,7 +250,7 @@ function ModeSetup({ training, onPlay, onBack, reducedMotion }) {
           </div>
         </div>
         <button className="start-game compact" onClick={() => onPlay(selected, ownTeam, RIVALS[venue].arena)}>
-          {training ? 'LANCER L’ENTRAÎNEMENT' : 'LANCER LE MATCH'} <span>▶</span>
+          {training ? 'ENTRAÎNEMENT !' : 'MATCH !'}
         </button>
       </section>
     </main>
@@ -261,35 +263,35 @@ function Tournament({ progress, onPick, reducedMotion, onBack }) {
   const open = selected <= progress.beaten
   return (
     <main className="story-select" style={{ '--team-accent': rival.accent }}>
-      <SceneBackground arena={rival.arena} className={`mode-backdrop arena-${rival.arena}`} />
+      <SceneBackground arena="neon" className="mode-backdrop arena-neon" />
       <button className="console-back" onClick={onBack}>
-        ← MENU
+        MENU
       </button>
       <section>
-        <span className="eyebrow">MODE HISTOIRE · COUPE NÉON</span>
+        <span className="eyebrow">COUPE NÉON</span>
         <h1>CHAPITRE {String(selected + 1).padStart(2, '0')}</h1>
-        <div className="chapter-opponent">
+        <div className="chapter-stage">
           <button
             onClick={() => setSelected((selected - 1 + RIVALS.length) % RIVALS.length)}
             aria-label="Chapitre précédent"
           >
             ◀
           </button>
-          <Portrait
-            kit={rosterKit(rival, 0)}
-            pose={open ? 'taunt' : 'idle'}
-            facing={-1}
-            reducedMotion={reducedMotion}
-          />
+          <img src={storyStage(selected)} alt={`${PLAYER_TEAM.name} contre ${rival.name}`} />
           <button onClick={() => setSelected((selected + 1) % RIVALS.length)} aria-label="Chapitre suivant">
             ▶
           </button>
         </div>
-        <h2>{rival.name}</h2>
-        <p>{rival.stadium}</p>
-        <div className="chapter-progress">{Math.min(progress.beaten, 6)} / 6 VICTOIRES</div>
+        <div className="chapter-caption">
+          <TeamEmblem team={rival} />
+          <div>
+            <h2>{rival.name}</h2>
+            <p>{rival.stadium}</p>
+          </div>
+          <strong>{open ? `STAGE ${selected + 1}` : 'FERMÉ'}</strong>
+        </div>
         <button className="start-game compact" disabled={!open} onClick={() => onPick(selected)}>
-          {open ? 'COMMENCER' : 'VERROUILLÉ'} <span>{open ? '▶' : '◆'}</span>
+          {open ? 'MATCH !' : 'VERROUILLÉ'}
         </button>
       </section>
     </main>
@@ -299,7 +301,7 @@ function Tournament({ progress, onPick, reducedMotion, onBack }) {
 const STORY_BEATS = [
   [
     'Gaspard',
-    'Le Parc des Renards appartient aux Battes Rouges. Rentrez chez vous.',
+    'Le Parc des Renards appartient aux Red Bats. Rentrez chez vous.',
     'Riko',
     'On ne vient pas prendre votre terrain. On vient gagner votre respect.',
   ],
@@ -311,7 +313,7 @@ const STORY_BEATS = [
   ],
   [
     'Marin',
-    'Ici, même le vent joue pour les Requins du Port.',
+    'Ici, même le vent joue pour les Harbor Sharks.',
     'Riko',
     'Parfait. Il poussera notre victoire jusqu’aux tribunes.',
   ],
@@ -323,7 +325,7 @@ const STORY_BEATS = [
   ],
   [
     'Bruce',
-    'Une balle des Taureaux suffit pour éteindre vos néons.',
+    'Une balle des Iron Bulls suffit pour éteindre vos néons.',
     'Riko',
     'Essaie. Les nôtres brillent encore plus fort sous les impacts.',
   ],
@@ -342,7 +344,7 @@ function StoryDialog({ rival, index, reducedMotion, onPlay, onClose }) {
   const lines = [
     {
       speaker: 'Riko',
-      text: `${rival.stadium}. Les Renards sont prêts. On joue notre baseball, jusqu’au dernier impact.`,
+      text: `${rival.stadium}. Les Neon Foxes sont prêts. On joue notre baseball, jusqu’au dernier impact.`,
       side: 'riko',
     },
     { speaker: beat[0], text: beat[1], side: 'rival' },
@@ -366,17 +368,16 @@ function StoryDialog({ rival, index, reducedMotion, onPlay, onClose }) {
       <section className={`story-card arena-${rival.arena}`} style={{ '--rival-accent': rival.accent }}>
         <SceneBackground arena={rival.arena} className="story-background" />
         <div className="story-topline">
-          <span>MODE HISTOIRE · CHAPITRE 0{index + 1}</span>
-          <button className="dialog-back" onClick={onClose} aria-label="Retour au choix du chapitre">
-            ← RETOUR
-          </button>
+          <span>
+            CHAPITRE 0{index + 1} · {rival.stadium}
+          </span>
         </div>
         <h2 id="story-title">FACE À FACE</h2>
         <div className="story-versus">
           <div className={current.side === 'riko' ? 'speaking' : ''}>
             <DialoguePortrait team={PLAYER_TEAM} side="left" speaking={current.side === 'riko'} />
             <b>RIKO</b>
-            <small>RENARDS NÉON</small>
+            <small>NEON FOXES</small>
           </div>
           <span>VS</span>
           <div className={current.side === 'rival' ? 'speaking' : ''}>
@@ -395,12 +396,17 @@ function StoryDialog({ rival, index, reducedMotion, onPlay, onClose }) {
             <i key={i} className={i === line ? 'active' : ''} />
           ))}
         </div>
-        <button
-          className="button primary story-next"
-          onClick={() => (line < lines.length - 1 ? setLine(line + 1) : onPlay())}
-        >
-          {line < lines.length - 1 ? 'SUIVANT' : 'JOUER LE MATCH'} <span>▶</span>
-        </button>
+        <div className="story-actions">
+          <button className="button secondary story-return" onClick={onClose}>
+            RETOUR
+          </button>
+          <button
+            className="button primary story-next"
+            onClick={() => (line < lines.length - 1 ? setLine(line + 1) : onPlay())}
+          >
+            {line < lines.length - 1 ? 'SUIVANT' : 'MATCH !'}
+          </button>
+        </div>
       </section>
     </dialog>
   )
@@ -428,7 +434,7 @@ function Settings({ settings, setSettings, onClose }) {
           <h2>OPTIONS</h2>
         </div>
         <button className="dialog-back" onClick={onClose} aria-label="Retour au menu">
-          ← RETOUR
+          RETOUR
         </button>
       </div>
       {[
@@ -456,13 +462,13 @@ function Settings({ settings, setSettings, onClose }) {
         </div>
       ))}
       <button className="start-game compact" onClick={onClose}>
-        VALIDER <span>▶</span>
+        VALIDER
       </button>
     </dialog>
   )
 }
 
-function Results({ r, rival, isFinal, inTournament, onNext, onRetry, onMenu }) {
+function Results({ r, rival, playerTeam, isFinal, inTournament, onNext, onRetry, onMenu }) {
   const seconds = Math.floor(r.frames / 60)
   const ref = useRef(null)
   useEffect(() => {
@@ -484,13 +490,15 @@ function Results({ r, rival, isFinal, inTournament, onNext, onRetry, onMenu }) {
         <span className="eyebrow">
           {isFinal && r.win && inTournament ? 'COUPE NÉON · LES CHAMPIONS' : 'LE MATCH EST TERMINÉ'}
         </span>
-        <div className="result-emblem">{r.win ? '✦' : '◇'}</div>
-        <h1 id="result-title">{r.win ? 'COUP DE CIRCUIT !' : 'REVANCHE ?'}</h1>
+        <div className="result-versus">
+          <TeamEmblem team={playerTeam} />
+          <b>{r.win ? 'VICTOIRE' : 'DÉFAITE'}</b>
+          <TeamEmblem team={rival} />
+        </div>
+        <h1 id="result-title">{r.win ? 'MATCH GAGNÉ !' : 'REVANCHE ?'}</h1>
         <p>
-          {r.win ? 'Les Renards font vibrer le stade.' : 'Le prochain lancer sera le vôtre.'}
-          <br />
           <small>
-            contre {rival.name} · {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')}
+            {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')} · {rival.name}
           </small>
         </p>
         <div className="result-score">
@@ -513,17 +521,17 @@ function Results({ r, rival, isFinal, inTournament, onNext, onRetry, onMenu }) {
         <div className="result-actions">
           {r.win && inTournament && !isFinal && (
             <button className="button primary" onClick={onNext}>
-              PROCHAIN MATCH ↗
+              PROCHAIN MATCH
             </button>
           )}
           <button
             className={`button ${r.win && inTournament && !isFinal ? 'secondary' : 'primary'}`}
             onClick={onRetry}
           >
-            {r.win ? 'REJOUER' : 'PRENDRE MA REVANCHE'} ↗
+            {r.win ? 'REJOUER' : 'REVANCHE'}
           </button>
           <button className="text-button" onClick={onMenu}>
-            Retour au club →
+            RETOUR AU CLUB
           </button>
         </div>
       </section>
@@ -594,6 +602,7 @@ export default function App() {
           <Results
             r={result}
             rival={RIVALS[idx]}
+            playerTeam={playerTeam}
             isFinal={idx === RIVALS.length - 1}
             inTournament={tournament}
             onNext={() => {

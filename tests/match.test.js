@@ -238,6 +238,16 @@ test('en portrait la caméra reste centrée sur le porteur, même au bord du ter
   assert.ok(Math.abs(m.camX - holder.x) <= 21, `porteur droit hors centre : ${m.camX}`)
 })
 
+test('le ralenti garde la boucle à 60 Hz sans recalculer le HUD à chaque image', () => {
+  const m = new Match({ rival: RIVALS[0] })
+  m.state = 'play'
+  m.slowMo = 12
+  let emissions = 0
+  m.emitHud = () => emissions++
+  for (let i = 0; i < 8; i++) m.update()
+  assert.ok(emissions <= 4, `HUD recalculé ${emissions} fois pendant 8 images de ralenti`)
+})
+
 test('fin du match : plus de dégâts ni de temps de jeu, un seul résultat', () => {
   let ends = 0
   const m = new Match({ rival: RIVALS[0], onEnd: () => ends++ })
