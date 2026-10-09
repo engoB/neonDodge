@@ -24,7 +24,7 @@ const s = (force, power, speed, jump, catching, defense, hp) => ({
 
 export const PLAYER_TEAM = {
   id: 'neons',
-  name: 'Neon Foxes',
+  name: 'Renards Néon',
   arena: 'gym',
   accent: '#5de7cd',
   kit: {
@@ -69,7 +69,7 @@ function team(id, name, arena, accent, kit, roster, specials, level) {
 export const RIVALS = [
   team(
     'chaussettes',
-    'Red Bats',
+    'Battes Rouges',
     'gym',
     '#ff596d',
     {
@@ -88,7 +88,7 @@ export const RIVALS = [
   ),
   team(
     'corbeaux',
-    'Gold Owls',
+    'Hiboux Dorés',
     'roof',
     '#f9d57c',
     {
@@ -107,7 +107,7 @@ export const RIVALS = [
   ),
   team(
     'mouettes',
-    'Harbor Sharks',
+    'Requins du Port',
     'beach',
     '#22d3ee',
     {
@@ -125,7 +125,7 @@ export const RIVALS = [
   ),
   team(
     'cactus',
-    'Wild Coyotes',
+    'Coyotes Sauvages',
     'desert',
     '#84cc16',
     {
@@ -143,7 +143,7 @@ export const RIVALS = [
   ),
   team(
     'requins',
-    'Iron Bulls',
+    'Taureaux de Fer',
     'foundry',
     '#0ea5e9',
     {
@@ -161,7 +161,7 @@ export const RIVALS = [
   ),
   team(
     'eclairs',
-    'Violet Phantoms',
+    'Fantômes Violets',
     'neon',
     '#e879f9',
     {
@@ -208,12 +208,12 @@ export function rosterKit(teamDef, i) {
 }
 
 const STADIUMS = {
-  gym: 'Fox Yard',
-  roof: 'Skyline Park',
-  beach: 'Harbor Field',
-  desert: 'Coyote Canyon',
-  foundry: 'Iron Foundry',
-  neon: 'Neon Dome',
+  gym: 'Parc des Renards',
+  roof: 'Parc du Couchant',
+  beach: 'Stade du Port',
+  desert: 'Canyon Coyote',
+  foundry: 'Forge de Fer',
+  neon: 'Dôme Néon',
 }
 const DESCRIPTIONS = [
   'Le club historique. Des lancers droits, du cœur et du caractère.',
@@ -221,7 +221,7 @@ const DESCRIPTIONS = [
   'Le vent du port dans le dos. Des rebonds difficiles à lire.',
   'Une équipe rapide qui adore vous faire sortir du rythme.',
   'Des lanceurs puissants. Chaque réception devient décisive.',
-  'Les maîtres du dernier stade. Le duel pour la Neon Cup.',
+  'Les maîtres du dernier stade. Le duel pour la Coupe Néon.',
 ]
 RIVALS.forEach((r, i) => {
   r.stadium = STADIUMS[r.arena]

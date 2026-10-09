@@ -122,9 +122,9 @@ function Title({ onStart, trophies }) {
           <h1 id="hero-title">
             <span>NEON</span>SLUGGER<span className="title-star">✦</span>
           </h1>
-          <p>BASEBALL × DODGEBALL</p>
+          <p>BASEBALL × BALLE AU PRISONNIER</p>
           <button className="start-game" onClick={onStart}>
-            START GAME <span>▶</span>
+            JOUER <span>▶</span>
           </button>
           {trophies > 0 && <p className="title-trophies">✦ CHAMPION × {trophies}</p>}
         </div>
@@ -142,15 +142,15 @@ function ConsoleMenu({ onStory, onArcade, onTraining, onOptions, progress }) {
       onStory,
     ],
     ['ARCADE', 'MATCH RAPIDE', onArcade],
-    ['TRAINING', 'ENTRAÎNEMENT', onTraining],
-    ['OPTIONS', 'SON · IMAGE · VIBRATIONS', onOptions],
+    ['ENTRAÎNEMENT', 'APPRENDRE ET ESSAYER', onTraining],
+    ['OPTIONS', 'SON · IMAGE · CONFORT', onOptions],
   ]
   return (
     <main className="console-menu-screen">
       <div className="console-menu-bg" />
       <section className="console-menu-panel" aria-labelledby="main-menu-title">
         <span className="eyebrow">NEON SLUGGER</span>
-        <h1 id="main-menu-title">SELECT MODE</h1>
+        <h1 id="main-menu-title">CHOISISSEZ UN MODE</h1>
         <nav className="console-menu-list" aria-label="Menu principal">
           {items.map(([title, detail, action], i) => (
             <button
@@ -209,7 +209,7 @@ function ModeSetup({ training, onPlay, onBack, reducedMotion }) {
         ← MENU
       </button>
       <section>
-        <span className="eyebrow">{training ? 'TRAINING ROOM' : 'ARCADE BATTLE'}</span>
+        <span className="eyebrow">{training ? 'SALLE D’ENTRAÎNEMENT' : 'DUEL ARCADE'}</span>
         <h1>{training ? 'ENTRAÎNEMENT' : 'MATCH ARCADE'}</h1>
         <div className="versus-select compact-roster">
           <Portrait kit={rosterKit(ownTeam, 0)} pose="hold" reducedMotion={reducedMotion} />
@@ -242,11 +242,13 @@ function ModeSetup({ training, onPlay, onBack, reducedMotion }) {
             <button onClick={() => setVenue((venue + 1) % RIVALS.length)} aria-label="Terrain suivant">
               ▶
             </button>
-            <small>{RIVALS[venue].name.toUpperCase()} · {String(venue + 1).padStart(2, '0')}/06</small>
+            <small>
+              {RIVALS[venue].name.toUpperCase()} · {String(venue + 1).padStart(2, '0')}/06
+            </small>
           </div>
         </div>
         <button className="start-game compact" onClick={() => onPlay(selected, ownTeam, RIVALS[venue].arena)}>
-          {training ? 'START TRAINING' : 'PLAY BALL'} <span>▶</span>
+          {training ? 'LANCER L’ENTRAÎNEMENT' : 'LANCER LE MATCH'} <span>▶</span>
         </button>
       </section>
     </main>
@@ -264,7 +266,7 @@ function Tournament({ progress, onPick, reducedMotion, onBack }) {
         ← MENU
       </button>
       <section>
-        <span className="eyebrow">STORY MODE · NEON CUP</span>
+        <span className="eyebrow">MODE HISTOIRE · COUPE NÉON</span>
         <h1>CHAPITRE {String(selected + 1).padStart(2, '0')}</h1>
         <div className="chapter-opponent">
           <button
@@ -287,7 +289,7 @@ function Tournament({ progress, onPick, reducedMotion, onBack }) {
         <p>{rival.stadium}</p>
         <div className="chapter-progress">{Math.min(progress.beaten, 6)} / 6 VICTOIRES</div>
         <button className="start-game compact" disabled={!open} onClick={() => onPick(selected)}>
-          {open ? 'START CHAPTER' : 'LOCKED'} <span>{open ? '▶' : '◆'}</span>
+          {open ? 'COMMENCER' : 'VERROUILLÉ'} <span>{open ? '▶' : '◆'}</span>
         </button>
       </section>
     </main>
@@ -297,7 +299,7 @@ function Tournament({ progress, onPick, reducedMotion, onBack }) {
 const STORY_BEATS = [
   [
     'Gaspard',
-    'Le Fox Yard appartient aux Bats. Rentrez chez vous.',
+    'Le Parc des Renards appartient aux Battes Rouges. Rentrez chez vous.',
     'Riko',
     'On ne vient pas prendre votre terrain. On vient gagner votre respect.',
   ],
@@ -309,7 +311,7 @@ const STORY_BEATS = [
   ],
   [
     'Marin',
-    'Ici, même le vent joue pour les Sharks.',
+    'Ici, même le vent joue pour les Requins du Port.',
     'Riko',
     'Parfait. Il poussera notre victoire jusqu’aux tribunes.',
   ],
@@ -317,11 +319,11 @@ const STORY_BEATS = [
     'Pico',
     'Notre rythme va vous faire courir après le match.',
     'Riko',
-    'Les Foxes ne suivent pas le rythme. Ils le déclenchent.',
+    'Les Renards ne suivent pas le rythme. Ils le déclenchent.',
   ],
   [
     'Bruce',
-    'Une balle des Bulls suffit pour éteindre vos néons.',
+    'Une balle des Taureaux suffit pour éteindre vos néons.',
     'Riko',
     'Essaie. Les nôtres brillent encore plus fort sous les impacts.',
   ],
@@ -329,7 +331,7 @@ const STORY_BEATS = [
     'Vega',
     'Tu voulais la couronne. Il faut maintenant me la prendre.',
     'Riko',
-    'Pas la prendre, Vega. La mériter devant tout le Dome.',
+    'Pas la prendre, Vega. La mériter devant tout le Dôme.',
   ],
 ]
 
@@ -340,7 +342,7 @@ function StoryDialog({ rival, index, reducedMotion, onPlay, onClose }) {
   const lines = [
     {
       speaker: 'Riko',
-      text: `${rival.stadium}. Les Foxes sont prêts. On joue notre baseball, jusqu’au dernier impact.`,
+      text: `${rival.stadium}. Les Renards sont prêts. On joue notre baseball, jusqu’au dernier impact.`,
       side: 'riko',
     },
     { speaker: beat[0], text: beat[1], side: 'rival' },
@@ -365,8 +367,8 @@ function StoryDialog({ rival, index, reducedMotion, onPlay, onClose }) {
         <SceneBackground arena={rival.arena} className="story-background" />
         <div className="story-topline">
           <span>MODE HISTOIRE · CHAPITRE 0{index + 1}</span>
-          <button className="icon-button" onClick={onClose} aria-label="Fermer le dialogue">
-            ×
+          <button className="dialog-back" onClick={onClose} aria-label="Retour au choix du chapitre">
+            ← RETOUR
           </button>
         </div>
         <h2 id="story-title">FACE À FACE</h2>
@@ -374,7 +376,7 @@ function StoryDialog({ rival, index, reducedMotion, onPlay, onClose }) {
           <div className={current.side === 'riko' ? 'speaking' : ''}>
             <DialoguePortrait team={PLAYER_TEAM} side="left" speaking={current.side === 'riko'} />
             <b>RIKO</b>
-            <small>NEON FOXES</small>
+            <small>RENARDS NÉON</small>
           </div>
           <span>VS</span>
           <div className={current.side === 'rival' ? 'speaking' : ''}>
@@ -397,7 +399,7 @@ function StoryDialog({ rival, index, reducedMotion, onPlay, onClose }) {
           className="button primary story-next"
           onClick={() => (line < lines.length - 1 ? setLine(line + 1) : onPlay())}
         >
-          {line < lines.length - 1 ? 'NEXT' : 'PLAY BALL !'} <span>▶</span>
+          {line < lines.length - 1 ? 'SUIVANT' : 'JOUER LE MATCH'} <span>▶</span>
         </button>
       </section>
     </dialog>
@@ -425,14 +427,13 @@ function Settings({ settings, setSettings, onClose }) {
           <span className="eyebrow">NEON SLUGGER</span>
           <h2>OPTIONS</h2>
         </div>
-        <button className="icon-button" onClick={onClose} aria-label="Fermer les réglages">
-          ×
+        <button className="dialog-back" onClick={onClose} aria-label="Retour au menu">
+          ← RETOUR
         </button>
       </div>
       {[
         ['sound', 'EFFETS SONORES'],
         ['music', 'MUSIQUE'],
-        ['haptics', 'VIBRATIONS'],
         ['reducedMotion', 'ANIMATIONS RÉDUITES'],
       ].map(([key, title]) => (
         <div key={key} className="option-stepper" role="group" aria-label={title}>
@@ -444,7 +445,7 @@ function Settings({ settings, setSettings, onClose }) {
             >
               ◀
             </button>
-            <b>{settings[key] ? 'ON' : 'OFF'}</b>
+            <b>{settings[key] ? 'ACTIF' : 'COUPÉ'}</b>
             <button
               onClick={() => setSettings({ ...settings, [key]: !settings[key] })}
               aria-label={`${title}, suivant`}
@@ -455,7 +456,7 @@ function Settings({ settings, setSettings, onClose }) {
         </div>
       ))}
       <button className="start-game compact" onClick={onClose}>
-        VALIDATE <span>▶</span>
+        VALIDER <span>▶</span>
       </button>
     </dialog>
   )
@@ -481,12 +482,12 @@ function Results({ r, rival, isFinal, inTournament, onNext, onRetry, onMenu }) {
     >
       <section className="result-card">
         <span className="eyebrow">
-          {isFinal && r.win && inTournament ? 'NEON CUP · LES CHAMPIONS' : 'LE MATCH EST TERMINÉ'}
+          {isFinal && r.win && inTournament ? 'COUPE NÉON · LES CHAMPIONS' : 'LE MATCH EST TERMINÉ'}
         </span>
         <div className="result-emblem">{r.win ? '✦' : '◇'}</div>
-        <h1 id="result-title">{r.win ? 'HOME RUN !' : 'REVANCHE ?'}</h1>
+        <h1 id="result-title">{r.win ? 'COUP DE CIRCUIT !' : 'REVANCHE ?'}</h1>
         <p>
-          {r.win ? 'Les Foxes font vibrer le stade.' : 'Le prochain lancer sera le vôtre.'}
+          {r.win ? 'Les Renards font vibrer le stade.' : 'Le prochain lancer sera le vôtre.'}
           <br />
           <small>
             contre {rival.name} · {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')}
@@ -580,7 +581,7 @@ export default function App() {
           key={runId}
           rival={{ ...RIVALS[idx], arena: matchArena }}
           settings={progress.settings}
-          label={`${tournament ? `Neon Cup · match ${idx + 1}` : 'Match express'} · ${RIVALS[idx].name}`}
+          label={`${tournament ? `Coupe Néon · match ${idx + 1}` : 'Match express'} · ${RIVALS[idx].name}`}
           training={mode === 'training'}
           playerTeam={playerTeam}
           onEnd={(r) => {
