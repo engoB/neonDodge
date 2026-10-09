@@ -44,7 +44,8 @@ function line(ctx, x0, y0, x1, y1) {
 export function drawMatch(m, ctx, scale, dpr, viewH, t) {
   const arena = m.rival.arena
   const fl = FLOORS[arena]
-  const offY = (viewH - VIEW_H) * 0.85
+  // Le terrain remonte en portrait : davantage d'action, moins de ciel inutile.
+  const offY = (viewH - VIEW_H) * 0.68
   const sh = !m.reducedMotion && m.shake ? (Math.sin(t * 90) * m.shake) / 2 : 0
   const zoom = m.camZoom || 1
   // Align camera translation to the pixel grid. Fractional transforms made
@@ -244,6 +245,8 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
     const p = it.p
     const [sx, sy] = toScreen(p.x, p.y, p.z)
     const pose = poseOf(m, p)
+    if (p === holder && p.team === 0 && m.shotMeter)
+      shotMeterRing(ctx, sx, sy + p.z, m.shotMeter, m.meterWindow(m.shotMeter))
     drawAthlete(ctx, {
       x: sx,
       y: sy,
@@ -326,7 +329,7 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
   const cys = viewH / 2
   if (m.state === 'intro') {
     const n = Math.ceil(m.introT / 40)
-    banner(ctx, cxs, cys, n > 3 ? 'PLAY BALL !' : n > 0 ? String(n) : 'GO !', n > 3 ? 28 : 46)
+    banner(ctx, cxs, cys, n > 3 ? 'JOUEZ !' : n > 0 ? String(n) : 'PARTEZ !', n > 3 ? 28 : 38)
   }
   if (m.state === 'end' && m.endT < 120)
     banner(ctx, cxs, viewH - 18, m.winner === 0 ? 'VICTOIRE !' : 'DÉFAITE…', 24)
@@ -355,16 +358,49 @@ function drawBatFinisher(ctx, finisher) {
   const enter = Math.min(1, (78 - finisher.t) / 12)
   const angle = (-1.15 + enter * 2.05) * finisher.facing
   ctx.save()
-  ctx.translate(x - finisher.facing * 18, y - 8)
+  ctx.translate(x - finisher.facing * 22, y - 10)
   ctx.rotate(angle)
+  ctx.scale(finisher.facing, 1)
   ctx.shadowColor = finisher.team === 0 ? '#67e8f9' : '#fb7185'
-  ctx.shadowBlur = 14
-  ctx.fillStyle = '#4b2b20'
-  ctx.fillRect(-4, -4, 15, 8)
-  ctx.fillStyle = '#f9d57c'
-  ctx.fillRect(8, -7, 48, 14)
-  ctx.fillStyle = '#fff3c4'
-  ctx.fillRect(14, -5, 34, 4)
+  ctx.shadowBlur = 18
+  ctx.lineJoin = 'round'
+  ctx.lineWidth = 4
+  ctx.strokeStyle = '#261628'
+  ctx.fillStyle = '#e49a3b'
+  ctx.beginPath()
+  ctx.moveTo(-42, -4)
+  ctx.lineTo(-42, 4)
+  ctx.lineTo(-35, 6)
+  ctx.lineTo(-31, 3)
+  ctx.lineTo(-7, 6)
+  ctx.bezierCurveTo(7, 10, 46, 14, 66, 11)
+  ctx.bezierCurveTo(76, 9, 76, -9, 66, -11)
+  ctx.bezierCurveTo(46, -14, 7, -10, -7, -6)
+  ctx.lineTo(-31, -3)
+  ctx.lineTo(-35, -6)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+  ctx.shadowBlur = 0
+  // Poignée, veinage et reflet rendent la batte immédiatement lisible.
+  ctx.fillStyle = '#61351f'
+  ctx.fillRect(-34, -4, 25, 8)
+  ctx.fillStyle = '#fff0ad'
+  ctx.fillRect(-30, -2, 19, 2)
+  ctx.strokeStyle = '#9b5928'
+  ctx.lineWidth = 2
+  for (const bx of [10, 27, 44, 59]) {
+    ctx.beginPath()
+    ctx.moveTo(bx, -8)
+    ctx.lineTo(bx + 4, 8)
+    ctx.stroke()
+  }
+  ctx.strokeStyle = '#fff3c4'
+  ctx.lineWidth = 3
+  ctx.beginPath()
+  ctx.moveTo(2, -6)
+  ctx.bezierCurveTo(24, -10, 49, -11, 65, -8)
+  ctx.stroke()
   ctx.restore()
   ctx.save()
   ctx.translate(x, y)
@@ -377,6 +413,41 @@ function drawBatFinisher(ctx, finisher) {
     ctx.lineTo(Math.cos(a) * 30, Math.sin(a) * 21)
     ctx.stroke()
   }
+  ctx.restore()
+}
+
+function shotMeterRing(ctx, x, y, meter, window) {
+  const colors = ['#22d3ee', '#fde047', '#fb7185']
+  const color = colors[meter.stage - 1] || colors[0]
+  const start = -Math.PI / 2
+  const tau = Math.PI * 2
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.scale(1, 0.38)
+  ctx.lineCap = 'round'
+  ctx.lineWidth = 7
+  ctx.strokeStyle = 'rgba(11, 20, 43, 0.82)'
+  ctx.beginPath()
+  ctx.arc(0, 0, 19, 0, tau)
+  ctx.stroke()
+  ctx.lineWidth = 8
+  ctx.strokeStyle = '#ffffff'
+  ctx.beginPath()
+  ctx.arc(0, 0, 19, start + window.start * tau, start + window.end * tau)
+  ctx.stroke()
+  ctx.lineWidth = 5
+  ctx.strokeStyle = color
+  ctx.beginPath()
+  ctx.arc(0, 0, 19, start, start + meter.value * tau)
+  ctx.stroke()
+  const angle = start + meter.value * tau
+  ctx.fillStyle = color
+  ctx.strokeStyle = '#1b1530'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.arc(Math.cos(angle) * 19, Math.sin(angle) * 19, 4.5, 0, tau)
+  ctx.fill()
+  ctx.stroke()
   ctx.restore()
 }
 

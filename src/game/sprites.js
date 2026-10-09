@@ -41,7 +41,12 @@ export const ASSET_URLS = {
   echo: new URL('../../assets/sprites/echo.png', import.meta.url),
   nova: new URL('../../assets/sprites/nova.png', import.meta.url),
   baseball: new URL('../../assets/sprites/baseball.png', import.meta.url),
-  stadium: new URL('../../assets/stadium-panorama.webp', import.meta.url),
+  'stadium-gym': new URL('../../assets/stadiums-v2/gym.webp', import.meta.url),
+  'stadium-roof': new URL('../../assets/stadiums-v2/roof.webp', import.meta.url),
+  'stadium-beach': new URL('../../assets/stadiums-v2/beach.webp', import.meta.url),
+  'stadium-desert': new URL('../../assets/stadiums-v2/desert.webp', import.meta.url),
+  'stadium-foundry': new URL('../../assets/stadiums-v2/foundry.webp', import.meta.url),
+  'stadium-neon': new URL('../../assets/stadiums-v2/neon.webp', import.meta.url),
 }
 export const ATHLETE_IDS = [
   'riko',

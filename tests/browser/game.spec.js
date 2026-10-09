@@ -4,9 +4,9 @@ const action = (page) => page.locator('[data-game-action="true"]')
 const pause = (page) => page.getByRole('button', { name: 'Pause', exact: true })
 
 async function start(page) {
-  await page.getByRole('button', { name: /START GAME/ }).click()
+  await page.getByRole('button', { name: /^JOUER/ }).click()
   await page.getByRole('button', { name: /ARCADE/ }).click()
-  await page.getByRole('button', { name: /PLAY BALL/ }).click()
+  await page.getByRole('button', { name: /LANCER LE MATCH/ }).click()
   await expect(action(page)).toBeEnabled()
   await expect(page.locator('.game-surface')).toBeVisible()
 }
@@ -61,7 +61,7 @@ test.beforeEach(async ({ page }) => {
         beaten: 0,
         best: {},
         trophies: 0,
-        settings: { sound: false, music: false, haptics: false, reducedMotion: true },
+        settings: { sound: false, music: false, reducedMotion: true },
       }),
     )
   })
@@ -69,7 +69,7 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('accueil : écran titre épuré puis menu console', async ({ page }, info) => {
-  await expect(page.getByRole('button', { name: /START GAME/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^JOUER/ })).toBeVisible()
   await expect(page.getByText('TOUCH TO START')).toHaveCount(0)
   await expect(page.getByRole('heading', { name: /NEON.*SLUGGER/ })).toBeVisible()
   const visual = await page.locator('.hero-art').evaluate(async (el) => {
@@ -79,51 +79,61 @@ test('accueil : écran titre épuré puis menu console', async ({ page }, info) 
     await img.decode()
     return { width: img.naturalWidth, height: img.naturalHeight }
   })
-  expect(visual).toEqual({ width: 1536, height: 1024 })
+  expect(visual).toEqual({ width: 941, height: 1672 })
   const box = await page.locator('#hero-title').boundingBox()
   expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize().width + 1)
   expect(
     await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth && document.documentElement.scrollHeight <= innerHeight,
+      () =>
+        document.documentElement.scrollWidth <= innerWidth &&
+        document.documentElement.scrollHeight <= innerHeight,
     ),
   ).toBe(true)
   await screenshot(page, info, 'accueil')
-  await page.getByRole('button', { name: /START GAME/ }).click()
+  await page.getByRole('button', { name: /^JOUER/ }).click()
   await expect(page.locator('.console-menu-list button')).toHaveCount(4)
-  await expect(page.getByRole('heading', { name: 'SELECT MODE' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'CHOISISSEZ UN MODE' })).toBeVisible()
 })
 
 test('arcade : sélection aux flèches et lancement plein écran', async ({ page }, info) => {
-  await page.getByRole('button', { name: /START GAME/ }).click()
+  await page.getByRole('button', { name: /^JOUER/ }).click()
   await page.getByRole('button', { name: /ARCADE/ }).click()
-  await expect(page.getByText('RED BATS', { exact: true })).toBeVisible()
-  await expect(page.getByText('FOX YARD', { exact: true })).toBeVisible()
+  await expect(page.getByText('BATTES ROUGES', { exact: true })).toBeVisible()
+  await expect(page.getByText('PARC DES RENARDS', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: /ADVERSAIRE, valeur suivante/ }).click()
-  await expect(page.getByText('GOLD OWLS', { exact: true })).toBeVisible()
-  await expect(page.getByText('FOX YARD', { exact: true })).toBeVisible()
+  await expect(page.getByText('HIBOUX DORÉS', { exact: true })).toBeVisible()
+  await expect(page.getByText('PARC DES RENARDS', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Terrain suivant' }).click()
-  await expect(page.getByText('SKYLINE PARK', { exact: true })).toBeVisible()
+  await expect(page.getByText('PARC DU COUCHANT', { exact: true })).toBeVisible()
   await expect(page.locator('.stadium-card canvas')).toBeVisible()
   expect(
     await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth && document.documentElement.scrollHeight <= innerHeight,
+      () =>
+        document.documentElement.scrollWidth <= innerWidth &&
+        document.documentElement.scrollHeight <= innerHeight,
     ),
   ).toBe(true)
   await screenshot(page, info, 'arcade-select')
-  await page.getByRole('button', { name: /PLAY BALL/ }).click()
+  await page.getByRole('button', { name: /LANCER LE MATCH/ }).click()
   await expect(action(page)).toBeEnabled()
 })
 
-test('réglages : dialogue modal, fermeture clavier et sauvegarde', async ({ page }) => {
-  await page.getByRole('button', { name: /START GAME/ }).click()
+test('réglages : dialogue sans défilement, retour et sauvegarde', async ({ page }) => {
+  await page.getByRole('button', { name: /^JOUER/ }).click()
   await page.getByRole('button', { name: /OPTIONS/ }).click()
   const dialog = page.locator('.settings-dialog')
   await expect(dialog).toBeVisible()
   const sound = page.getByRole('group', { name: 'EFFETS SONORES' })
-  await expect(sound).toContainText('OFF')
+  await expect(sound).toContainText('COUPÉ')
   await sound.getByRole('button', { name: /suivant/ }).click()
-  await expect(sound).toContainText('ON')
-  await page.keyboard.press('Escape')
+  await expect(sound).toContainText('ACTIF')
+  await expect(page.getByText('VIBRATIONS')).toHaveCount(0)
+  expect(
+    await dialog.evaluate(
+      (el) => el.scrollHeight <= el.clientHeight && el.getBoundingClientRect().bottom <= innerHeight,
+    ),
+  ).toBe(true)
+  await page.getByRole('button', { name: /Retour au menu/ }).click()
   await expect(dialog).toHaveCount(0)
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('neon-dodge-v1')).settings.sound)).toBe(
     true,
@@ -133,19 +143,19 @@ test('réglages : dialogue modal, fermeture clavier et sauvegarde', async ({ pag
 test('coupe : premier match accessible, suivants verrouillés et commandes visibles', async ({
   page,
 }, info) => {
-  await page.getByRole('button', { name: /START GAME/ }).click()
+  await page.getByRole('button', { name: /^JOUER/ }).click()
   await page.getByRole('button', { name: /HISTOIRE/ }).click()
   await expect(page.getByRole('heading', { name: /CHAPITRE 01/ })).toBeVisible()
-  await page.getByRole('button', { name: /START CHAPTER/ }).click()
+  await page.getByRole('button', { name: /COMMENCER/ }).click()
   await expect(page.locator('.story-dialog')).toBeVisible()
   await expect(page.locator('.story-versus .dialogue-portrait')).toHaveCount(2)
   await expect(page.locator('.speech-box.riko')).toBeVisible()
   await screenshot(page, info, 'histoire-gauche')
-  await page.getByRole('button', { name: /NEXT/ }).click()
+  await page.getByRole('button', { name: /SUIVANT/ }).click()
   await expect(page.locator('.speech-box.rival')).toBeVisible()
   await screenshot(page, info, 'histoire-droite')
-  await page.getByRole('button', { name: /NEXT/ }).click()
-  await page.getByRole('button', { name: /PLAY BALL/ }).click()
+  await page.getByRole('button', { name: /SUIVANT/ }).click()
+  await page.getByRole('button', { name: /JOUER LE MATCH/ }).click()
   await expect(action(page)).toBeEnabled()
   await expectMatchFits(page)
   await screenshot(page, info, 'match')
@@ -158,7 +168,7 @@ test('tactile : pause, reprise et jauge avec validation séparée', async ({ pag
   await page.getByRole('button', { name: /REPRENDRE LE MATCH/ }).click()
   await expect(page.locator('.pause-dialog')).not.toBeVisible()
   await action(page).click()
-  await expect(page.getByRole('progressbar', { name: /Jauge de tir 1 sur 3/ })).toBeVisible()
+  await expect(page.getByRole('progressbar', { name: /Jauge de tir 1 sur 3/ })).toBeAttached()
   await expect(page.locator('.arena-status')).toContainText('ATTAQUE')
   await pause(page).click()
   await page.getByRole('button', { name: /REPRENDRE LE MATCH/ }).click()
@@ -183,7 +193,7 @@ test('pointeur : annulation sans lancer, passe et reprise', async ({ page }) => 
   await expectMatchFits(page)
 })
 
-test('commandes directes : le Jump Shot se déclenche en une touche', async ({ page }) => {
+test('commandes directes : le tir sauté se déclenche en une touche', async ({ page }) => {
   await start(page)
   const jump = page.getByRole('button', { name: 'Faire un tir en saut' })
   await expect(jump).toBeEnabled()
@@ -198,17 +208,17 @@ test('paysage : le jeu demande explicitement le retour au portrait', async ({ pa
   await expect(page.getByText('TOURNEZ L’ÉCRAN')).toBeVisible()
   await screenshot(page, info, 'portrait-required')
   await page.setViewportSize(original)
-  await expect(page.getByRole('button', { name: /START GAME/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^JOUER/ })).toBeVisible()
 })
 
-test('training : équipe sélectionnée, vies restaurées et retour menu', async ({ page }, info) => {
-  await page.getByRole('button', { name: /START GAME/ }).click()
-  await page.getByRole('button', { name: /TRAINING/ }).click()
+test('entraînement : équipe sélectionnée, vies restaurées et retour menu', async ({ page }, info) => {
+  await page.getByRole('button', { name: /^JOUER/ }).click()
+  await page.getByRole('button', { name: /ENTRAÎNEMENT/ }).click()
   await page.getByRole('button', { name: /ÉQUIPE, valeur suivante/ }).click()
-  await expect(page.getByText('RED BATS', { exact: true })).toHaveCount(2)
-  await page.getByRole('button', { name: /START TRAINING/ }).click()
+  await expect(page.getByText('BATTES ROUGES', { exact: true })).toHaveCount(2)
+  await page.getByRole('button', { name: /LANCER L’ENTRAÎNEMENT/ }).click()
   await expect(action(page)).toBeEnabled()
-  await expect(page.locator('.score-team.left')).toContainText('Red Bats')
+  await expect(page.locator('.score-team.left')).toContainText('Battes Rouges')
   await expectMatchFits(page)
   await screenshot(page, info, 'training')
 })

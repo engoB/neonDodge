@@ -83,7 +83,6 @@ export default function MatchScreen({
     const m = new Match({
       rival,
       seed: Math.floor(Math.random() * 2 ** 32),
-      haptics: settings.haptics,
       reducedMotion: settings.reducedMotion,
       onHud: setHud,
       onEnd,
@@ -210,12 +209,12 @@ export default function MatchScreen({
     meter = hud?.shotMeter
   const title =
     hud?.state === 'intro'
-      ? 'PLAY BALL'
+      ? 'À VOUS DE JOUER'
       : holding
         ? meter
-          ? `TAPE ${meter.stage} / 3`
+          ? `FRAPPE ${meter.stage} / 3`
           : hud.armed
-            ? 'SUPER ARMÉ'
+            ? 'SUPER PRÊT'
             : 'PRÉPAREZ LE TIR'
         : hud?.threat !== null
           ? 'ATTRAPEZ !'
@@ -250,19 +249,13 @@ export default function MatchScreen({
             <strong>{title}</strong>
             {meter && (
               <div
-                className={`shot-meter stage-${meter.stage}`}
+                className="shot-meter-accessible"
                 role="progressbar"
                 aria-label={`Jauge de tir ${meter.stage} sur 3`}
                 aria-valuenow={Math.round(meter.value * 100)}
                 aria-valuemin={0}
                 aria-valuemax={100}
-              >
-                <span
-                  className="shot-zone"
-                  style={{ left: `${meter.start * 100}%`, width: `${(meter.end - meter.start) * 100}%` }}
-                />
-                <i style={{ left: `${meter.value * 100}%` }} />
-              </div>
+              ></div>
             )}
           </div>
         )}
@@ -275,7 +268,9 @@ export default function MatchScreen({
               <small className="arcade-score" aria-label="Score">
                 {String(hud.score).padStart(5, '0')}
               </small>
-              <span>{training ? 'TRAINING' : label.startsWith('Neon Cup') ? 'NEON CUP' : 'ARCADE'}</span>
+              <span>
+                {training ? 'ENTRAÎNEMENT' : label.startsWith('Coupe Néon') ? 'COUPE NÉON' : 'ARCADE'}
+              </span>
               <b>
                 {Math.floor(hud.seconds / 60)}:{String(hud.seconds % 60).padStart(2, '0')}
               </b>
@@ -308,12 +303,12 @@ export default function MatchScreen({
             aria-label={
               holding
                 ? meter
-                  ? 'Valider le timing du tir'
+                  ? 'Valider le rythme du tir'
                   : 'Préparer un tir'
                 : 'Réceptionner ou maintenir pour sauter'
             }
           >
-            <strong>{holding ? (meter ? `TAPE ${meter.stage}` : 'TIR') : 'ATTRAPER / SAUT'}</strong>
+            <strong>{holding ? (meter ? `FRAPPE ${meter.stage}` : 'TIR') : 'ATTRAPER / SAUT'}</strong>
           </button>
           <button
             className="pass-button"
@@ -337,7 +332,7 @@ export default function MatchScreen({
             }}
             aria-label="Faire un tir en saut"
           >
-            <span>↗</span>JUMP SHOT
+            <span>↗</span>TIR SAUTÉ
           </button>
         </div>
       )}
@@ -351,7 +346,7 @@ export default function MatchScreen({
       >
         <section className="pause-card">
           <span className="eyebrow">LE STADE VOUS ATTEND</span>
-          <h2>TIME OUT.</h2>
+          <h2>PAUSE</h2>
           <p>
             {label}
             <br />

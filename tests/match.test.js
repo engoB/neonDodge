@@ -117,6 +117,24 @@ test('la jauge enchaîne trois timings puis déclenche le tir signature', () => 
   assert.equal(hud.shotMeter, null)
 })
 
+test('la jauge ne fait qu’un passage puis déclenche un tir normal', () => {
+  const m = new Match({ rival: RIVALS[0] })
+  m.state = 'play'
+  m.press()
+  m.release()
+  let previous = m.shotMeter.value
+  for (let i = 0; i < 100 && m.shotMeter; i++) {
+    m.updateShotMeter()
+    if (m.shotMeter) {
+      assert.ok(m.shotMeter.value >= previous, 'le curseur ne doit jamais repartir au début')
+      previous = m.shotMeter.value
+    }
+  }
+  assert.equal(m.shotMeter, null)
+  assert.equal(m.holder.state, 'windup')
+  assert.equal(m.holder.throwOpts.sup, undefined)
+})
+
 test('une réception parfaite élargit la jauge sans renvoyer la balle', () => {
   const m = new Match({ rival: RIVALS[0] })
   m.state = 'play'

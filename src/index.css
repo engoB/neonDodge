@@ -3079,8 +3079,7 @@ body {
 .console-menu-screen,
 .mode-setup,
 .story-select {
-  padding: max(50px, calc(env(safe-area-inset-top) + 34px)) 13px
-    max(12px, env(safe-area-inset-bottom));
+  padding: max(50px, calc(env(safe-area-inset-top) + 34px)) 13px max(12px, env(safe-area-inset-bottom));
 }
 .console-menu-panel,
 .mode-setup > section,
@@ -3468,7 +3467,11 @@ button {
   font-size: clamp(34px, 11vw, 48px);
   line-height: 1.05;
   letter-spacing: -0.05em;
-  text-shadow: 4px 0 #07101a, -4px 0 #07101a, 0 4px #07101a, 4px 4px var(--pixel-red);
+  text-shadow:
+    4px 0 #07101a,
+    -4px 0 #07101a,
+    0 4px #07101a,
+    4px 4px var(--pixel-red);
 }
 .title-lockup-minimal > p:not(.title-trophies) {
   color: var(--pixel-yellow);
@@ -3483,7 +3486,20 @@ button {
   background: var(--pixel-red);
   box-shadow: 6px 6px 0 #02070d;
   color: var(--pixel-ink);
-  clip-path: polygon(5px 0, calc(100% - 5px) 0, calc(100% - 5px) 5px, 100% 5px, 100% calc(100% - 5px), calc(100% - 5px) calc(100% - 5px), calc(100% - 5px) 100%, 5px 100%, 5px calc(100% - 5px), 0 calc(100% - 5px), 0 5px, 5px 5px);
+  clip-path: polygon(
+    5px 0,
+    calc(100% - 5px) 0,
+    calc(100% - 5px) 5px,
+    100% 5px,
+    100% calc(100% - 5px),
+    calc(100% - 5px) calc(100% - 5px),
+    calc(100% - 5px) 100%,
+    5px 100%,
+    5px calc(100% - 5px),
+    0 calc(100% - 5px),
+    0 5px,
+    5px 5px
+  );
 }
 .title-lockup-minimal .start-game {
   font-size: clamp(14px, 4.8vw, 20px);
@@ -3514,7 +3530,20 @@ button {
   outline-offset: -6px;
   background: #123b54f2;
   box-shadow: 5px 5px 0 #02070d;
-  clip-path: polygon(5px 0, calc(100% - 5px) 0, calc(100% - 5px) 5px, 100% 5px, 100% calc(100% - 5px), calc(100% - 5px) calc(100% - 5px), calc(100% - 5px) 100%, 5px 100%, 5px calc(100% - 5px), 0 calc(100% - 5px), 0 5px, 5px 5px);
+  clip-path: polygon(
+    5px 0,
+    calc(100% - 5px) 0,
+    calc(100% - 5px) 5px,
+    100% 5px,
+    100% calc(100% - 5px),
+    calc(100% - 5px) calc(100% - 5px),
+    calc(100% - 5px) 100%,
+    5px 100%,
+    5px calc(100% - 5px),
+    0 calc(100% - 5px),
+    0 5px,
+    5px 5px
+  );
 }
 .console-menu-list button.selected,
 .console-menu-list button:focus-visible {
@@ -3675,7 +3704,16 @@ canvas.story-background {
   outline-offset: -8px;
   background: var(--pixel-paper);
   box-shadow: 6px 6px 0 #02070d;
-  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px, 6px 6px);
+  clip-path: polygon(
+    6px 0,
+    100% 0,
+    100% calc(100% - 6px),
+    calc(100% - 6px) calc(100% - 6px),
+    calc(100% - 6px) 100%,
+    0 100%,
+    0 6px,
+    6px 6px
+  );
 }
 .speech-box.riko {
   border-left-color: var(--pixel-cyan);
@@ -3710,7 +3748,20 @@ canvas.story-background {
   outline-offset: -7px;
   background: #0b263a;
   box-shadow: 4px 4px 0 #02070d;
-  clip-path: polygon(6px 0, calc(100% - 6px) 0, calc(100% - 6px) 6px, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 6px calc(100% - 6px), 0 calc(100% - 6px), 0 6px, 6px 6px);
+  clip-path: polygon(
+    6px 0,
+    calc(100% - 6px) 0,
+    calc(100% - 6px) 6px,
+    100% 6px,
+    100% calc(100% - 6px),
+    calc(100% - 6px) calc(100% - 6px),
+    calc(100% - 6px) 100%,
+    6px 100%,
+    6px calc(100% - 6px),
+    0 calc(100% - 6px),
+    0 6px,
+    6px 6px
+  );
 }
 .score-name {
   min-height: 21px;
@@ -3810,7 +3861,16 @@ canvas.story-background {
 .jump-button {
   border: 3px solid var(--pixel-paper);
   box-shadow: 3px 3px 0 #02070d;
-  clip-path: polygon(4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px, 100% 100%, 0 100%, 0 4px, 4px 4px);
+  clip-path: polygon(
+    4px 0,
+    calc(100% - 4px) 0,
+    calc(100% - 4px) 4px,
+    100% 4px,
+    100% 100%,
+    0 100%,
+    0 4px,
+    4px 4px
+  );
 }
 .action-pad strong,
 .pass-button,
@@ -3854,5 +3914,373 @@ canvas.story-background {
   .speech-box.riko,
   .speech-box.rival {
     min-height: 112px;
+  }
+}
+
+/* Arcade arrondie v7 ---------------------------------------------------------
+   Formes plus accueillantes, lecture immédiate et aucun panneau défilant. */
+.title-stage .hero-art {
+  background-image: url('../assets/slugger-key-art-v2.webp');
+  background-size: cover;
+  background-position: center center;
+}
+.title-stage .hero-art:after {
+  background: linear-gradient(0deg, #06111ef2 0 6%, #06111e9c 23%, #07152218 55%, transparent 100%);
+}
+.title-lockup-minimal {
+  top: 67%;
+  right: 18px;
+  bottom: auto;
+  left: 18px;
+  transform: translateY(-50%);
+}
+.title-lockup-minimal h1 {
+  font-size: clamp(32px, 10.5vw, 47px);
+}
+.title-lockup-minimal > p:not(.title-trophies) {
+  font-size: clamp(6px, 1.9vw, 9px);
+  letter-spacing: 0.08em;
+}
+
+.start-game,
+.button,
+.button.primary,
+.button.secondary,
+.console-menu-list button,
+.console-back,
+.dialog-back,
+.value-stepper,
+.option-stepper,
+.stadium-card,
+.scoreboard,
+.match-hud .icon-button,
+.arena-status,
+.action-pad,
+.pass-button,
+.jump-button {
+  clip-path: none;
+  border-radius: 16px;
+}
+.start-game,
+.button.primary {
+  outline-offset: -8px;
+  box-shadow:
+    0 7px 0 #02070d,
+    0 10px 20px #02070d80;
+}
+.start-game:active,
+.button:active,
+.console-menu-list button:active,
+.action-pad:active,
+.pass-button:active,
+.jump-button:active {
+  transform: translateY(3px);
+  box-shadow: 0 3px 0 #02070d;
+}
+
+.console-menu-bg {
+  background-image: url('../assets/stadiums-v2/neon.webp');
+  background-position: center;
+}
+.console-menu-bg:after {
+  background: linear-gradient(180deg, #092c4a5c, #06111da8 55%, #06111de8);
+}
+.console-menu-panel {
+  align-self: center;
+}
+.console-menu-panel h1 {
+  font-size: clamp(21px, 6.9vw, 31px);
+  text-align: center;
+}
+.console-menu-panel .eyebrow {
+  display: block;
+  text-align: center;
+}
+.console-menu-list button {
+  border-color: #b9f6f0;
+  outline: 0;
+  background: linear-gradient(135deg, #174d70f5, #102f55f5);
+  box-shadow: 0 5px 0 #02070d;
+}
+.console-menu-list button.selected,
+.console-menu-list button:focus-visible {
+  background: linear-gradient(135deg, #ffe269, #ffb84f);
+  box-shadow:
+    0 5px 0 #7e342e,
+    0 0 22px #ffe26966;
+}
+
+.value-stepper,
+.option-stepper {
+  background: linear-gradient(135deg, #174e73f2, #143755f2);
+  box-shadow: 0 4px 0 #02070d;
+}
+.stadium-card {
+  box-shadow:
+    0 5px 0 #02070d,
+    0 0 20px #58f4dc33;
+}
+.stadium-card button:first-of-type {
+  border-radius: 14px 0 0 14px;
+}
+.stadium-card button:last-of-type {
+  border-radius: 0 14px 14px 0;
+}
+
+.dialog-back {
+  min-width: 94px;
+  min-height: 34px;
+  padding: 8px 10px;
+  border: 2px solid var(--pixel-paper);
+  background: #164c72;
+  box-shadow: 0 3px 0 #02070d;
+  color: var(--pixel-yellow);
+  font: 400 7px var(--font-display);
+  white-space: nowrap;
+}
+.story-topline {
+  gap: 8px;
+}
+.story-topline > span {
+  min-width: 0;
+  line-height: 1.6;
+}
+.dialogue-portrait {
+  width: 100%;
+  height: auto !important;
+  aspect-ratio: 1 / 1;
+  max-height: none;
+  background-size: 400% 200%;
+}
+.story-versus > div,
+.story-versus > div.speaking {
+  transform: none;
+}
+.story-versus > div.speaking .dialogue-portrait {
+  transform: scale(1.035);
+}
+.story-versus > div.speaking .dialogue-portrait.right {
+  transform: scaleX(-1) scale(1.035);
+}
+.speech-box,
+.speech-box.riko,
+.speech-box.rival {
+  border-radius: 22px;
+  clip-path: none;
+  box-shadow: 0 6px 0 #02070d;
+}
+.speech-box:after {
+  content: '';
+  position: absolute;
+  top: -13px;
+  left: 24px;
+  width: 22px;
+  height: 22px;
+  border-top: 5px solid var(--pixel-ink);
+  border-left: 5px solid var(--pixel-ink);
+  background: var(--pixel-paper);
+  transform: rotate(45deg);
+}
+.speech-box.rival:after {
+  right: 24px;
+  left: auto;
+}
+
+.settings-dialog {
+  width: min(430px, calc(100% - 20px));
+  max-height: calc(100svh - 20px);
+  overflow: hidden;
+  padding: clamp(15px, 4.5vw, 22px);
+  border: 4px solid var(--pixel-yellow);
+  border-radius: 24px;
+  background: linear-gradient(160deg, #153d62, #0a1d36);
+  box-shadow: 0 9px 0 #02070d;
+}
+.dialog-heading {
+  margin-bottom: 8px;
+}
+.dialog-heading h2 {
+  margin: 5px 0;
+  font-size: clamp(24px, 8vw, 34px);
+}
+.option-stepper {
+  min-height: 53px;
+  margin: 7px 0;
+  padding: 6px 8px;
+  grid-template-columns: minmax(92px, 1fr) minmax(138px, 1.2fr);
+  gap: 5px;
+}
+.option-stepper > span {
+  font: 400 7px / 1.5 var(--font-display);
+}
+.option-stepper b {
+  font: 400 9px var(--font-display);
+}
+.settings-dialog .start-game {
+  min-height: 48px;
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.scoreboard {
+  min-height: 78px;
+  border-color: var(--pixel-yellow);
+  outline: 3px solid #ff496c;
+  background: linear-gradient(135deg, #164f76 0 38%, #33235d 62% 100%);
+  box-shadow:
+    0 5px 0 #02070d,
+    0 0 18px #58f4dc3d;
+}
+.score-team {
+  padding: 5px 6px;
+  border: 2px solid color-mix(in srgb, var(--team-accent) 80%, white);
+  border-radius: 10px;
+  background: #07101a99;
+}
+.score-name b {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--team-accent);
+  color: #07101a;
+  text-shadow: none;
+}
+.health-player > span {
+  height: 11px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.health-player i {
+  box-shadow: inset 0 3px #ffffff73;
+}
+.score-middle {
+  padding: 2px 4px;
+  border-radius: 9px;
+  background: #07101ad9;
+}
+.arcade-score {
+  color: #fff3c2;
+  text-shadow: 2px 2px #ff496c;
+}
+.score-middle b {
+  font-size: clamp(18px, 5.6vw, 23px);
+}
+.match-hud .icon-button {
+  height: 78px;
+  border-color: var(--pixel-yellow);
+  background: linear-gradient(#2d5e8d, #173958);
+}
+.shot-meter-accessible {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.action-pad,
+.pass-button,
+.jump-button {
+  border-radius: 18px;
+  box-shadow: 0 5px 0 #02070d;
+}
+.action-pad {
+  background: linear-gradient(145deg, #2477a6, #174566);
+}
+.pass-button {
+  background: linear-gradient(145deg, #20a493, #116069);
+}
+.jump-button {
+  background: linear-gradient(145deg, #fff080, #f7b949);
+}
+
+.result-dialog,
+.pause-dialog {
+  width: min(430px, calc(100% - 20px));
+  max-width: 430px;
+  max-height: calc(100svh - 20px);
+  overflow: hidden;
+}
+.result-card,
+.pause-card {
+  width: 100%;
+  max-height: calc(100svh - 20px);
+  overflow: hidden;
+  border: 4px solid var(--pixel-yellow);
+  border-radius: 24px;
+  background: linear-gradient(160deg, #184c75, #251f55);
+  box-shadow: 0 8px 0 #02070d;
+}
+.result-card {
+  padding: 18px;
+}
+.result-emblem {
+  font-size: 34px;
+  line-height: 1;
+}
+.result-card h1 {
+  margin: 7px 0;
+  color: var(--pixel-yellow);
+  font-size: clamp(24px, 8vw, 34px);
+}
+.result-card p {
+  margin: 6px 0;
+  line-height: 1.45;
+}
+.result-score {
+  padding: 9px;
+  border-color: var(--pixel-cyan);
+  border-radius: 14px;
+  background: #07101a99;
+}
+.result-score strong {
+  font-size: 34px;
+}
+.result-stats {
+  gap: 5px;
+  margin: 8px 0;
+}
+.result-stats dd {
+  margin: 5px 0;
+  font-size: 18px;
+}
+.result-actions {
+  gap: 7px;
+}
+.result-actions .button,
+.pause-card .button {
+  min-height: 42px;
+}
+.pause-card {
+  padding: 22px;
+}
+
+@media (max-height: 640px) and (orientation: portrait) {
+  .title-lockup-minimal {
+    top: 69%;
+  }
+  .title-lockup-minimal h1 {
+    font-size: 30px;
+  }
+  .title-lockup-minimal .start-game {
+    min-height: 48px;
+  }
+  .story-versus {
+    min-height: 118px;
+  }
+  .speech-box,
+  .speech-box.riko,
+  .speech-box.rival {
+    min-height: 98px;
+  }
+  .option-stepper {
+    min-height: 47px;
+    margin: 5px 0;
+  }
+  .settings-dialog .start-game {
+    min-height: 43px;
   }
 }

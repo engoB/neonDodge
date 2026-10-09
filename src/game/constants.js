@@ -37,7 +37,7 @@ export const SPECIAL_WINDOW = 104 // durée d'armement d'une passe spéciale
 // chaque réussite resserre la fenêtre avant le tir signature final.
 export const METER_SPEED = [0.014, 0.017, 0.021]
 export const METER_ZONE = [0.22, 0.16, 0.11]
-export const METER_LIMIT = 180
+export const METER_LIMIT = 90
 
 // Rattrapage : la fenêtre mesurée est 1 image, 3 images avant le contact.
 // Au doigt on accepte 2 à 4 images ; 3 images = « parfait ».

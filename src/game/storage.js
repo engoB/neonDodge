@@ -7,7 +7,6 @@ const DEFAULT = {
   settings: {
     sound: true,
     music: true,
-    haptics: true,
     reducedMotion:
       typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches,
   },

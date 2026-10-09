@@ -32,7 +32,6 @@ export class Match {
     seed = 1,
     onHud = () => {},
     onEnd = () => {},
-    haptics = true,
     reducedMotion = false,
     auto = false,
     training = false,
@@ -44,7 +43,6 @@ export class Match {
     this.onHud = onHud
     this.onEnd = onEnd
     this.reducedMotion = reducedMotion
-    this.haptics = haptics
     this.auto = auto // vrai : l'équipe du joueur est aussi pilotée par l'IA (tests, démo)
     this.training = training
     this.teams = [playerTeam, rival]
@@ -330,7 +328,7 @@ export class Match {
     this.input.pressed = false
     this.input.pendingJump = false
     this.jump(p)
-    this.addText(p, 'JUMP SHOT !', '#ffffff')
+    this.addText(p, 'TIR SAUTÉ !', '#ffffff')
     return true
   }
 
@@ -371,11 +369,9 @@ export class Match {
         p.meterBonus = true
         this.addText(p, 'PARFAIT !', '#fde047')
         sfx.perfect()
-        this.vibrate(25)
       } else {
         this.addText(p, 'ATTRAPÉ', '#a5f3fc')
         sfx.catch()
-        this.vibrate(15)
       }
     } else {
       this.addText(p, 'ATTRAPÉ', '#fecaca')
@@ -394,7 +390,7 @@ export class Match {
       bonus: !!p.meterBonus,
     }
     p.meterBonus = false
-    this.addText(p, 'TIMING !', '#f9d57c')
+    this.addText(p, 'RYTHME !', '#f9d57c')
   }
 
   meterWindow(meter = this.shotMeter) {
@@ -415,15 +411,14 @@ export class Match {
       this.startThrow(p, { running: meter.stage > 1 })
       return false
     }
-    this.vibrate(12 + meter.stage * 5)
     sfx.charged()
     if (meter.stage >= 3) {
-      this.addText(p, 'PERFECT ×3', '#fde047')
+      this.addText(p, 'PARFAIT ×3', '#fde047')
       this.shotMeter = null
       this.startThrow(p, { sup: true, running: true, finisher: true })
       return true
     }
-    this.addText(p, meter.stage === 1 ? 'GOOD !' : 'GREAT !', '#67e8f9')
+    this.addText(p, meter.stage === 1 ? 'BIEN !' : 'EXCELLENT !', '#67e8f9')
     meter.stage++
     meter.value = 0
     meter.age = 0
@@ -434,9 +429,10 @@ export class Match {
     const meter = this.shotMeter
     if (!meter) return
     meter.age++
-    meter.value += C.METER_SPEED[meter.stage - 1]
-    if (meter.value > 1) meter.value -= 1
-    if (meter.age >= C.METER_LIMIT) {
+    meter.value = Math.min(1, meter.value + C.METER_SPEED[meter.stage - 1])
+    // Un seul passage par frappe : une fenêtre ratée produit immédiatement
+    // un tir normal, sans va-et-vient infini de la jauge.
+    if (meter.value >= 1 || meter.age >= C.METER_LIMIT) {
       const p = meter.player
       this.shotMeter = null
       this.addText(p, 'TROP TARD', '#fca5a5')
@@ -504,12 +500,11 @@ export class Match {
       sfx.superShot()
       this.shake = 8
       this.superBanner = {
-        name: special ? specialName(special) : 'SUPER SLUGGER',
+        name: special ? specialName(special) : 'SUPER FRAPPE',
         kicker: `${p.name.toUpperCase()} DÉCHAÎNE`,
         team: p.team,
         t: 84,
       }
-      this.vibrate(35)
     } else sfx.throw()
   }
 
@@ -578,7 +573,6 @@ export class Match {
     }
     if (p.team === 0) {
       this.stats.taken += dmg
-      this.vibrate(50)
     } else this.stats.hits++
     // rebond mesuré : la balle repart en arrière et retombe
     b.state = 'loose'
@@ -605,8 +599,8 @@ export class Match {
           t: this.reducedMotion ? 24 : 78,
         }
         this.superBanner = {
-          name: 'GRAND SLAM KO',
-          kicker: 'FATAL FINISH · BATTE FANTÔME',
+          name: 'COUP DE CIRCUIT KO',
+          kicker: 'FRAPPE FINALE · BATTE FANTÔME',
           team: b.team,
           t: 96,
         }
@@ -1217,10 +1211,6 @@ export class Match {
     const goal = lo > hi ? C.MID : Math.max(lo, Math.min(hi, focus))
     this.camX += (goal - this.camX) * (followsHolder && portraitView ? 0.18 : 0.085)
     if (Math.abs(goal - this.camX) < 0.08) this.camX = goal
-  }
-
-  vibrate(ms) {
-    if (this.haptics && typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(ms)
   }
 
   emitHud() {
