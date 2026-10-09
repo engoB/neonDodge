@@ -319,16 +319,16 @@ export class Match {
     this.pass(c)
   }
 
-  // Une touche dédiée : le porteur saute et lance automatiquement au sommet.
+  // Une touche dédiée : le porteur saute et déclenche son super au sommet.
   jumpShot() {
     if (this.state !== 'play') return false
     const p = this.holder
     if (!p || p.team !== 0 || p.ko || p.state !== 'hold' || this.shotMeter) return false
-    p.airShot = { sup: false, running: true }
+    p.airShot = { sup: true, running: true }
     this.input.pressed = false
     this.input.pendingJump = false
     this.jump(p)
-    this.addText(p, 'TIR SAUTÉ !', '#ffffff')
+    this.addText(p, 'SUPER SAUTÉ !', '#fde047')
     return true
   }
 

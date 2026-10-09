@@ -97,6 +97,7 @@ test('accueil : écran titre épuré puis menu console', async ({ page }, info) 
 })
 
 test('arcade : sélection aux flèches et lancement plein écran', async ({ page }, info) => {
+  await page.goto('/?debug')
   await page.getByRole('button', { name: /^JOUER/ }).click()
   await page.getByRole('button', { name: /ARCADE/ }).click()
   await expect(page.getByText('RED BATS', { exact: true })).toBeVisible()
@@ -104,9 +105,22 @@ test('arcade : sélection aux flèches et lancement plein écran', async ({ page
   await page.getByRole('button', { name: /ADVERSAIRE, valeur suivante/ }).click()
   await expect(page.getByText('GOLD OWLS', { exact: true })).toBeVisible()
   await expect(page.getByText('PARC DES RENARDS', { exact: true })).toBeVisible()
+  const stadium = page.locator('.stadium-card canvas')
+  await expect(stadium).toBeVisible()
+  const digest = () =>
+    stadium.evaluate((canvas) => {
+      const data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data
+      let hash = 2166136261
+      for (let i = 0; i < data.length; i += 4096) hash = Math.imul(hash ^ data[i], 16777619)
+      return hash >>> 0
+    })
+  const firstTerrain = await digest()
+  const previousBox = await page.getByRole('button', { name: 'Terrain précédent' }).boundingBox()
+  const nextBox = await page.getByRole('button', { name: 'Terrain suivant' }).boundingBox()
+  expect(previousBox.x).toBeLessThan(nextBox.x)
   await page.getByRole('button', { name: 'Terrain suivant' }).click()
   await expect(page.getByText('PARC DU COUCHANT', { exact: true })).toBeVisible()
-  await expect(page.locator('.stadium-card canvas')).toBeVisible()
+  await expect.poll(digest).not.toBe(firstTerrain)
   expect(
     await page.evaluate(
       () =>
@@ -117,6 +131,16 @@ test('arcade : sélection aux flèches et lancement plein écran', async ({ page
   await screenshot(page, info, 'arcade-select')
   await page.getByRole('button', { name: /MATCH !/ }).click()
   await expect(action(page)).toBeEnabled()
+  await page.evaluate(() => {
+    const match = window.__match
+    const target = match.players[7]
+    target.hp = 1
+    match.players[0].throwOpts = { target }
+    match.release_ball(match.players[0])
+    match.hitPlayer(target, match.ball)
+    match.emitHud()
+  })
+  await expect(page.locator('.score-team.right')).toContainText('KO')
 })
 
 test('réglages : dialogue sans défilement, retour et sauvegarde', async ({ page }) => {
@@ -148,15 +172,34 @@ test('coupe : premier match accessible, suivants verrouillés et commandes visib
   await page.getByRole('button', { name: /HISTOIRE/ }).click()
   await expect(page.getByRole('heading', { name: /CHAPITRE 01/ })).toBeVisible()
   await expect(page.locator('.chapter-stage img')).toBeVisible()
+  const firstStage = await page.locator('.chapter-stage img').getAttribute('src')
+  await page.getByRole('button', { name: 'Chapitre suivant' }).click()
+  await expect(page.getByRole('heading', { name: /CHAPITRE 02/ })).toBeVisible()
+  await expect(page.locator('.chapter-stage img')).not.toHaveAttribute('src', firstStage)
+  await page.getByRole('button', { name: 'Chapitre précédent' }).click()
   await screenshot(page, info, 'histoire-stage')
   await page.getByRole('button', { name: /MATCH !/ }).click()
   await expect(page.locator('.story-dialog')).toBeVisible()
   await expect(page.locator('.story-versus .dialogue-portrait')).toHaveCount(2)
   await expect(page.locator('.story-dialog').getByRole('button', { name: 'RETOUR' })).toBeVisible()
   await expect(page.locator('.speech-box.riko')).toBeVisible()
+  const portraitGeometry = await page.locator('.story-versus > div').evaluateAll((items) =>
+    items.map((item) => {
+      const rect = item.getBoundingClientRect()
+      return [Math.round(rect.x), Math.round(rect.y), Math.round(rect.width), Math.round(rect.height)]
+    }),
+  )
   await screenshot(page, info, 'histoire-gauche')
   await page.getByRole('button', { name: /SUIVANT/ }).click()
   await expect(page.locator('.speech-box.rival')).toBeVisible()
+  expect(
+    await page.locator('.story-versus > div').evaluateAll((items) =>
+      items.map((item) => {
+        const rect = item.getBoundingClientRect()
+        return [Math.round(rect.x), Math.round(rect.y), Math.round(rect.width), Math.round(rect.height)]
+      }),
+    ),
+  ).toEqual(portraitGeometry)
   await screenshot(page, info, 'histoire-droite')
   await page.getByRole('button', { name: /SUIVANT/ }).click()
   await page
@@ -199,12 +242,15 @@ test('pointeur : annulation sans lancer, passe et reprise', async ({ page }) => 
   await expectMatchFits(page)
 })
 
-test('commandes directes : le tir sauté se déclenche en une touche', async ({ page }) => {
+test('commandes directes : le tir sauté déclenche un super au sommet', async ({ page }, info) => {
+  await page.goto('/?debug')
   await start(page)
   const jump = page.getByRole('button', { name: 'Faire un tir en saut' })
   await expect(jump).toBeEnabled()
   await jump.click()
   await expect(jump).toBeDisabled({ timeout: 2500 })
+  await expect.poll(() => page.evaluate(() => window.__match.ball.sup)).toBe(true)
+  await screenshot(page, info, 'super-saute')
 })
 
 test('fin : le terrain reste visible avant la fiche de résultat', async ({ page }, info) => {

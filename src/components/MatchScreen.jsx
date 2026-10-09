@@ -299,9 +299,7 @@ export default function MatchScreen({
                 : 'Réceptionner ou maintenir pour sauter'
             }
           >
-            <span className="control-icon main" aria-hidden="true">
-              ●
-            </span>
+            <span className="pixel-action-icon shot" aria-hidden="true" />
           </button>
           <button
             className="pass-button"
@@ -313,9 +311,7 @@ export default function MatchScreen({
             }}
             aria-label="Passer la balle"
           >
-            <span className="control-icon" aria-hidden="true">
-              ⇧
-            </span>
+            <span className="pixel-action-icon pass" aria-hidden="true" />
           </button>
           <button
             className="jump-button"
@@ -327,9 +323,7 @@ export default function MatchScreen({
             }}
             aria-label="Faire un tir en saut"
           >
-            <span className="control-icon" aria-hidden="true">
-              ↗
-            </span>
+            <span className="pixel-action-icon jump" aria-hidden="true" />
           </button>
         </div>
       )}

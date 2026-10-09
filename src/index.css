@@ -3520,11 +3520,12 @@ canvas,
   width: 100%;
   height: 100%;
   object-fit: cover;
+  pointer-events: none;
 }
 .chapter-stage button {
   position: absolute;
   z-index: 2;
-  top: 50%;
+  top: calc(50% - 31px);
   width: 46px;
   height: 62px;
   border: 3px solid var(--pixel-paper);
@@ -3532,12 +3533,11 @@ canvas,
   background: #07101ad9;
   color: var(--pixel-yellow);
   font: 400 18px var(--font-display);
-  transform: translateY(-50%);
 }
-.chapter-stage button:first-child {
+.chapter-stage .chapter-prev {
   left: 8px;
 }
-.chapter-stage button:last-child {
+.chapter-stage .chapter-next {
   right: 8px;
 }
 .chapter-caption {
@@ -5069,5 +5069,283 @@ canvas.story-background {
   .result-stats dd {
     margin-top: 4px;
     font-size: 16px;
+  }
+}
+
+/* v9 — lisibilité arcade, sélecteurs fiables et composition histoire stable. */
+.team-emblem {
+  width: 76px;
+  height: 76px;
+}
+.emblem-versus .team-emblem {
+  width: 100px;
+  height: 100px;
+}
+.mode-setup .emblem-versus {
+  min-height: 108px;
+}
+.chapter-caption {
+  grid-template-columns: 68px minmax(0, 1fr) auto;
+}
+.chapter-caption .team-emblem {
+  width: 64px;
+  height: 64px;
+}
+.scoreboard {
+  min-height: 104px;
+  grid-template-columns: minmax(64px, 0.95fr) minmax(92px, 1.1fr) minmax(64px, 0.95fr);
+}
+.score-name {
+  min-height: 57px;
+}
+.score-name img {
+  width: 54px;
+  height: 54px;
+}
+.match-hud .icon-button {
+  height: 104px;
+}
+.result-versus {
+  grid-template-columns: 80px 1fr 80px;
+}
+.result-versus .team-emblem {
+  width: 76px;
+  height: 76px;
+}
+
+.stadium-card .stadium-thumb {
+  pointer-events: none;
+}
+.stadium-card .stadium-prev,
+.stadium-card .stadium-next {
+  position: absolute;
+  z-index: 4;
+  top: 0;
+  bottom: 0;
+  width: 52px;
+  border: 0;
+  border-radius: 0;
+  background: #06192ed9;
+  box-shadow: inset 0 0 0 3px #fff3c2;
+}
+.stadium-card .stadium-prev {
+  right: auto;
+  left: 0;
+}
+.stadium-card .stadium-next {
+  right: 0;
+  left: auto;
+}
+.stadium-card .stadium-prev:active,
+.stadium-card .stadium-next:active {
+  background: #ff496c;
+  transform: translateY(2px);
+}
+.stadium-card strong {
+  position: absolute;
+  right: 58px;
+  bottom: 10px;
+  left: 58px;
+  padding: 0;
+}
+.stadium-card small {
+  right: 58px;
+  left: auto;
+}
+
+.story-card {
+  grid-template-rows: 24px minmax(190px, 1fr) 132px 10px 54px;
+  gap: 8px;
+}
+.story-cast {
+  display: grid;
+  height: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+  gap: 10px;
+  margin: 0;
+  overflow: visible;
+}
+.story-cast > div,
+.story-cast > div.speaking {
+  display: grid;
+  height: auto;
+  align-self: end;
+  grid-template-rows: auto auto auto;
+  padding: 5px 5px 7px;
+  transform: none;
+}
+.story-cast .dialogue-portrait,
+.story-cast > div.speaking .dialogue-portrait,
+.story-cast > div.speaking .dialogue-portrait.right {
+  width: 100%;
+  height: auto !important;
+  max-height: none !important;
+  aspect-ratio: 1 / 1;
+  transform: none;
+}
+.story-cast .dialogue-portrait.right {
+  transform: scaleX(-1) !important;
+}
+.story-cast > div:not(.speaking) {
+  opacity: 0.72;
+}
+.story-cast > div:not(.speaking) .dialogue-portrait {
+  filter: saturate(0.65) brightness(0.78);
+}
+.story-cast b {
+  min-height: 25px;
+  margin: 0;
+  padding: 6px 3px 2px;
+}
+.story-cast small {
+  min-height: 12px;
+}
+.speech-box,
+.speech-box.riko,
+.speech-box.rival {
+  box-sizing: border-box;
+  height: 132px;
+  min-height: 132px;
+  overflow: hidden;
+}
+.speech-box p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.match-deck {
+  grid-template-columns: 1.35fr 0.82fr 0.82fr;
+  gap: 9px;
+  padding: 9px;
+}
+.action-pad,
+.pass-button,
+.jump-button {
+  min-height: 84px;
+  border-width: 4px;
+  border-radius: 17px;
+  box-shadow: 0 6px 0 #02070d;
+}
+.pixel-action-icon {
+  position: relative;
+  display: block;
+  width: 54px;
+  height: 54px;
+  image-rendering: pixelated;
+  filter: drop-shadow(4px 4px 0 #02070d);
+}
+.pixel-action-icon.shot {
+  border: 5px solid #07101a;
+  border-radius: 50%;
+  background: #fff3c2;
+  box-shadow: inset 0 0 0 4px #f5f0d9;
+}
+.pixel-action-icon.shot::before,
+.pixel-action-icon.shot::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  width: 6px;
+  height: 29px;
+  border-block: 5px dashed #ff496c;
+}
+.pixel-action-icon.shot::before {
+  left: 8px;
+  transform: rotate(-24deg);
+}
+.pixel-action-icon.shot::after {
+  right: 8px;
+  transform: rotate(24deg);
+}
+.pixel-action-icon.pass::before,
+.pixel-action-icon.pass::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  width: 42px;
+  height: 12px;
+  background: #fff3c2;
+  clip-path: polygon(0 30%, 66% 30%, 66% 0, 100% 50%, 66% 100%, 66% 70%, 0 70%);
+}
+.pixel-action-icon.pass::before {
+  top: 7px;
+}
+.pixel-action-icon.pass::after {
+  bottom: 7px;
+  transform: scaleX(-1);
+}
+.pixel-action-icon.jump::before {
+  content: '';
+  position: absolute;
+  right: 5px;
+  bottom: 7px;
+  width: 44px;
+  height: 44px;
+  background: #07101a;
+  clip-path: polygon(0 72%, 16% 88%, 62% 42%, 44% 24%, 100% 8%, 84% 64%, 66% 46%, 20% 92%);
+}
+.pixel-action-icon.jump::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  border: 3px solid #07101a;
+  border-radius: 50%;
+  background: #fff3c2;
+}
+
+@media (max-height: 700px) and (orientation: portrait) {
+  .emblem-versus .team-emblem {
+    width: 76px;
+    height: 76px;
+  }
+  .mode-setup .emblem-versus {
+    min-height: 80px;
+  }
+  .scoreboard,
+  .match-hud .icon-button {
+    min-height: 88px;
+    height: 88px;
+  }
+  .score-name img {
+    width: 48px;
+    height: 48px;
+  }
+  .action-pad,
+  .pass-button,
+  .jump-button {
+    min-height: 70px;
+  }
+  .pixel-action-icon {
+    width: 46px;
+    height: 46px;
+  }
+  .story-card {
+    grid-template-rows: 20px minmax(150px, 1fr) 108px 8px 46px;
+    gap: 5px;
+  }
+  .speech-box,
+  .speech-box.riko,
+  .speech-box.rival {
+    height: 108px;
+    min-height: 108px;
+  }
+  .story-cast b {
+    font-size: 8px;
+  }
+}
+
+@media (max-width: 350px) and (orientation: portrait) {
+  .result-versus {
+    grid-template-columns: 56px minmax(0, 1fr) 56px;
+  }
+  .result-versus .team-emblem {
+    width: 54px;
+    height: 54px;
   }
 }

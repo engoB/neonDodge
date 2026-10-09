@@ -447,47 +447,47 @@ function banner(ctx, x, y, text, size) {
 
 function specialBanner(ctx, callout, width, height) {
   const life = callout.t
-  const enter = Math.min(1, (84 - life) / 10)
+  const duration = callout.kicker === 'FRAPPE FINALE' ? 96 : 84
+  const enter = Math.max(0, Math.min(1, (duration - life) / 10))
   const leave = Math.min(1, life / 14)
   const alpha = Math.min(enter, leave)
   const accent = callout.team === 0 ? '#67e8f9' : '#fb7185'
-  const cardW = Math.min(width - 18, 460)
+  const cardW = Math.min(width - 12, 520)
   const x = (width - cardW) / 2
-  const cardH = Math.min(96, cardW / 3.15)
-  const y = Math.max(9, Math.min(20, height * 0.06))
+  const cardH = Math.min(height * 0.42, cardW * 0.56)
+  const y = Math.max(12, (height - cardH) * 0.42)
   ctx.save()
   ctx.globalAlpha = alpha
   const pop = 0.92 + enter * 0.08
   ctx.translate(width / 2, y + cardH / 2)
   ctx.scale(pop, pop)
   ctx.translate(-width / 2, -(y + cardH / 2))
-  ctx.fillStyle = '#060d18f2'
-  rr(ctx, x, y, cardW, cardH, 10)
+  ctx.fillStyle = '#030713f5'
+  rr(ctx, x, y, cardW, cardH, 6)
   ctx.fill()
   ctx.strokeStyle = accent
-  ctx.lineWidth = 3
+  ctx.lineWidth = 4
   ctx.stroke()
   if (superImpactImage?.complete && superImpactImage.naturalWidth) {
-    ctx.globalAlpha = alpha * 0.78
-    ctx.drawImage(superImpactImage, x + 7, y + 5, cardW - 14, cardH - 10)
+    ctx.drawImage(superImpactImage, x + 5, y + 5, cardW - 10, cardH - 10)
     ctx.globalAlpha = alpha
   }
-  const shade = ctx.createLinearGradient(0, y, 0, y + cardH)
-  shade.addColorStop(0, '#06101b22')
-  shade.addColorStop(1, '#06101bd9')
-  ctx.fillStyle = shade
-  rr(ctx, x, y, cardW, cardH, 10)
-  ctx.fill()
+  ctx.fillStyle = '#030713d9'
+  ctx.fillRect(x + 5, y + 5, cardW - 10, 23)
+  ctx.fillRect(x + 5, y + cardH - 39, cardW - 10, 34)
+  ctx.fillStyle = accent
+  ctx.fillRect(x + 5, y + 28, 7, cardH - 67)
+  ctx.fillRect(x + cardW - 12, y + 28, 7, cardH - 67)
   ctx.textAlign = 'center'
-  ctx.font = '900 7px monospace'
-  ctx.fillStyle = '#f5f0d9'
-  ctx.fillText(callout.kicker, width / 2, y + cardH - 10)
-  const size = Math.max(17, Math.min(25, cardW / 15))
-  ctx.font = `900 italic ${size}px Impact, sans-serif`
-  ctx.lineWidth = Math.max(3, size / 8)
+  ctx.font = '400 7px "Press Start 2P", monospace'
+  ctx.fillStyle = accent
+  ctx.fillText(callout.kicker, width / 2, y + 20)
+  const size = Math.max(12, Math.min(22, cardW / Math.max(12, callout.name.length * 0.72)))
+  ctx.font = `400 ${size}px "Press Start 2P", monospace`
+  ctx.lineWidth = Math.max(3, size / 6)
   ctx.strokeStyle = '#111827'
-  ctx.strokeText(callout.name, width / 2, y + cardH - 23)
+  ctx.strokeText(callout.name, width / 2, y + cardH - 15)
   ctx.fillStyle = '#ffe86b'
-  ctx.fillText(callout.name, width / 2, y + cardH - 23)
+  ctx.fillText(callout.name, width / 2, y + cardH - 15)
   ctx.restore()
 }
