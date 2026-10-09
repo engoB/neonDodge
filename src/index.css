@@ -3535,10 +3535,10 @@ canvas,
   font: 400 18px var(--font-display);
   transform: translateY(-50%);
 }
-.chapter-stage button:first-child {
+.chapter-stage .chapter-prev {
   left: 8px;
 }
-.chapter-stage button:last-child {
+.chapter-stage .chapter-next {
   right: 8px;
 }
 .chapter-caption {

@@ -280,14 +280,24 @@ function Tournament({ progress, onPick, reducedMotion, onBack }) {
         <span className="eyebrow">COUPE NÉON</span>
         <h1>CHAPITRE {String(selected + 1).padStart(2, '0')}</h1>
         <div className="chapter-stage">
+          <img
+            src={storyStage(selected)}
+            alt={`${PLAYER_TEAM.name} contre ${rival.name}`}
+            draggable="false"
+            style={{ pointerEvents: 'none' }}
+          />
           <button
+            className="chapter-prev"
             onClick={() => setSelected((selected - 1 + RIVALS.length) % RIVALS.length)}
             aria-label="Chapitre précédent"
           >
             ◀
           </button>
-          <img src={storyStage(selected)} alt={`${PLAYER_TEAM.name} contre ${rival.name}`} />
-          <button onClick={() => setSelected((selected + 1) % RIVALS.length)} aria-label="Chapitre suivant">
+          <button
+            className="chapter-next"
+            onClick={() => setSelected((selected + 1) % RIVALS.length)}
+            aria-label="Chapitre suivant"
+          >
             ▶
           </button>
         </div>
