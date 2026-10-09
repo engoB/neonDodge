@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { Match } from '../src/game/match.js'
+import { poseOf } from '../src/game/render.js'
 import { RIVALS, PLAYER_TEAM } from '../src/game/teams.js'
 import * as C from '../src/game/constants.js'
 import { playMatch } from './bot.js'
@@ -148,6 +149,37 @@ test('les joueurs regardent la balle sans osciller dans la zone morte', () => {
   m.ball.x = 160
   m.updateFacing(p)
   assert.equal(p.facing, 1)
+})
+
+test('les joueurs extérieurs se stabilisent au lieu de vibrer sur les sous-pixels', () => {
+  const m = new Match({ rival: RIVALS[0] })
+  m.state = 'play'
+  const side = m.players[4]
+  for (let i = 0; i < 90; i++) {
+    m.ball.y = i % 2 ? 44.1 : 44.9
+    m.updatePlayer(side)
+  }
+  const y = side.y
+  for (let i = 0; i < 30; i++) {
+    m.ball.y = i % 2 ? 44.1 : 44.9
+    m.updatePlayer(side)
+    assert.equal(side.y, y)
+  }
+  assert.equal(side.state, 'idle')
+})
+
+test('à la fin tous les survivants gagnants célèbrent et les perdants sont abattus', () => {
+  const m = new Match({ rival: RIVALS[0] })
+  m.state = 'end'
+  m.winner = 0
+  const winner = m.players[0]
+  const loser = m.players[7]
+  winner.state = 'hold'
+  loser.state = 'walk'
+  assert.equal(poseOf(m, winner), 'cheer')
+  assert.equal(poseOf(m, loser), 'hurt')
+  loser.ko = true
+  assert.equal(poseOf(m, loser), 'ko')
 })
 
 test('le bouton Jump Shot saute puis lance automatiquement au sommet', () => {

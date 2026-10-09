@@ -47,17 +47,20 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
   const offY = (viewH - VIEW_H) * 0.85
   const sh = !m.reducedMotion && m.shake ? (Math.sin(t * 90) * m.shake) / 2 : 0
   const zoom = m.camZoom || 1
-  const worldLeft = m.camX - m.viewW / (2 * zoom)
+  // Align camera translation to the pixel grid. Fractional transforms made
+  // stationary edge players alternate between two columns of pixels.
+  const renderCamX = Math.round(m.camX * zoom) / zoom
+  const worldLeft = renderCamX - m.viewW / (2 * zoom)
   const worldWidth = m.viewW / zoom
   const cameraY = FLOOR_Y + C.DEPTH * DEPTH_K * 0.55
   ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0)
   ctx.translate(0, offY)
   // décor du fond (tribunes, ciel…)
-  SCENES[arena].bg(ctx, m.camX, m.viewW, -offY, FLOOR_Y - 15, m.reducedMotion ? 0 : t)
+  SCENES[arena].bg(ctx, renderCamX, m.viewW, -offY, FLOOR_Y - 15, m.reducedMotion ? 0 : t)
   ctx.save()
   ctx.translate(m.viewW / 2 + sh, cameraY)
   ctx.scale(zoom, zoom)
-  ctx.translate(-m.camX, -cameraY)
+  ctx.translate(-renderCamX, -cameraY)
   // sol extérieur jusqu'en bas de l'écran
   ctx.fillStyle = fl.out
   ctx.fillRect(worldLeft - 40, FLOOR_Y - 30, worldWidth + 80, viewH - offY - FLOOR_Y + 40)
@@ -330,8 +333,11 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
   if (m.superBanner) specialBanner(ctx, m.superBanner, m.viewW, viewH)
 }
 
-function poseOf(m, p) {
+export function poseOf(m, p) {
   if (p.ko) return 'ko'
+  // The result overrides every transient action for standing players: the
+  // winning side celebrates while the losing side visibly slumps.
+  if (m.state === 'end') return m.winner === p.team ? 'cheer' : 'hurt'
   if (p.state === 'hit') return 'hurt'
   if (p.state === 'catch') return 'catch'
   if (p.state === 'whiff') return 'hurt'
@@ -341,7 +347,6 @@ function poseOf(m, p) {
   if (p.z > 0) return p.vz > 0 ? 'jump' : 'fall'
   if (p.state === 'dash') return 'run'
   if (p.state === 'walk') return m.holder === p ? 'hold' : 'walk'
-  if (m.state === 'end') return m.winner === p.team ? 'cheer' : 'idle'
   return m.holder === p ? 'hold' : 'idle'
 }
 

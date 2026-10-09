@@ -747,18 +747,25 @@ export class Match {
         // La ligne défensive coulisse avec la balle sans oscillation permanente.
         ty = p.home.y + Math.max(-10, Math.min(10, (b.y - p.home.y) * 0.18))
       } else if (p.role === 'out') {
-        // les extérieurs suivent la balle le long de leur ligne
-        if (p.line === 'back') ty = Math.max(0, Math.min(C.DEPTH, b.y))
+        // Les extérieurs se déplacent par petits paliers, comme sur une borne.
+        // Suivre chaque sous-pixel de la balle les faisait vibrer en bord d'écran.
+        const step = 6
+        if (p.line === 'back') ty = Math.round(Math.max(0, Math.min(C.DEPTH, b.y)) / step) * step
         else
-          tx = Math.max(
-            p.team === 0 ? C.MID + 10 : 10,
-            Math.min(p.team === 0 ? C.COURT_W - 10 : C.MID - 10, b.x),
-          )
+          tx =
+            Math.round(
+              Math.max(
+                p.team === 0 ? C.MID + 10 : 10,
+                Math.min(p.team === 0 ? C.COURT_W - 10 : C.MID - 10, b.x),
+              ) / step,
+            ) * step
       }
       const collecting = b.state === 'loose' && this.collector() === p
       const follow = collecting ? 1 : 0.12
-      p.goalX += (tx - p.goalX) * follow
-      p.goalY += (ty - p.goalY) * follow
+      if (collecting || Math.abs(tx - p.goalX) > 2) p.goalX += (tx - p.goalX) * follow
+      if (collecting || Math.abs(ty - p.goalY) > 2) p.goalY += (ty - p.goalY) * follow
+      if (Math.abs(tx - p.goalX) < 0.7) p.goalX = tx
+      if (Math.abs(ty - p.goalY) < 0.7) p.goalY = ty
       this.moveTo(p, p.goalX, p.goalY, collecting ? C.RUN : C.WALK)
     }
     this.clamp(p)
@@ -769,7 +776,9 @@ export class Match {
     const dx = tx - p.x
     const dy = ty - p.y
     const d = Math.hypot(dx, dy)
-    if (d < 0.75) {
+    if (d < 1.35) {
+      p.x = tx
+      p.y = ty
       if (p.state === 'walk') p.state = 'idle'
       return
     }
