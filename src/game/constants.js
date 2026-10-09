@@ -60,7 +60,7 @@ export const AI_JUMP_THROW = 0.42
 export const CONE = Math.PI / 4 // 45°
 export const CONE_WIDE = Math.PI / 2 // 90°
 
-// Dégâts : mesurés 2 PV (tir normal) et 12 PV (super tir) ; la Force les module.
-// Points de vie mesurés 17 à 23.
-export const damage = (force, sup) => (sup ? 12 + Math.floor(force / 3) : 2 + Math.floor(force / 3))
+// Arcade : un tir normal met KO en 3–4 impacts et un super est réellement décisif.
+// L'invulnérabilité reste exclusivement gérée par le mode entraînement.
+export const damage = (force, sup) => (sup ? 14 + Math.floor(force * 0.75) : 4 + Math.floor(force * 0.55))
 export const HIT_STUN = 40

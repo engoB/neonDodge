@@ -233,15 +233,24 @@ function ModeSetup({ training, onPlay, onBack, reducedMotion }) {
         <div className="stadium-picker" aria-label="Terrain sélectionné">
           <span>TERRAIN</span>
           <div className="stadium-card">
-            <SceneBackground arena={RIVALS[venue].arena} className="stadium-thumb" />
+            <SceneBackground
+              key={RIVALS[venue].arena}
+              arena={RIVALS[venue].arena}
+              className="stadium-thumb"
+            />
             <button
+              className="stadium-prev"
               onClick={() => setVenue((venue - 1 + RIVALS.length) % RIVALS.length)}
               aria-label="Terrain précédent"
             >
               ◀
             </button>
             <strong>{RIVALS[venue].stadium.toUpperCase()}</strong>
-            <button onClick={() => setVenue((venue + 1) % RIVALS.length)} aria-label="Terrain suivant">
+            <button
+              className="stadium-next"
+              onClick={() => setVenue((venue + 1) % RIVALS.length)}
+              aria-label="Terrain suivant"
+            >
               ▶
             </button>
             <small>
@@ -359,7 +368,7 @@ function StoryDialog({ rival, index, reducedMotion, onPlay, onClose }) {
     <dialog
       ref={ref}
       className="story-dialog"
-      aria-labelledby="story-title"
+      aria-label={`Dialogue du chapitre ${index + 1}`}
       onCancel={(event) => {
         event.preventDefault()
         onClose()
@@ -372,14 +381,12 @@ function StoryDialog({ rival, index, reducedMotion, onPlay, onClose }) {
             CHAPITRE 0{index + 1} · {rival.stadium}
           </span>
         </div>
-        <h2 id="story-title">FACE À FACE</h2>
-        <div className="story-versus">
+        <div className="story-versus story-cast">
           <div className={current.side === 'riko' ? 'speaking' : ''}>
             <DialoguePortrait team={PLAYER_TEAM} side="left" speaking={current.side === 'riko'} />
             <b>RIKO</b>
             <small>NEON FOXES</small>
           </div>
-          <span>VS</span>
           <div className={current.side === 'rival' ? 'speaking' : ''}>
             <DialoguePortrait team={rival} side="right" speaking={current.side === 'rival'} />
             <b>{rival.players[0].name.toUpperCase()}</b>

@@ -200,7 +200,7 @@ test('à la fin tous les survivants gagnants célèbrent et les perdants sont ab
   assert.equal(poseOf(m, loser), 'ko')
 })
 
-test('le bouton Jump Shot saute puis lance automatiquement au sommet', () => {
+test('le bouton de tir sauté déclenche un super automatiquement au sommet', () => {
   const m = new Match({ rival: RIVALS[0] })
   m.state = 'play'
   assert.equal(m.jumpShot(), true)
@@ -208,6 +208,30 @@ test('le bouton Jump Shot saute puis lance automatiquement au sommet', () => {
   for (let i = 0; i < 90 && m.ball.state === 'held'; i++) m.update()
   assert.equal(m.ball.state, 'flying')
   assert.equal(m.ball.jumpShot, true)
+  assert.equal(m.ball.sup, true)
+  assert.equal(m.superBanner.name, 'COMÈTE FATALE')
+})
+
+test('arcade : les dégâts font tomber un joueur, contrairement à l’entraînement', () => {
+  const arcade = new Match({ rival: RIVALS[0], training: false })
+  arcade.state = 'play'
+  const target = arcade.players[7]
+  target.hp = 1
+  arcade.players[0].throwOpts = { target }
+  arcade.release_ball(arcade.players[0])
+  arcade.hitPlayer(target, arcade.ball)
+  assert.equal(target.hp, 0)
+  assert.equal(target.ko, true)
+
+  const training = new Match({ rival: RIVALS[0], training: true })
+  training.state = 'play'
+  const dummy = training.players[7]
+  dummy.hp = 1
+  training.players[0].throwOpts = { target: dummy }
+  training.release_ball(training.players[0])
+  training.hitPlayer(dummy, training.ball)
+  assert.equal(dummy.hp, 1)
+  assert.equal(dummy.ko, false)
 })
 
 test('la caméra cadre l’action et un tir signature déclenche son annonce', () => {
