@@ -75,7 +75,8 @@ test('décompte et pause : les appuis ne verrouillent pas la prochaine action', 
   assert.equal(m.playFrames, 0)
   m.state = 'play'
   m.press()
-  assert.equal(m.holder.state, 'dash')
+  assert.equal(m.holder.state, 'meter')
+  assert.equal(m.shotMeter.stage, 1)
 })
 
 test('annuler un geste ne lance pas la balle et remet la charge à zéro', () => {
@@ -91,7 +92,7 @@ test('annuler un geste ne lance pas la balle et remet la charge à zéro', () =>
   assert.equal(m.input.pressed, false)
 })
 
-test('le HUD distingue la fenêtre signature d’une charge dépassée', () => {
+test('la jauge enchaîne trois timings puis déclenche le tir signature', () => {
   let hud
   const m = new Match({
     rival: RIVALS[0],
@@ -101,27 +102,33 @@ test('le HUD distingue la fenêtre signature d’une charge dépassée', () => {
   })
   m.state = 'play'
   m.press()
-  for (let i = 0; i < C.SUPER_CHARGE; i++) m.update()
-  assert.equal(hud.superReady, true)
-  assert.equal(hud.chargeLate, false)
-  for (let i = 0; i <= C.SUPER_ZONE; i++) m.update()
-  assert.equal(hud.superReady, false)
-  assert.equal(hud.chargeLate, true)
   m.release()
-  assert.equal(m.holder.throwOpts.sup, false)
+  for (let stage = 1; stage <= 3; stage++) {
+    const zone = m.meterWindow()
+    m.shotMeter.value = (zone.start + zone.end) / 2
+    m.press()
+    m.release()
+    if (stage < 3) assert.equal(m.shotMeter.stage, stage + 1)
+  }
+  assert.equal(m.shotMeter, null)
+  assert.equal(m.holder.throwOpts.sup, true)
+  m.emitHud()
+  assert.equal(hud.shotMeter, null)
 })
 
-test('une réception parfaite conserve son bonus pour le prochain élan', () => {
+test('une réception parfaite élargit la jauge sans renvoyer la balle', () => {
   const m = new Match({ rival: RIVALS[0] })
   m.state = 'play'
   const p = m.players[0]
   m.catchBall(p, true)
+  assert.equal(m.input.pressed, false)
+  assert.equal(m.ball.state, 'held')
   for (let i = 0; i < 12; i++) m.update()
+  assert.equal(m.ball.state, 'held', 'la réception ne doit jamais devenir un lancer automatique')
   m.press()
-  assert.equal(p.charge, C.SUPER_CHARGE - 6)
-  for (let i = 0; i < 6; i++) m.update()
-  m.release()
-  assert.equal(p.throwOpts.sup, true)
+  assert.equal(m.shotMeter.bonus, true)
+  const width = m.meterWindow().end - m.meterWindow().start
+  assert.ok(width > C.METER_ZONE[0])
 })
 
 test('les joueurs regardent la balle sans osciller dans la zone morte', () => {
@@ -184,4 +191,65 @@ test('fin du match : plus de dégâts ni de temps de jeu, un seul résultat', ()
     m.alive(0).map((p) => p.hp),
     health,
   )
+})
+
+test('un premier tap ouvre la jauge; un timing raté lance un tir normal', () => {
+  const m = new Match({ rival: RIVALS[0] })
+  m.state = 'play'
+  m.press()
+  m.release()
+  assert.equal(m.holder.state, 'meter')
+  assert.equal(m.shotMeter.stage, 1)
+  m.press()
+  m.release()
+  assert.equal(m.shotMeter, null)
+  assert.equal(m.holder.throwOpts.sup, undefined)
+  for (let i = 0; i < 12; i++) m.update()
+  assert.equal(m.ball.state, 'flying')
+  assert.equal(m.ball.sup, false)
+})
+
+test('le dernier KO continue sa chute, reste dans le terrain et cadre l’impact', () => {
+  const m = new Match({ rival: RIVALS[0] })
+  m.state = 'play'
+  const target = m.alive(1).at(-1)
+  for (const p of m.alive(1))
+    if (p !== target) {
+      p.ko = true
+      p.hp = 0
+    }
+  target.hp = 1
+  const thrower = m.players[0]
+  m.giveBall(thrower)
+  thrower.throwOpts = { target, sup: true }
+  m.release_ball(thrower)
+  m.ball.x = target.x
+  m.ball.y = target.y
+  m.hitPlayer(target, m.ball)
+  assert.equal(m.state, 'end')
+  assert.ok(m.finisher)
+  assert.ok(m.impactFocus)
+  for (let i = 0; i < 140; i++) m.update()
+  assert.equal(target.ko, true)
+  assert.equal(target.z, 0)
+  assert.equal(target.vz, 0)
+  assert.ok(target.x >= 8 && target.x <= C.COURT_W - 8)
+  assert.equal(m.impactFocus, null, 'le zoom impact revient au cadrage normal')
+})
+
+test('training : pas de KO ni de fin, restauration des vies et équipe choisie', () => {
+  const m = new Match({ rival: RIVALS[0], playerTeam: RIVALS[1], training: true })
+  m.state = 'play'
+  assert.equal(m.players[0].name, RIVALS[1].players[0].name)
+  const target = m.players[7],
+    thrower = m.players[0]
+  target.hp = 1
+  thrower.throwOpts = { target, sup: true }
+  m.release_ball(thrower)
+  m.hitPlayer(target, m.ball)
+  assert.equal(target.ko, false)
+  assert.equal(target.hp, 1)
+  for (let i = 0; i < 800; i++) m.update()
+  assert.equal(m.state, 'play')
+  assert.equal(m.stats.kos, 0)
 })

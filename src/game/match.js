@@ -35,6 +35,8 @@ export class Match {
     haptics = true,
     reducedMotion = false,
     auto = false,
+    training = false,
+    playerTeam = PLAYER_TEAM,
   }) {
     this.rand = rng(seed)
     this.rival = rival
@@ -44,7 +46,8 @@ export class Match {
     this.reducedMotion = reducedMotion
     this.haptics = haptics
     this.auto = auto // vrai : l'équipe du joueur est aussi pilotée par l'IA (tests, démo)
-    this.teams = [PLAYER_TEAM, rival]
+    this.training = training
+    this.teams = [playerTeam, rival]
     this.players = []
     for (let t = 0; t < 2; t++) for (let i = 0; i < 7; i++) this.players.push(this.makePlayer(t, i))
     this.ball = {
@@ -68,7 +71,7 @@ export class Match {
     this.introT = 150
     this.endT = 0
     this.winner = null
-    this.input = { pressed: false, pressFrame: 0, pendingJump: false, threatAtPress: false }
+    this.input = { pressed: false, pressFrame: 0, pendingJump: false, threatAtPress: false, meterTap: null }
     this.texts = []
     this.parts = []
     this.shake = 0
@@ -78,13 +81,17 @@ export class Match {
     this.camZoom = 1.14
     this.viewW = 480
     this.superBanner = null
+    this.shotMeter = null
+    this.slowMo = 0
+    this.impactFocus = null
+    this.finisher = null
     this.lastHud = ''
     this.hint = 'Maintenez pour courir, relâchez pour tirer'
     this.hintT = 400
   }
 
   makePlayer(team, i) {
-    const td = team === 0 ? PLAYER_TEAM : this.rival
+    const td = this.teams[team]
     const pd = td.players[i]
     const role = i < 4 ? 'in' : 'out'
     const p = {
@@ -109,6 +116,7 @@ export class Match {
       ko: false,
       flash: 0,
       charge: 0,
+      meterBonus: false,
       anim: this.randSafe() * 10,
       line: null,
       home: { x: 0, y: 0 },
@@ -242,10 +250,12 @@ export class Match {
     if (!c || c.ko) return
     const h = this.holder
     if (h === c) {
-      if (c.state === 'hold') {
-        c.state = 'dash'
-        c.charge = c.readyCharge || 0
-        c.readyCharge = 0
+      if (this.shotMeter) {
+        inp.meterTap = 'confirm'
+        this.confirmShotMeter()
+      } else if (c.state === 'hold') {
+        inp.meterTap = 'start'
+        this.startShotMeter(c)
       }
       return
     }
@@ -267,10 +277,8 @@ export class Match {
     if (this.state !== 'play') return
     const c = this.controlled
     if (!c) return
-    if (this.holder === c && c.state === 'dash') {
-      const inZone = c.charge >= C.SUPER_CHARGE && c.charge <= C.SUPER_CHARGE + C.SUPER_ZONE
-      if (c.charge > C.SUPER_CHARGE + C.SUPER_ZONE) this.addText(c, 'TROP TARD', '#fca5a5')
-      this.startThrow(c, { sup: inZone, running: c.charge >= 4 })
+    if (this.holder === c && this.shotMeter) {
+      inp.meterTap = null
       return
     }
     if (
@@ -286,6 +294,7 @@ export class Match {
       this.addText(c, 'TROP TÔT', '#fca5a5')
     }
     inp.pendingJump = false
+    inp.meterTap = null
   }
 
   // Cancellation (lost pointer, blur, pause) never fires a pitch.
@@ -293,8 +302,10 @@ export class Match {
     this.input.pressed = false
     this.input.pendingJump = false
     this.input.threatAtPress = false
+    this.input.meterTap = null
+    this.shotMeter = null
     const h = this.holder
-    if (h && h.team === 0 && h.state === 'dash') {
+    if (h && h.team === 0 && ['dash', 'meter'].includes(h.state)) {
       h.state = 'hold'
       h.charge = 0
       h.glow = false
@@ -305,7 +316,7 @@ export class Match {
   swipeUp() {
     if (this.state !== 'play') return
     const c = this.controlled
-    if (!c || this.holder !== c || !['hold', 'dash'].includes(c.state)) return
+    if (!c || this.holder !== c || c.state !== 'hold' || this.shotMeter) return
     this.input.pressed = false
     this.pass(c)
   }
@@ -314,9 +325,8 @@ export class Match {
   jumpShot() {
     if (this.state !== 'play') return false
     const p = this.holder
-    if (!p || p.team !== 0 || p.ko || !['hold', 'dash'].includes(p.state)) return false
-    const inZone = p.charge >= C.SUPER_CHARGE && p.charge <= C.SUPER_CHARGE + C.SUPER_ZONE
-    p.airShot = { sup: inZone, running: p.charge >= 4 }
+    if (!p || p.team !== 0 || p.ko || p.state !== 'hold' || this.shotMeter) return false
+    p.airShot = { sup: false, running: true }
     this.input.pressed = false
     this.input.pendingJump = false
     this.jump(p)
@@ -347,13 +357,18 @@ export class Match {
   catchBall(p, perfect) {
     const b = this.ball
     this.giveBall(p)
+    // La touche de réception est entièrement consommée. Elle ne peut jamais
+    // devenir le premier appui d'un lancer quand l'animation se termine.
+    this.input.pressed = false
+    this.input.pendingJump = false
+    this.input.meterTap = null
     p.state = 'catch'
     p.t = 12
     if (p.team === 0) {
       this.stats.catches++
       if (perfect) {
         this.stats.perfects++
-        p.readyCharge = C.SUPER_CHARGE - 6
+        p.meterBonus = true
         this.addText(p, 'PARFAIT !', '#fde047')
         sfx.perfect()
         this.vibrate(25)
@@ -367,6 +382,66 @@ export class Match {
       sfx.catch()
     }
     this.burst(b.x, b.y, b.z, perfect ? '#fde047' : '#fff', perfect ? 14 : 6)
+  }
+
+  startShotMeter(p) {
+    p.state = 'meter'
+    this.shotMeter = {
+      player: p,
+      stage: 1,
+      value: 0,
+      age: 0,
+      bonus: !!p.meterBonus,
+    }
+    p.meterBonus = false
+    this.addText(p, 'TIMING !', '#f9d57c')
+  }
+
+  meterWindow(meter = this.shotMeter) {
+    if (!meter) return { start: 0, end: 0 }
+    const width = C.METER_ZONE[meter.stage - 1] + (meter.bonus ? 0.07 : 0)
+    return { start: 0.5 - width / 2, end: 0.5 + width / 2 }
+  }
+
+  confirmShotMeter() {
+    const meter = this.shotMeter
+    if (!meter) return false
+    const { start, end } = this.meterWindow(meter)
+    const success = meter.value >= start && meter.value <= end
+    const p = meter.player
+    if (!success) {
+      this.addText(p, meter.stage === 1 ? 'NORMAL' : 'BON TIR', '#f5f0d9')
+      this.shotMeter = null
+      this.startThrow(p, { running: meter.stage > 1 })
+      return false
+    }
+    this.vibrate(12 + meter.stage * 5)
+    sfx.charged()
+    if (meter.stage >= 3) {
+      this.addText(p, 'PERFECT ×3', '#fde047')
+      this.shotMeter = null
+      this.startThrow(p, { sup: true, running: true, finisher: true })
+      return true
+    }
+    this.addText(p, meter.stage === 1 ? 'GOOD !' : 'GREAT !', '#67e8f9')
+    meter.stage++
+    meter.value = 0
+    meter.age = 0
+    return true
+  }
+
+  updateShotMeter() {
+    const meter = this.shotMeter
+    if (!meter) return
+    meter.age++
+    meter.value += C.METER_SPEED[meter.stage - 1]
+    if (meter.value > 1) meter.value -= 1
+    if (meter.age >= C.METER_LIMIT) {
+      const p = meter.player
+      this.shotMeter = null
+      this.addText(p, 'TROP TARD', '#fca5a5')
+      this.startThrow(p, { running: meter.stage > 1 })
+    }
   }
 
   startThrow(p, opts = {}) {
@@ -405,6 +480,7 @@ export class Match {
     b.running = !!o.running
     b.jumpShot = !!o.jump
     b.age = 0
+    b.impactCue = false
     b.hit = new Set()
     b.speed = speed
     b.dirx = (tx - p.x) / d
@@ -486,7 +562,7 @@ export class Match {
 
   hitPlayer(p, b) {
     const dmg = Math.max(1, C.damage(b.thrower.stats.force, b.sup) - Math.floor(p.stats.defense / 4))
-    p.hp = Math.max(0, p.hp - dmg)
+    p.hp = this.training ? Math.max(1, p.hp - dmg) : Math.max(0, p.hp - dmg)
     p.state = 'hit'
     p.t = C.HIT_STUN
     p.kx = Math.sign(b.vx || 1) * 1.6
@@ -496,6 +572,10 @@ export class Match {
     sfx.hitEnemy()
     this.burst(b.x, b.y, b.z, b.sup ? '#67e8f9' : '#fef3c7', b.sup ? 18 : 8)
     this.shake = Math.max(this.shake, b.sup ? 10 : 4)
+    if (b.sup) {
+      this.slowMo = this.reducedMotion ? 10 : 38
+      this.impactFocus = { x: p.x, y: p.y, t: this.slowMo }
+    }
     if (p.team === 0) {
       this.stats.taken += dmg
       this.vibrate(50)
@@ -510,11 +590,27 @@ export class Match {
     b.bounces = 0
     if (p.hp <= 0) {
       p.ko = true
+      this.lastKO = p
       p.state = 'ko'
       p.vz = 3
       p.kx = Math.sign(b.vx) * -2.2
       if (p.team === 1) this.stats.kos++
       this.addText(p, 'KO !', '#fde047')
+      if (b.sup) {
+        this.finisher = {
+          x: p.x,
+          y: p.y,
+          team: b.team,
+          facing: b.thrower?.facing || 1,
+          t: this.reducedMotion ? 24 : 78,
+        }
+        this.superBanner = {
+          name: 'GRAND SLAM KO',
+          kicker: 'FATAL FINISH · BATTE FANTÔME',
+          team: b.team,
+          t: 96,
+        }
+      }
       sfx.ko()
       this.checkEnd()
     }
@@ -537,20 +633,53 @@ export class Match {
       return
     }
     if (this.state === 'end') {
+      if (this.slowMo > 0) this.slowMo--
       for (const p of this.players) {
-        p.anim += 1 / 60
-        if (p.ko) p.t++
+        if (p.ko && (this.slowMo <= 0 || this.frame % 3 === 0)) this.updatePlayer(p)
+        else p.anim += 1 / 60
       }
+      this.updateCamera()
       this.updateFx()
       if (--this.endT === 0) this.finish()
       this.emitHud()
       return
     }
+    if (this.shotMeter) {
+      this.updateShotMeter()
+      // La jauge transforme l'action en arrêt sur image jouable : les animations
+      // respirent encore, mais la trajectoire n'avance qu'un quart du temps.
+      if (this.frame % 4 !== 0) {
+        for (const p of this.players) p.anim += 1 / 240
+        this.updateFx()
+        this.updateCamera()
+        this.emitHud()
+        return
+      }
+    }
+    if (this.slowMo > 0) {
+      this.slowMo--
+      if (this.impactFocus) this.impactFocus.t = this.slowMo
+      if (this.frame % 3 !== 0) {
+        this.updateFx()
+        this.updateCamera()
+        this.emitHud()
+        return
+      }
+    }
     this.playFrames++
+    if (this.training && this.playFrames % 180 === 0) for (const p of this.players) p.hp = p.maxHp
     if (this.hintT > 0) this.hintT--
     for (const a of this.armed) if (a && --a.t <= 0) this.armed[this.armed.indexOf(a)] = null
     this.updateInput()
     for (const p of this.players) this.updatePlayer(p)
+    if (this.ball.sup && this.ball.state === 'flying' && !this.ball.impactCue) {
+      const f = this.ball.target ? this.framesToContact(this.ball.target) : null
+      if (f !== null && f < 12) {
+        this.ball.impactCue = true
+        this.slowMo = this.reducedMotion ? 0 : 30
+        this.impactFocus = { x: this.ball.target.x, y: this.ball.target.y, t: 30 }
+      }
+    }
     this.updateBall()
     this.updateFx()
     this.updateCamera()
@@ -582,8 +711,9 @@ export class Match {
       }
     }
     if (p.ko) {
-      p.x += p.kx
-      p.kx *= 0.95
+      p.x = Math.max(8, Math.min(C.COURT_W - 8, p.x + p.kx))
+      p.kx *= 0.88
+      if (Math.abs(p.kx) < 0.04) p.kx = 0
       p.t++
       return
     }
@@ -700,25 +830,7 @@ export class Match {
       this.updateHeld()
       return
     }
-    if (p.state === 'hold' && this.input.pressed) {
-      p.state = 'dash'
-      p.charge = p.readyCharge || 0
-      p.readyCharge = 0
-    }
-    if (p.state === 'dash') {
-      const lo = p.role === 'in'
-      if (lo) p.x += C.RUN * (0.8 + p.stats.speed * 0.025)
-      p.charge++
-      if (p.charge === C.SUPER_CHARGE) {
-        p.glow = true
-        sfx.charged()
-        this.addText(p, 'MAINTENANT !', '#67e8f9')
-        this.vibrate(20)
-      }
-      if (p.charge === C.SUPER_CHARGE + C.SUPER_ZONE + 1) p.glow = false
-    } else if (p.state === 'windup') {
-      if (--p.t <= 0) this.release_ball(p)
-    }
+    if (p.state === 'windup' && --p.t <= 0) this.release_ball(p)
     this.updateHeld()
   }
 
@@ -985,7 +1097,9 @@ export class Match {
         this.state = 'end'
         this.winner = 1 - t
         this.cancelInput()
-        this.endT = 150
+        // Le dernier joueur reste au sol assez longtemps pour que le KO soit lu
+        // avant l'apparition des résultats.
+        this.endT = this.reducedMotion ? 150 : 220
         if (this.winner === 0) sfx.win()
         else sfx.lose()
       }
@@ -1050,6 +1164,8 @@ export class Match {
     }
     this.texts = this.texts.filter((t) => t.t > 0)
     if (this.superBanner && --this.superBanner.t <= 0) this.superBanner = null
+    if (this.finisher && --this.finisher.t <= 0) this.finisher = null
+    if (this.impactFocus && this.slowMo <= 0) this.impactFocus = null
     if (this.shake > 0) this.shake--
   }
 
@@ -1058,20 +1174,27 @@ export class Match {
     const b = this.ball
     let focus = b.x
     let wantedZoom = 1.2
-    if (b.state === 'held' && b.holder) {
+    if (this.impactFocus) {
+      focus = this.impactFocus.x
+      wantedZoom = 1.78
+    } else if (b.state === 'held' && b.holder) {
       const target = this.pickTarget(b.holder)
       focus = target ? b.holder.x * 0.58 + target.x * 0.42 : b.holder.x
       wantedZoom = 1.3
     } else if (b.state === 'flying') {
       focus = b.target && !b.target.ko ? b.x * 0.72 + b.target.x * 0.28 : b.x
       const remaining = b.target ? Math.abs(b.target.x - b.x) : 220
+      if (b.sup && b.target && this.framesToContact(b.target) < 12) wantedZoom = 1.7
       wantedZoom = remaining < 150 ? 1.48 : 1.36
     } else if (b.state === 'loose') wantedZoom = 1.26
-    if (this.state === 'intro' || this.state === 'end') {
-      focus = C.MID
-      wantedZoom = this.state === 'intro' ? 1.14 : 1.2
+    if ((this.state === 'intro' || this.state === 'end') && !this.impactFocus) {
+      focus = this.state === 'end' && this.lastKO ? this.lastKO.x : C.MID
+      wantedZoom = this.state === 'intro' ? 1.14 : 1.36
     }
-    wantedZoom = Math.min(w < 420 ? 1.38 : 1.48, wantedZoom)
+    wantedZoom = Math.min(
+      w < 420 ? (this.impactFocus ? 1.62 : 1.42) : this.impactFocus ? 1.82 : 1.52,
+      wantedZoom,
+    )
     this.camZoom += (wantedZoom - this.camZoom) * 0.055
     if (Math.abs(wantedZoom - this.camZoom) < 0.002) this.camZoom = wantedZoom
     const half = w / (2 * this.camZoom)
@@ -1095,16 +1218,24 @@ export class Match {
     const h = this.holder
     const hud = {
       state: this.state,
+      score: this.stats.kos * 250 + this.stats.hits * 50 + this.stats.perfects * 100 + this.stats.supers * 50,
       intro: Math.ceil(this.introT / 40),
       us: team(0),
       them: team(1),
       holding: !!h && h.team === 0,
-      charge: h && h.team === 0 ? Math.min(1, h.charge / C.SUPER_CHARGE) : 0,
+      charge: this.shotMeter?.value || 0,
+      shotMeter: this.shotMeter
+        ? {
+            stage: this.shotMeter.stage,
+            value: this.shotMeter.value,
+            ...this.meterWindow(),
+          }
+        : null,
       armed: !!this.armed[0],
-      canJumpShot: !!h && h.team === 0 && ['hold', 'dash'].includes(h.state),
-      superReady:
-        !!h && h.team === 0 && h.charge >= C.SUPER_CHARGE && h.charge <= C.SUPER_CHARGE + C.SUPER_ZONE,
-      chargeLate: !!h && h.team === 0 && h.charge > C.SUPER_CHARGE + C.SUPER_ZONE,
+      canJumpShot: !!h && h.team === 0 && h.state === 'hold' && !this.shotMeter,
+      superReady: this.shotMeter?.stage === 3,
+      chargeLate: false,
+      slowMo: this.slowMo > 0,
       seconds: Math.floor(this.playFrames / 60),
       threat: c
         ? (() => {

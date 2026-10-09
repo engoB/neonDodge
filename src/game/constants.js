@@ -33,6 +33,12 @@ export const SUPER_CHARGE = 24 // images de course avant le super tir
 export const SUPER_ZONE = 4 // il faut relâcher dans ces images-là, sinon le tir redevient normal
 export const SPECIAL_WINDOW = 104 // durée d'armement d'une passe spéciale
 
+// Jauge console en trois frappes. Le monde passe au ralenti pendant la visée ;
+// chaque réussite resserre la fenêtre avant le tir signature final.
+export const METER_SPEED = [0.014, 0.017, 0.021]
+export const METER_ZONE = [0.22, 0.16, 0.11]
+export const METER_LIMIT = 180
+
 // Rattrapage : la fenêtre mesurée est 1 image, 3 images avant le contact.
 // Au doigt on accepte 2 à 4 images ; 3 images = « parfait ».
 export const CATCH_PERFECT = 3

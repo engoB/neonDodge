@@ -5,7 +5,7 @@ import { preloadSprites } from '../game/sprites.js'
 import { PLAYER_TEAM } from '../game/teams.js'
 import { unlockAudio, startMusic, stopMusic } from '../game/audio.js'
 
-const ARENA_MUSIC = { gym: 0, roof: 1, beach: 2, neon: 3 }
+const ARENA_MUSIC = { gym: 0, roof: 1, beach: 2, desert: 1, foundry: 2, neon: 3 }
 function TeamBar({ name, players, side, accent }) {
   return (
     <div className={`score-team ${side}`} style={{ '--team-accent': accent }}>
@@ -30,7 +30,15 @@ function TeamBar({ name, players, side, accent }) {
     </div>
   )
 }
-export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
+export default function MatchScreen({
+  rival,
+  settings,
+  onEnd,
+  onQuit,
+  label,
+  training = false,
+  playerTeam = PLAYER_TEAM,
+}) {
   const canvasRef = useRef(null),
     arenaRef = useRef(null),
     matchRef = useRef(null),
@@ -79,6 +87,8 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
       reducedMotion: settings.reducedMotion,
       onHud: setHud,
       onEnd,
+      training,
+      playerTeam,
     })
     matchRef.current = m
     if (import.meta.env.DEV && new URLSearchParams(location.search).has('debug')) window.__match = m
@@ -142,47 +152,8 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
     const blur = () => {
       pause()
     }
-    const key = (e) => {
-      if (e.repeat) return
-      if (e.code === 'Escape' && e.type === 'keydown') {
-        if (!['intro', 'play', 'paused'].includes(m.state)) return
-        e.preventDefault()
-        togglePause()
-        return
-      }
-      if (m.state !== 'play') return
-      if (['Space', 'Enter', 'KeyZ'].includes(e.code)) {
-        // Native buttons keep their keyboard semantics, especially in the pause dialog.
-        if (
-          document.activeElement?.tagName === 'BUTTON' &&
-          document.activeElement?.dataset.gameAction !== 'true'
-        )
-          return
-        e.preventDefault()
-        if (e.type === 'keydown') {
-          unlockAudio()
-          m.press()
-          setPressing(true)
-        } else {
-          m.release()
-          setPressing(false)
-        }
-      }
-      if (e.code === 'ArrowUp' && e.type === 'keydown') {
-        e.preventDefault()
-        m.swipeUp()
-        setPressing(false)
-      }
-      if (['KeyX', 'ArrowDown'].includes(e.code) && e.type === 'keydown') {
-        e.preventDefault()
-        m.jumpShot()
-        setPressing(false)
-      }
-    }
     document.addEventListener('visibilitychange', hidden)
     window.addEventListener('blur', blur)
-    window.addEventListener('keydown', key)
-    window.addEventListener('keyup', key)
     return () => {
       disposed = true
       cancelAnimationFrame(raf)
@@ -190,8 +161,6 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
       m.cancelInput()
       document.removeEventListener('visibilitychange', hidden)
       window.removeEventListener('blur', blur)
-      window.removeEventListener('keydown', key)
-      window.removeEventListener('keyup', key)
       stopMusic()
       if (window.__match === m) delete window.__match
     }
@@ -238,19 +207,16 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
     if (pointer.current?.id === e.pointerId) clearInput()
   }
   const holding = hud?.holding,
-    ready = hud?.superReady || hud?.armed,
-    late = hud?.chargeLate && !hud?.armed
+    meter = hud?.shotMeter
   const title =
     hud?.state === 'intro'
       ? 'PLAY BALL'
       : holding
-        ? hud.armed
-          ? 'SUPER ARMÉ'
-          : late
-            ? 'CHARGE PERDUE'
-            : ready
-              ? 'RELÂCHEZ !'
-              : 'CHARGE'
+        ? meter
+          ? `TAPE ${meter.stage} / 3`
+          : hud.armed
+            ? 'SUPER ARMÉ'
+            : 'PRÉPAREZ LE TIR'
         : hud?.threat !== null
           ? 'ATTRAPEZ !'
           : 'SUIVEZ LA BALLE'
@@ -282,16 +248,20 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
               {holding ? 'ATTAQUE' : 'DÉFENSE'} · {hud.ctrl}
             </span>
             <strong>{title}</strong>
-            {holding && (
+            {meter && (
               <div
-                className={`timing-bar ${ready ? 'ready' : ''} ${late ? 'late' : ''}`}
+                className={`shot-meter stage-${meter.stage}`}
                 role="progressbar"
-                aria-label="Charge du tir"
-                aria-valuenow={Math.round(hud.charge * 100)}
+                aria-label={`Jauge de tir ${meter.stage} sur 3`}
+                aria-valuenow={Math.round(meter.value * 100)}
                 aria-valuemin={0}
                 aria-valuemax={100}
               >
-                <i style={{ width: `${hud.charge * 100}%` }} />
+                <span
+                  className="shot-zone"
+                  style={{ left: `${meter.start * 100}%`, width: `${(meter.end - meter.start) * 100}%` }}
+                />
+                <i style={{ left: `${meter.value * 100}%` }} />
               </div>
             )}
           </div>
@@ -300,9 +270,12 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
       {hud && (
         <div className="match-hud">
           <div className="scoreboard">
-            <TeamBar name={PLAYER_TEAM.name} players={hud.us} side="left" accent={PLAYER_TEAM.accent} />
+            <TeamBar name={playerTeam.name} players={hud.us} side="left" accent={playerTeam.accent} />
             <div className="score-middle">
-              <span>NEON CUP</span>
+              <small className="arcade-score" aria-label="Score">
+                {String(hud.score).padStart(5, '0')}
+              </small>
+              <span>{training ? 'TRAINING' : label.startsWith('Neon Cup') ? 'NEON CUP' : 'ARCADE'}</span>
               <b>
                 {Math.floor(hud.seconds / 60)}:{String(hud.seconds % 60).padStart(2, '0')}
               </b>
@@ -334,15 +307,17 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
             }}
             aria-label={
               holding
-                ? 'Maintenir pour charger, relâcher pour lancer'
+                ? meter
+                  ? 'Valider le timing du tir'
+                  : 'Préparer un tir'
                 : 'Réceptionner ou maintenir pour sauter'
             }
           >
-            <strong>{holding ? 'LANCER' : 'ATTRAPER / SAUT'}</strong>
+            <strong>{holding ? (meter ? `TAPE ${meter.stage}` : 'TIR') : 'ATTRAPER / SAUT'}</strong>
           </button>
           <button
             className="pass-button"
-            disabled={!holding || hud.state !== 'play'}
+            disabled={!holding || !!meter || hud.state !== 'play'}
             onClick={() => {
               unlockAudio()
               matchRef.current?.swipeUp()
@@ -380,7 +355,7 @@ export default function MatchScreen({ rival, settings, onEnd, onQuit, label }) {
           <p>
             {label}
             <br />
-            Les gestes sont suspendus pendant la pause.
+            {training ? 'Entraînement libre · vies restaurées' : ''}
           </p>
           <button className="button primary" onClick={resume}>
             REPRENDRE LE MATCH <span>▶</span>

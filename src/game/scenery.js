@@ -26,6 +26,20 @@ export const BALLPARKS = {
     label: 'HARBOR FIELD',
     city: '#164452',
   },
+  desert: {
+    sky: ['#35172c', '#c05f3f'],
+    crowd: '#3a2027',
+    accent: '#f7d154',
+    label: 'COYOTE CANYON',
+    city: '#502a2b',
+  },
+  foundry: {
+    sky: ['#101820', '#6f3d32'],
+    crowd: '#24292f',
+    accent: '#ff6b35',
+    label: 'IRON FOUNDRY',
+    city: '#303841',
+  },
   neon: {
     sky: ['#100e32', '#462765'],
     crowd: '#211333',
@@ -34,6 +48,90 @@ export const BALLPARKS = {
     city: '#211840',
   },
 }
+// Architectural silhouettes make each park identifiable beyond its palette.
+function landmarks(arena, ctx, w, top, bottom) {
+  if (arena === 'gym') return
+  const h = bottom - top
+  const base = top + h * 0.62
+  ctx.save()
+  const sky = ctx.createLinearGradient(0, top, 0, base)
+  sky.addColorStop(0, BALLPARKS[arena].sky[0])
+  sky.addColorStop(1, BALLPARKS[arena].sky[1])
+  ctx.fillStyle = sky
+  ctx.fillRect(0, top, w, base - top)
+  ctx.fillStyle = '#fff0b3'
+  ctx.fillRect(w * 0.72, top + h * 0.1, 18, 18)
+  if (arena === 'roof') {
+    for (let i = 0; i < 14; i++) {
+      const x = (i * w) / 13
+      const bh = 28 + hash(i, 9) * h * 0.4
+      ctx.fillStyle = '#19263f'
+      ctx.fillRect(x, base - bh, w / 16, bh)
+      ctx.fillStyle = '#f9d57c88'
+      for (let y = base - bh + 8; y < base - 8; y += 9)
+        for (let k = 0; k < 3; k++) ctx.fillRect(x + 5 + k * 8, y, 3, 4)
+    }
+  } else if (arena === 'beach') {
+    ctx.fillStyle = '#267b81'
+    ctx.fillRect(0, base - 24, w, 24)
+    ctx.fillStyle = '#8cd8cf'
+    for (let i = 0; i < 25; i++) ctx.fillRect((i * w) / 24, base - 19 + (i % 3) * 5, w / 35, 2)
+    for (const x of [w * 0.16, w * 0.79]) {
+      ctx.fillStyle = '#173c43'
+      ctx.fillRect(x, top + 30, 6, base - top - 30)
+      ctx.beginPath()
+      ctx.moveTo(x + 3, top + 28)
+      ctx.lineTo(x - 38, top + 49)
+      ctx.lineTo(x + 3, top + 40)
+      ctx.lineTo(x + 38, top + 46)
+      ctx.closePath()
+      ctx.fill()
+    }
+  } else if (arena === 'desert') {
+    ctx.fillStyle = '#63362e'
+    for (let i = 0; i < 6; i++) {
+      const x = (i * w) / 5
+      const bh = h * (0.2 + hash(i, 4) * 0.25)
+      ctx.fillRect(x, base - bh, w / 8, bh)
+      ctx.fillRect(x - 8, base - bh + 18, w / 6, bh - 18)
+    }
+    ctx.fillStyle = '#263f32'
+    for (const x of [w * 0.2, w * 0.85]) {
+      ctx.fillRect(x, base - 46, 7, 46)
+      ctx.fillRect(x - 14, base - 32, 21, 6)
+      ctx.fillRect(x - 14, base - 45, 6, 18)
+      ctx.fillRect(x, base - 21, 21, 6)
+      ctx.fillRect(x + 15, base - 35, 6, 20)
+    }
+  } else if (arena === 'foundry') {
+    for (let i = 0; i < 6; i++) {
+      const x = (i * w) / 5
+      ctx.fillStyle = '#2b2f36'
+      ctx.fillRect(x, base - 26, w / 8, 26)
+      ctx.fillRect(x + 12, base - 75, 14, 50)
+      ctx.fillStyle = '#e7804388'
+      ctx.fillRect(x + 12, base - 77, 14, 5)
+      ctx.fillStyle = '#76808644'
+      ctx.fillRect(x + 6, base - 94, 28, 12)
+      ctx.fillRect(x + 20, base - 112, 35, 12)
+    }
+  } else if (arena === 'neon') {
+    ctx.strokeStyle = '#b987fb'
+    ctx.lineWidth = 4
+    for (let i = 1; i < 8; i++) {
+      ctx.beginPath()
+      ctx.moveTo(w / 2, top)
+      ctx.lineTo((i * w) / 8, base)
+      ctx.stroke()
+    }
+    ctx.strokeStyle = '#67e8f9'
+    ctx.strokeRect(w * 0.08, top + 20, w * 0.84, h * 0.42)
+    ctx.fillStyle = '#e879f9'
+    ctx.fillRect(w * 0.15, base - 8, w * 0.7, 3)
+  }
+  ctx.restore()
+}
+
 function stadium(arena, ctx, camX, w, top, bottom, t) {
   const panorama = getSpriteAsset('stadium')
   if (panorama) {
@@ -46,9 +144,26 @@ function stadium(arena, ctx, camX, w, top, bottom, t) {
       sh = h / scale
     const sx = Math.max(0, Math.min(panorama.width - sw, (panorama.width - sw) / 2 + (camX - 240) * 0.35))
     ctx.drawImage(panorama, sx, panorama.height - sh, sw, sh, 0, top, w, h)
-    const tint = { gym: '#0c405510', roof: '#c46a3220', beach: '#1bc4b52b', neon: '#602c8d40' }[arena]
+    const tint = {
+      gym: '#0c405510',
+      roof: '#c46a3220',
+      beach: '#1bc4b52b',
+      desert: '#c5532f38',
+      foundry: '#53170f52',
+      neon: '#602c8d40',
+    }[arena]
     ctx.fillStyle = tint
     ctx.fillRect(0, top, w, h)
+    landmarks(arena, ctx, w, top, bottom)
+    const park = BALLPARKS[arena]
+    ctx.fillStyle = '#06131dde'
+    ctx.fillRect(w / 2 - 52, bottom - 25, 104, 21)
+    ctx.strokeStyle = park.accent
+    ctx.strokeRect(w / 2 - 52, bottom - 25, 104, 21)
+    ctx.font = '900 8px monospace'
+    ctx.textAlign = 'center'
+    ctx.fillStyle = park.accent
+    ctx.fillText(park.label, w / 2, bottom - 12)
     ctx.restore()
     return
   }

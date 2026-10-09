@@ -14,6 +14,8 @@ const FLOORS = {
   gym: { out: '#153a36', in: '#29735a', dirt: '#ab7452', line: '#ecedd0', mid: '#5de7cd' },
   roof: { out: '#243c3e', in: '#386456', dirt: '#aa6e58', line: '#f2dfc6', mid: '#ff7b7f' },
   beach: { out: '#1c4946', in: '#338573', dirt: '#c6945c', line: '#f7e9c7', mid: '#f9d57c' },
+  desert: { out: '#4b2527', in: '#765137', dirt: '#c27848', line: '#ffe5a3', mid: '#f7d154' },
+  foundry: { out: '#202932', in: '#39444a', dirt: '#814b38', line: '#f0d5b5', mid: '#ff6b35' },
   neon: { out: '#213445', in: '#385367', dirt: '#886781', line: '#e9dcf7', mid: '#c2a0ff' },
 }
 
@@ -157,7 +159,6 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
   const target = holder && holder.team === 0 ? m.pickTarget(holder) : null
   // ombres
   for (const p of m.players) {
-    if (p.ko && p.t > 60) continue
     const [sx, sy] = toScreen(p.x, p.y)
     ctx.fillStyle = 'rgba(0,0,0,0.22)'
     ctx.beginPath()
@@ -214,7 +215,7 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
     ctx.restore()
   }
   // joueurs et balle, triés par profondeur
-  const items = m.players.filter((p) => !(p.ko && p.t > 70)).map((p) => ({ y: p.y, p }))
+  const items = m.players.map((p) => ({ y: p.y, p }))
   if (b.state !== 'held') items.push({ y: b.y + 0.5, ball: true })
   items.sort((a, c) => a.y - c.y)
   for (const it of items) {
@@ -260,9 +261,20 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
           : null,
       flash: p.flash > 0 && p.flash % 4 < 2,
       glow: p === holder && p.glow ? (p.team === 0 ? '#22d3ee' : '#fb923c') : null,
-      alpha: p.ko ? Math.max(0, 1 - p.t / 70) : p.role === 'out' ? 0.95 : 1,
+      alpha: p.role === 'out' ? 0.95 : 1,
       rot: p.ko ? Math.min(1.4, p.t * 0.08) * -p.facing : 0,
     })
+    if (p.ko && p.z === 0) {
+      ctx.save()
+      ctx.font = 'bold 10px monospace'
+      ctx.fillStyle = '#f9d57c'
+      ctx.textAlign = 'center'
+      for (let i = 0; i < 3; i++) {
+        const angle = (i / 3) * Math.PI * 2 + (m.reducedMotion ? 0 : t * 3)
+        ctx.fillText('★', sx + Math.cos(angle) * 14, sy - 20 + Math.sin(angle) * 4)
+      }
+      ctx.restore()
+    }
     if (p === holder && p.team === 0 && p.state === 'dash')
       chargeRing(
         ctx,
@@ -294,11 +306,17 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
     ctx.fillText(tx.text, x, y)
   }
   ctx.globalAlpha = 1
+  if (m.finisher) drawBatFinisher(ctx, m.finisher)
   // superpositions écran
   ctx.restore()
   ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0)
   if (!m.reducedMotion && m.shake > 6) {
     ctx.fillStyle = '#f5f0d912'
+    ctx.fillRect(0, 0, m.viewW, viewH)
+  }
+  if (m.impactFocus) {
+    const pulse = 0.1 + Math.abs(Math.sin(m.impactFocus.t * 0.35)) * 0.12
+    ctx.fillStyle = `rgba(249,213,124,${pulse})`
     ctx.fillRect(0, 0, m.viewW, viewH)
   }
   const cxs = m.viewW / 2
@@ -307,7 +325,8 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
     const n = Math.ceil(m.introT / 40)
     banner(ctx, cxs, cys, n > 3 ? 'PLAY BALL !' : n > 0 ? String(n) : 'GO !', n > 3 ? 28 : 46)
   }
-  if (m.state === 'end') banner(ctx, cxs, cys, m.winner === 0 ? 'VICTOIRE !' : 'DÉFAITE…', 40)
+  if (m.state === 'end' && m.endT < 120)
+    banner(ctx, cxs, viewH - 18, m.winner === 0 ? 'VICTOIRE !' : 'DÉFAITE…', 24)
   if (m.superBanner) specialBanner(ctx, m.superBanner, m.viewW, viewH)
 }
 
@@ -317,12 +336,43 @@ function poseOf(m, p) {
   if (p.state === 'catch') return 'catch'
   if (p.state === 'whiff') return 'hurt'
   if (p.state === 'windup') return 'windup'
+  if (p.state === 'meter') return 'hold'
   if (p.state === 'throw') return 'throw'
   if (p.z > 0) return p.vz > 0 ? 'jump' : 'fall'
   if (p.state === 'dash') return 'run'
   if (p.state === 'walk') return m.holder === p ? 'hold' : 'walk'
   if (m.state === 'end') return m.winner === p.team ? 'cheer' : 'idle'
   return m.holder === p ? 'hold' : 'idle'
+}
+
+function drawBatFinisher(ctx, finisher) {
+  const [x, y] = toScreen(finisher.x, finisher.y, 26)
+  const enter = Math.min(1, (78 - finisher.t) / 12)
+  const angle = (-1.15 + enter * 2.05) * finisher.facing
+  ctx.save()
+  ctx.translate(x - finisher.facing * 18, y - 8)
+  ctx.rotate(angle)
+  ctx.shadowColor = finisher.team === 0 ? '#67e8f9' : '#fb7185'
+  ctx.shadowBlur = 14
+  ctx.fillStyle = '#4b2b20'
+  ctx.fillRect(-4, -4, 15, 8)
+  ctx.fillStyle = '#f9d57c'
+  ctx.fillRect(8, -7, 48, 14)
+  ctx.fillStyle = '#fff3c4'
+  ctx.fillRect(14, -5, 34, 4)
+  ctx.restore()
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.strokeStyle = '#f9d57c'
+  ctx.lineWidth = 3
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2
+    ctx.beginPath()
+    ctx.moveTo(Math.cos(a) * 12, Math.sin(a) * 8)
+    ctx.lineTo(Math.cos(a) * 30, Math.sin(a) * 21)
+    ctx.stroke()
+  }
+  ctx.restore()
 }
 
 function ring(ctx, p, color, t) {
@@ -389,20 +439,20 @@ function specialBanner(ctx, callout, width, height) {
   ctx.globalAlpha = alpha
   ctx.translate((1 - enter) * (callout.team === 0 ? -cardW : cardW), 0)
   ctx.fillStyle = '#060d18df'
-  ctx.fillRect(x, y, cardW, 54)
+  ctx.fillRect(x, y, cardW, 38)
   ctx.fillStyle = accent
   ctx.fillRect(x, y, cardW, 3)
-  ctx.fillRect(x, y + 51, cardW, 3)
+  ctx.fillRect(x, y + 35, cardW, 3)
   ctx.textAlign = 'center'
   ctx.font = '900 7px monospace'
   ctx.fillStyle = '#f5f0d9'
-  ctx.fillText(callout.kicker, width / 2, y + 15)
-  const size = Math.max(21, Math.min(31, cardW / 13))
+  ctx.fillText(callout.kicker, width / 2, y + 11)
+  const size = Math.max(16, Math.min(23, cardW / 18))
   ctx.font = `900 italic ${size}px Impact, sans-serif`
   ctx.lineWidth = Math.max(3, size / 8)
   ctx.strokeStyle = '#111827'
-  ctx.strokeText(callout.name, width / 2, y + 43)
+  ctx.strokeText(callout.name, width / 2, y + 30)
   ctx.fillStyle = accent
-  ctx.fillText(callout.name, width / 2, y + 43)
+  ctx.fillText(callout.name, width / 2, y + 30)
   ctx.restore()
 }
