@@ -1110,6 +1110,7 @@ export class Match {
       win: this.winner === 0,
       ...this.stats,
       survivors: me.length,
+      strikeOutsAgainst: this.players.filter((p) => p.team === 0 && p.role === 'in' && p.ko).length,
       hpLeft: me.reduce((a, p) => a + p.hp, 0),
       frames: this.playFrames,
       score:

@@ -217,18 +217,16 @@ export function drawBall(ctx, b) {
   ctx.save()
   ctx.imageSmoothingEnabled = false
   ctx.translate(Math.round(b.x), Math.round(b.y))
-  if (['super', 'fire'].includes(b.kind)) {
-    ctx.shadowColor = b.kind === 'fire' ? '#ff596d' : '#5de7cd'
-    ctx.shadowBlur = 14
-  }
-  // Halo blanc et contour sombre : la balle reste lisible sur herbe, terre et tribunes.
+  const powered = ['super', 'fire'].includes(b.kind)
+  // La balle normale garde un contour sombre. Les supers reçoivent leurs
+  // flammes pixelisées dans le renderer, sans halo circulaire lisse.
   ctx.fillStyle = '#ffffff'
   ctx.strokeStyle = '#102337'
-  ctx.lineWidth = Math.max(1.5, r * 0.28)
+  ctx.lineWidth = powered ? 0 : Math.max(1.5, r * 0.28)
   ctx.beginPath()
   ctx.arc(0, 0, r + 1.5, 0, Math.PI * 2)
   ctx.fill()
-  ctx.stroke()
+  if (!powered) ctx.stroke()
   ctx.rotate(b.spin ?? 0)
   ctx.drawImage(image, -r - 1, -r - 1, (r + 1) * 2, (r + 1) * 2)
   ctx.restore()

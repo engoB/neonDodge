@@ -13,15 +13,16 @@ function ActionIcon({ type }) {
     <span className={`pixel-action-icon ${type}`} aria-hidden="true">
       <img src={baseballIcon} alt="" />
       <i />
+      <b />
     </span>
   )
 }
-function TeamBar({ team, players, side }) {
+function TeamBar({ team, players, side, strikeOuts }) {
   return (
     <div className={`score-team ${side}`} style={{ '--team-accent': team.accent }}>
       <div className="score-name">
         <img src={teamEmblem(team)} alt={team.name} />
-        <b>{players.filter((p) => !p.ko).length}</b>
+        <b aria-label={`${strikeOuts} strike outs`}>{strikeOuts}</b>
       </div>
       <div className="health-line">
         {players.map((p) => (
@@ -255,7 +256,7 @@ export default function MatchScreen({
           <div className="match-end-confirm" role="status">
             <strong>PARTIE TERMINÉE</strong>
             <button className="button primary" onClick={() => onEnd(pendingResult)}>
-              CONTINUER
+              CONTINUER ›
             </button>
           </div>
         )}
@@ -263,11 +264,13 @@ export default function MatchScreen({
       {hud && (
         <div className="match-hud">
           <div className="scoreboard">
-            <TeamBar team={playerTeam} players={hud.us} side="left" />
+            <TeamBar
+              team={playerTeam}
+              players={hud.us}
+              side="left"
+              strikeOuts={hud.them.filter((p) => p.ko).length}
+            />
             <div className="score-middle">
-              <small className="arcade-score" aria-label="Score">
-                {String(hud.score).padStart(5, '0')}
-              </small>
               <span>
                 {training ? 'ENTRAÎNEMENT' : label.startsWith('Coupe Néon') ? 'COUPE NÉON' : 'ARCADE'}
               </span>
@@ -275,7 +278,12 @@ export default function MatchScreen({
                 {Math.floor(hud.seconds / 60)}:{String(hud.seconds % 60).padStart(2, '0')}
               </b>
             </div>
-            <TeamBar team={rival} players={hud.them} side="right" />
+            <TeamBar
+              team={rival}
+              players={hud.them}
+              side="right"
+              strikeOuts={hud.us.filter((p) => p.ko).length}
+            />
           </div>
           <button className="icon-button" onClick={togglePause} aria-label="Pause">
             Ⅱ
@@ -366,7 +374,7 @@ export default function MatchScreen({
             RECOMMENCER
           </button>
           <button className="text-button" onClick={onQuit}>
-            RETOUR AU CLUB
+            ← RETOUR AU CLUB
           </button>
         </section>
       </dialog>

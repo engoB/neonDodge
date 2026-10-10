@@ -152,10 +152,11 @@ function ConsoleMenu({ onStory, onArcade, onTraining, onOptions, progress }) {
       'HISTOIRE',
       progress.beaten ? `CHAPITRE ${Math.min(6, progress.beaten + 1)}` : 'NOUVELLE PARTIE',
       onStory,
+      'story',
     ],
-    ['ARCADE', 'MATCH RAPIDE', onArcade],
-    ['ENTRAÎNEMENT', 'APPRENDRE ET ESSAYER', onTraining],
-    ['OPTIONS', 'SON · IMAGE · CONFORT', onOptions],
+    ['ARCADE', 'MATCH RAPIDE', onArcade, 'arcade'],
+    ['ENTRAÎNEMENT', 'APPRENDRE ET ESSAYER', onTraining, 'training'],
+    ['OPTIONS', 'SON · IMAGE · CONFORT', onOptions, 'options'],
   ]
   return (
     <main className="console-menu-screen">
@@ -163,13 +164,13 @@ function ConsoleMenu({ onStory, onArcade, onTraining, onOptions, progress }) {
       <section className="console-menu-panel" aria-label="Menu principal">
         <span className="eyebrow">NEON SLUGGER</span>
         <nav className="console-menu-list" aria-label="Menu principal">
-          {items.map(([title, detail, action], i) => (
+          {items.map(([title, detail, action, tone], i) => (
             <button
               key={title}
               onClick={action}
               onPointerEnter={() => setSelected(i)}
               onFocus={() => setSelected(i)}
-              className={i === selected ? 'selected' : ''}
+              className={`menu-${tone} ${i === selected ? 'selected' : ''}`}
             >
               <span>
                 <b>{title}</b>
@@ -212,14 +213,17 @@ function ModeSetup({ training, onPlay, onBack, reducedMotion }) {
     setSelected(next)
   }
   return (
-    <main className="mode-setup" style={{ '--team-accent': rival.accent }}>
-      <SceneBackground arena="gym" className="mode-backdrop arena-gym" />
+    <main
+      className={`mode-setup ${training ? 'training-setup' : 'arcade-setup'}`}
+      style={{ '--team-accent': rival.accent }}
+    >
+      <div className="mode-ambient" aria-hidden="true"><i /><i /><i /></div>
       <button className="console-back" onClick={onBack}>
-        MENU
+        ← MENU
       </button>
       <section>
-        <span className="eyebrow">{training ? 'SALLE D’ENTRAÎNEMENT' : 'DUEL ARCADE'}</span>
-        <h1>{training ? 'ENTRAÎNEMENT' : 'MATCH ARCADE'}</h1>
+        <span className="eyebrow">{training ? 'MODE LIBRE' : 'MATCH RAPIDE'}</span>
+        <h1>{training ? 'ENTRAÎNEMENT' : 'ARCADE'}</h1>
         <div className="versus-select emblem-versus">
           <TeamEmblem team={ownTeam} />
           <b>VS</b>
@@ -266,7 +270,7 @@ function ModeSetup({ training, onPlay, onBack, reducedMotion }) {
           </div>
         </div>
         <button className="start-game compact" onClick={() => onPlay(selected, ownTeam, RIVALS[venue].arena)}>
-          {training ? 'ENTRAÎNEMENT !' : 'MATCH !'}
+          {training ? 'COMMENCER' : 'MATCH !'}
         </button>
       </section>
     </main>
@@ -281,7 +285,7 @@ function Tournament({ progress, onPick, reducedMotion, onBack }) {
     <main className="story-select" style={{ '--team-accent': rival.accent }}>
       <SceneBackground arena="neon" className="mode-backdrop arena-neon" />
       <button className="console-back" onClick={onBack}>
-        MENU
+        ← MENU
       </button>
       <section>
         <span className="eyebrow">COUPE NÉON</span>
@@ -394,9 +398,8 @@ function StoryDialog({ rival, index, reducedMotion, onPlay, onClose }) {
       <section className={`story-card arena-${rival.arena}`} style={{ '--rival-accent': rival.accent }}>
         <SceneBackground arena={rival.arena} className="story-background" />
         <div className="story-topline">
-          <span>
-            CHAPITRE 0{index + 1} · {rival.stadium}
-          </span>
+          <b>CHAPITRE {String(index + 1).padStart(2, '0')}</b>
+          <span>{rival.stadium}</span>
         </div>
         <div className="story-versus story-cast">
           <div className={current.side === 'riko' ? 'speaking' : ''}>
@@ -422,7 +425,7 @@ function StoryDialog({ rival, index, reducedMotion, onPlay, onClose }) {
         </div>
         <div className="story-actions">
           <button className="button secondary story-return" onClick={onClose}>
-            RETOUR
+            ← RETOUR
           </button>
           <button
             className="button primary story-next"
@@ -458,7 +461,7 @@ function Settings({ settings, setSettings, onClose }) {
           <h2>OPTIONS</h2>
         </div>
         <button className="dialog-back" onClick={onClose} aria-label="Retour au menu">
-          RETOUR
+          ← RETOUR
         </button>
       </div>
       {[
@@ -525,12 +528,14 @@ function Results({ r, rival, playerTeam, isFinal, inTournament, onNext, onRetry,
           </small>
         </p>
         <div className="result-score">
-          <span>SCORE FINAL</span>
-          <strong>{r.score.toLocaleString('fr-FR')}</strong>
+          <span>STRIKE OUTS</span>
+          <strong>
+            {r.kos}<i>–</i>{r.strikeOutsAgainst}
+          </strong>
         </div>
         <dl className="result-stats">
           {[
-            ['STRIKE OUTS', `${r.kos}/4`],
+            ['IMPACTS', r.hits],
             ['RATTRAPAGES', r.catches],
             ['PARFAITS', r.perfects],
             ['SUPER TIRS', r.supers],
