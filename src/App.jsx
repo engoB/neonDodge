@@ -530,7 +530,7 @@ function Results({ r, rival, playerTeam, isFinal, inTournament, onNext, onRetry,
         <div className="result-score">
           <span>STRIKE OUTS</span>
           <strong>
-            {r.kos}<i>–</i>{r.taken}
+            {r.kos}<i>–</i>{r.strikeOutsAgainst}
           </strong>
         </div>
         <dl className="result-stats">
