@@ -5117,11 +5117,33 @@ canvas.story-background {
   height: 116px;
 }
 .result-versus {
-  grid-template-columns: 96px 1fr 96px;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: 96px minmax(0, 1fr) 96px;
 }
 .result-versus .team-emblem {
   width: 92px;
   height: 92px;
+}
+.result-versus b {
+  min-width: 0;
+  font-size: clamp(9px, 2.9vw, 12px);
+}
+.result-card h1,
+.result-stats,
+.result-actions {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+.result-stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.result-stats dt {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .stadium-card .stadium-thumb {
