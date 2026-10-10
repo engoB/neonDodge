@@ -209,7 +209,7 @@ test('le bouton de tir sauté déclenche un super automatiquement au sommet', ()
   assert.equal(m.ball.state, 'flying')
   assert.equal(m.ball.jumpShot, true)
   assert.equal(m.ball.sup, true)
-  assert.equal(m.superBanner.name, 'COMÈTE FATALE')
+  assert.equal(m.koFreeze, 0, 'un super tir ne doit pas interrompre la partie')
 })
 
 test('arcade : les dégâts font tomber un joueur, contrairement à l’entraînement', () => {
@@ -234,7 +234,7 @@ test('arcade : les dégâts font tomber un joueur, contrairement à l’entraîn
   assert.equal(dummy.ko, false)
 })
 
-test('la caméra cadre l’action et un tir signature déclenche son annonce', () => {
+test('la caméra cadre l’action et un tir signature renforce la balle sans panneau', () => {
   const m = new Match({ rival: RIVALS[0] })
   m.state = 'play'
   m.setView(360)
@@ -244,7 +244,8 @@ test('la caméra cadre l’action et un tir signature déclenche son annonce', (
   for (let i = 0; i < 24; i++) m.updateCamera()
   assert.ok(m.camZoom > 1.25)
   assert.ok(m.camX < C.MID, 'la caméra se rapproche du lanceur au départ du tir')
-  assert.equal(m.superBanner.name, 'COMÈTE FATALE')
+  assert.equal(m.ball.sup, true)
+  assert.equal(m.koFreeze, 0)
 })
 
 test('en portrait la caméra reste centrée sur le porteur, même au bord du terrain', () => {
@@ -262,7 +263,7 @@ test('en portrait la caméra reste centrée sur le porteur, même au bord du ter
   assert.ok(Math.abs(m.camX - holder.x) <= 21, `porteur droit hors centre : ${m.camX}`)
 })
 
-test("l'annonce signature fige entièrement le jeu puis rend la main", () => {
+test('le super tir reste fluide et construit une longue traînée', () => {
   const m = new Match({ rival: RIVALS[0] })
   m.state = 'play'
   const thrower = m.players[0]
@@ -270,14 +271,11 @@ test("l'annonce signature fige entièrement le jeu puis rend la main", () => {
   m.release_ball(thrower)
   const x = m.ball.x
   const time = m.playFrames
-  for (let i = 0; i < 40; i++) m.update()
-  assert.equal(m.ball.x, x)
-  assert.equal(m.playFrames, time)
-  assert.ok(m.superBanner)
-  for (let i = 0; i < 50; i++) m.update()
-  assert.equal(m.superBanner, null)
-  m.update()
+  for (let i = 0; i < 10; i++) m.update()
   assert.notEqual(m.ball.x, x)
+  assert.ok(m.playFrames > time)
+  assert.ok(m.ball.trail.length >= 8)
+  assert.equal(m.koFreeze, 0)
 })
 
 test('fin du match : plus de dégâts ni de temps de jeu, un seul résultat', () => {
@@ -334,8 +332,9 @@ test('le dernier KO continue sa chute, reste dans le terrain et cadre l’impact
   m.ball.y = target.y
   m.hitPlayer(target, m.ball)
   assert.equal(m.state, 'end')
-  assert.ok(m.finisher)
+  assert.equal(m.koFreeze, 96)
   assert.ok(m.impactFocus)
+  assert.equal(m.ball.z, target.z + 31, 'la balle reste au niveau du visage pendant le retrait')
   const frozenX = target.x
   const frozenEnd = m.endT
   for (let i = 0; i < 60; i++) m.update()
@@ -347,6 +346,7 @@ test('le dernier KO continue sa chute, reste dans le terrain et cadre l’impact
   assert.equal(target.vz, 0)
   assert.ok(target.x >= 8 && target.x <= C.COURT_W - 8)
   assert.equal(m.impactFocus, null, 'le zoom impact revient au cadrage normal')
+  assert.equal(m.ball.visible, false, 'la balle disparaît de la célébration finale')
 })
 
 test('training : pas de KO ni de fin, restauration des vies et équipe choisie', () => {

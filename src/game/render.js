@@ -2,10 +2,6 @@
 import * as C from './constants.js'
 import { drawAthlete, drawBall, rr } from './sprites.js'
 import { SCENES } from './scenery.js'
-import { SUPER_IMPACT } from './art.js'
-
-const superImpactImage = typeof Image === 'undefined' ? null : new Image()
-if (superImpactImage) superImpactImage.src = SUPER_IMPACT
 
 export const VIEW_H = 270
 const FLOOR_Y = 150 // y écran du fond du terrain (profondeur 0)
@@ -174,7 +170,8 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
     ctx.fill()
   }
   const b = m.ball
-  if (b.state !== 'held') {
+  const ballVisible = b.visible !== false
+  if (ballVisible && b.state !== 'held') {
     const [bx, by] = toScreen(b.x, b.y)
     ctx.fillStyle = 'rgba(0,0,0,0.25)'
     ctx.beginPath()
@@ -185,7 +182,7 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
   if (target) ring(ctx, target, '#fb923c', t)
   if (ctrl && !ctrl.ko) ring(ctx, ctrl, '#22d3ee', t)
 
-  if (b.state === 'flying') {
+  if (ballVisible && (b.state === 'flying' || m.koFreeze > 0)) {
     const trail = b.trail || []
     ctx.save()
     ctx.lineCap = 'round'
@@ -193,17 +190,27 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
       const a = toScreen(trail[i - 1].x, trail[i - 1].y, trail[i - 1].z)
       const c = toScreen(trail[i].x, trail[i].y, trail[i].z)
       const f = i / trail.length
-      ctx.globalAlpha = f * (b.sup ? 0.78 : b.kind === 'pass' ? 0.38 : 0.62)
-      ctx.strokeStyle = '#ffffff'
-      ctx.lineWidth = 1 + f * (b.sup ? 6 : 3.5)
+      const power = b.sup ? 1 : b.kind === 'pass' ? 0.38 : 0.62
+      ctx.globalAlpha = f * power * 0.7
+      ctx.strokeStyle = b.team === 0 ? '#22d3ee' : '#fb496c'
+      ctx.lineWidth = 2 + f * (b.sup ? 12 : 5)
       ctx.beginPath()
       ctx.moveTo(a[0], a[1])
       ctx.lineTo(c[0], c[1])
       ctx.stroke()
-      ctx.globalAlpha *= 0.72
-      ctx.strokeStyle = b.team === 0 ? '#67e8f9' : '#fb7185'
-      ctx.lineWidth = Math.max(1, ctx.lineWidth * 0.36)
+      ctx.globalAlpha = f * power
+      ctx.strokeStyle = '#fffdf0'
+      ctx.lineWidth = 1 + f * (b.sup ? 5 : 2.5)
+      ctx.beginPath()
+      ctx.moveTo(a[0], a[1])
+      ctx.lineTo(c[0], c[1])
       ctx.stroke()
+      if (b.sup && i % 3 === 0) {
+        ctx.globalAlpha = f * 0.82
+        ctx.fillStyle = i % 2 ? '#fff3a3' : b.team === 0 ? '#67e8f9' : '#fb7185'
+        const spark = 2 + Math.floor(f * 3)
+        ctx.fillRect(Math.round(c[0] - spark / 2), Math.round(c[1] - spark / 2), spark, spark)
+      }
     }
     ctx.restore()
   }
@@ -224,15 +231,30 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
   }
   // joueurs et balle, triés par profondeur
   const items = m.players.map((p) => ({ y: p.y, p }))
-  if (b.state !== 'held') items.push({ y: b.y + 0.5, ball: true })
+  if (ballVisible && b.state !== 'held') items.push({ y: b.y + 0.5, ball: true })
   items.sort((a, c) => a.y - c.y)
   for (const it of items) {
     if (it.ball) {
       const [bx, by] = toScreen(b.x, b.y, b.z)
+      if (b.sup || m.koFreeze > 0) {
+        ctx.save()
+        ctx.globalAlpha = m.koFreeze > 0 ? 0.82 : 0.48
+        ctx.fillStyle = b.team === 0 ? '#67e8f9' : '#fb7185'
+        ctx.beginPath()
+        ctx.arc(bx, by, m.koFreeze > 0 ? 18 : 15, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.globalAlpha = 0.9
+        ctx.fillStyle = '#fff3a3'
+        for (let i = 0; i < 4; i++) {
+          const a = i * Math.PI * 0.5 + b.age * 0.2
+          ctx.fillRect(Math.round(bx + Math.cos(a) * 17) - 2, Math.round(by + Math.sin(a) * 17) - 2, 4, 4)
+        }
+        ctx.restore()
+      }
       drawBall(ctx, {
         x: bx,
         y: by,
-        r: b.sup ? 8.5 : 7,
+        r: b.sup || m.koFreeze > 0 ? 11 : 7.5,
         kind: b.sup
           ? b.team === 0
             ? 'super'
@@ -337,9 +359,6 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
     const n = Math.ceil(m.introT / 40)
     banner(ctx, cxs, cys, n > 3 ? 'JOUEZ !' : n > 0 ? String(n) : 'PARTEZ !', n > 3 ? 28 : 38)
   }
-  if (m.state === 'end' && m.endT < 120)
-    banner(ctx, cxs, viewH - 18, m.winner === 0 ? 'VICTOIRE !' : 'DÉFAITE…', 24)
-  if (m.superBanner) specialBanner(ctx, m.superBanner, m.viewW, viewH)
 }
 
 export function poseOf(m, p) {
@@ -443,56 +462,4 @@ function banner(ctx, x, y, text, size) {
   ctx.strokeText(text, x, y)
   ctx.fillStyle = '#fde047'
   ctx.fillText(text, x, y)
-}
-
-function specialBanner(ctx, callout, width, height) {
-  const life = callout.t
-  const duration = callout.kicker === 'FRAPPE FINALE' ? 96 : 84
-  const enter = Math.max(0, Math.min(1, (duration - life) / 10))
-  const leave = Math.min(1, life / 14)
-  const alpha = Math.min(enter, leave)
-  const accent = callout.team === 0 ? '#67e8f9' : '#fb7185'
-  const cardW = Math.min(width - 12, 520)
-  const x = (width - cardW) / 2
-  const cardH = Math.min(height * 0.42, cardW * 0.56)
-  const y = Math.max(12, (height - cardH) * 0.42)
-  ctx.save()
-  ctx.globalAlpha = alpha
-  const pop = 0.92 + enter * 0.08
-  ctx.translate(width / 2, y + cardH / 2)
-  ctx.scale(pop, pop)
-  ctx.translate(-width / 2, -(y + cardH / 2))
-  ctx.fillStyle = '#030713f5'
-  rr(ctx, x, y, cardW, cardH, 6)
-  ctx.fill()
-  ctx.strokeStyle = accent
-  ctx.lineWidth = 4
-  ctx.stroke()
-  if (superImpactImage?.complete && superImpactImage.naturalWidth) {
-    ctx.drawImage(superImpactImage, x + 5, y + 5, cardW - 10, cardH - 10)
-    ctx.globalAlpha = alpha
-  }
-  ctx.fillStyle = '#030713d9'
-  ctx.fillRect(x + 5, y + 5, cardW - 10, 23)
-  ctx.fillRect(x + 5, y + cardH - 39, cardW - 10, 34)
-  ctx.fillStyle = accent
-  ctx.fillRect(x + 5, y + 28, 7, cardH - 67)
-  ctx.fillRect(x + cardW - 12, y + 28, 7, cardH - 67)
-  ctx.textAlign = 'center'
-  ctx.font = '400 7px "Press Start 2P", monospace'
-  ctx.fillStyle = accent
-  ctx.fillText(callout.kicker, width / 2, y + 20)
-  let size = 22
-  const maxTextWidth = cardW - 34
-  do {
-    ctx.font = `400 ${size}px "Press Start 2P", monospace`
-    if (ctx.measureText(callout.name).width <= maxTextWidth) break
-    size--
-  } while (size > 10)
-  ctx.lineWidth = Math.max(3, size / 6)
-  ctx.strokeStyle = '#111827'
-  ctx.strokeText(callout.name, width / 2, y + cardH - 15)
-  ctx.fillStyle = '#ffe86b'
-  ctx.fillText(callout.name, width / 2, y + cardH - 15)
-  ctx.restore()
 }

@@ -33,7 +33,7 @@ function TeamBar({ team, players, side }) {
             <span>
               <i style={{ width: `${(p.hp / p.max) * 100}%` }} />
             </span>
-            <small>{p.ko ? 'KO' : p.name}</small>
+            <small>{p.ko ? 'OUT' : p.name}</small>
           </div>
         ))}
       </div>
@@ -253,7 +253,7 @@ export default function MatchScreen({
         )}
         {pendingResult && (
           <div className="match-end-confirm" role="status">
-            <strong>{pendingResult.win ? 'VICTOIRE !' : 'FIN DU MATCH'}</strong>
+            <strong>PARTIE TERMINÉE</strong>
             <button className="button primary" onClick={() => onEnd(pendingResult)}>
               CONTINUER
             </button>

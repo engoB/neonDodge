@@ -142,7 +142,7 @@ test('arcade : sélection aux flèches et lancement plein écran', async ({ page
     match.hitPlayer(target, match.ball)
     match.emitHud()
   })
-  await expect(page.locator('.score-team.right')).toContainText('KO')
+  await expect(page.locator('.score-team.right')).toContainText('OUT')
 })
 
 test('réglages : dialogue sans défilement, retour et sauvegarde', async ({ page }) => {
@@ -259,12 +259,12 @@ test('commandes directes : le tir sauté déclenche un super au sommet', async (
   await jump.click()
   await expect(jump).toBeDisabled({ timeout: 2500 })
   await expect.poll(() => page.evaluate(() => window.__match.ball.sup)).toBe(true)
-  await expect.poll(() => page.evaluate(() => !!window.__match.superBanner)).toBe(true)
-  const frozen = await page.evaluate(() => ({ x: window.__match.ball.x, t: window.__match.playFrames }))
-  await page.waitForTimeout(350)
-  expect(await page.evaluate(() => ({ x: window.__match.ball.x, t: window.__match.playFrames }))).toEqual(
-    frozen,
-  )
+  await expect.poll(() => page.evaluate(() => window.__match.ball.trail.length)).toBeGreaterThan(5)
+  const moving = await page.evaluate(() => ({ x: window.__match.ball.x, t: window.__match.playFrames }))
+  await page.waitForTimeout(120)
+  const moved = await page.evaluate(() => ({ x: window.__match.ball.x, t: window.__match.playFrames }))
+  expect(moved.t).toBeGreaterThan(moving.t)
+  expect(moved.x).not.toBe(moving.x)
   await screenshot(page, info, 'super-saute')
 })
 
@@ -282,6 +282,8 @@ test('fin : le terrain reste visible avant la fiche de résultat', async ({ page
   await page.getByRole('button', { name: 'CONTINUER' }).click()
   await expect(page.locator('.result-dialog')).toBeVisible()
   await expect(page.locator('.result-versus img')).toHaveCount(2)
+  await expect(page.getByText('VICTOIRE', { exact: true })).toHaveCount(1)
+  await expect(page.getByText('STRIKE OUTS', { exact: true })).toBeVisible()
   expect(
     await page.locator('.result-card').evaluate((card) => {
       const bounds = card.getBoundingClientRect()

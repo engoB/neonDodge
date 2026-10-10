@@ -61,6 +61,7 @@ export class Match {
       age: 0,
       hit: new Set(),
       trail: [],
+      visible: true,
     }
     this.giveBall(this.players[0])
     this.playFrames = 0
@@ -78,11 +79,10 @@ export class Match {
     this.camX = C.MID
     this.camZoom = 1.14
     this.viewW = 480
-    this.superBanner = null
     this.shotMeter = null
     this.slowMo = 0
     this.impactFocus = null
-    this.finisher = null
+    this.koFreeze = 0
     this.lastHud = ''
     this.hint = 'Maintenez pour courir, relâchez pour tirer'
     this.hintT = 400
@@ -195,6 +195,7 @@ export class Match {
     b.vx = b.vy = b.vz = 0
     b.hit = new Set()
     b.trail = []
+    b.visible = true
     p.state = 'hold'
     p.t = 0
     p.charge = 0
@@ -415,7 +416,7 @@ export class Match {
     if (meter.stage >= 3) {
       this.addText(p, 'PARFAIT ×3', '#fde047')
       this.shotMeter = null
-      this.startThrow(p, { sup: true, running: true, finisher: true })
+      this.startThrow(p, { sup: true, running: true })
       return true
     }
     this.addText(p, meter.stage === 1 ? 'BIEN !' : 'EXCELLENT !', '#67e8f9')
@@ -478,6 +479,7 @@ export class Match {
     b.age = 0
     b.impactCue = false
     b.hit = new Set()
+    b.visible = true
     b.speed = speed
     b.dirx = (tx - p.x) / d
     b.diry = (ty - p.y) / d
@@ -499,12 +501,6 @@ export class Match {
       this.addText(p, (special ? specialName(special) : 'SUPER') + ' !', p.team === 0 ? '#67e8f9' : '#fb923c')
       sfx.superShot()
       this.shake = 8
-      this.superBanner = {
-        name: special ? specialName(special) : 'SUPER FRAPPE',
-        kicker: 'FRAPPE SIGNATURE',
-        team: p.team,
-        t: 84,
-      }
     } else sfx.throw()
   }
 
@@ -567,10 +563,6 @@ export class Match {
     sfx.hitEnemy()
     this.burst(b.x, b.y, b.z, b.sup ? '#67e8f9' : '#fef3c7', b.sup ? 18 : 8)
     this.shake = Math.max(this.shake, b.sup ? 10 : 4)
-    if (b.sup) {
-      this.slowMo = 0
-      this.impactFocus = { x: p.x, y: p.y, t: 1 }
-    }
     if (p.team === 0) {
       this.stats.taken += dmg
     } else this.stats.hits++
@@ -589,22 +581,14 @@ export class Match {
       p.vz = 3
       p.kx = Math.sign(b.vx) * -2.2
       if (p.team === 1) this.stats.kos++
-      this.addText(p, 'KO !', '#fde047')
-      if (b.sup) {
-        this.finisher = {
-          x: p.x,
-          y: p.y,
-          team: b.team,
-          facing: b.thrower?.facing || 1,
-          t: this.reducedMotion ? 24 : 78,
-        }
-        this.superBanner = {
-          name: 'COUP DE CIRCUIT KO',
-          kicker: 'FRAPPE FINALE',
-          team: b.team,
-          t: 96,
-        }
-      }
+      this.addText(p, 'STRIKE OUT !', '#fde047')
+      // Le seul arrêt de jeu spectaculaire est le retrait : la balle reste
+      // exactement au point d'impact, devant le visage, puis le jeu reprend.
+      b.x = p.x
+      b.y = p.y
+      b.z = p.z + 31
+      this.koFreeze = this.reducedMotion ? 30 : 96
+      this.impactFocus = { x: p.x, y: p.y, t: this.koFreeze }
       sfx.ko()
       this.checkEnd()
     }
@@ -615,15 +599,15 @@ export class Match {
   update() {
     if (this.state === 'paused') return
     this.frame++
-    // Une annonce signature est un véritable arrêt arcade : aucun joueur,
-    // projectile, chrono ou effet de jeu n'avance derrière le panneau.
-    // La caméra peut néanmoins finir son cadrage sur l'impact.
-    if (this.superBanner) {
-      if (this.impactFocus) this.impactFocus.t = this.superBanner.t
+    // Arrêt sur image réservé au STRIKE OUT : le super tir, lui, ne casse
+    // jamais le rythme de la partie.
+    if (this.koFreeze > 0) {
+      this.koFreeze--
+      if (this.impactFocus) this.impactFocus.t = this.koFreeze
       this.updateCamera()
-      if (--this.superBanner.t <= 0) {
-        this.superBanner = null
-        if (this.slowMo <= 0) this.impactFocus = null
+      if (this.koFreeze === 0) {
+        this.impactFocus = null
+        if (this.state === 'end') this.ball.visible = false
       }
       this.emitHud()
       return
@@ -959,7 +943,8 @@ export class Match {
     b.age++
     if (b.state === 'flying') {
       b.trail.push({ x: b.x, y: b.y, z: b.z })
-      if (b.trail.length > (b.kind === 'shot' ? 16 : 10)) b.trail.shift()
+      const trailLength = b.sup ? 30 : b.kind === 'shot' ? 18 : 10
+      if (b.trail.length > trailLength) b.trail.shift()
     }
     if (b.state === 'flying' && b.kind === 'shot') this.moveShot(b)
     else {
@@ -1176,8 +1161,7 @@ export class Match {
       t.t--
     }
     this.texts = this.texts.filter((t) => t.t > 0)
-    if (this.finisher && --this.finisher.t <= 0) this.finisher = null
-    if (this.impactFocus && this.slowMo <= 0 && !this.superBanner) this.impactFocus = null
+    if (this.impactFocus && this.slowMo <= 0 && this.koFreeze <= 0) this.impactFocus = null
     if (this.shake > 0) this.shake--
   }
 
