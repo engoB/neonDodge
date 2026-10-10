@@ -236,18 +236,42 @@ export function drawMatch(m, ctx, scale, dpr, viewH, t) {
   for (const it of items) {
     if (it.ball) {
       const [bx, by] = toScreen(b.x, b.y, b.z)
-      if (b.sup || m.koFreeze > 0) {
+      if (b.sup) {
         ctx.save()
-        ctx.globalAlpha = m.koFreeze > 0 ? 0.82 : 0.48
-        ctx.fillStyle = b.team === 0 ? '#67e8f9' : '#fb7185'
-        ctx.beginPath()
-        ctx.arc(bx, by, m.koFreeze > 0 ? 18 : 15, 0, Math.PI * 2)
-        ctx.fill()
+        ctx.translate(Math.round(bx), Math.round(by))
+        const backwards = b.vx >= 0 ? -1 : 1
+        const flicker = Math.floor(b.age / 2) % 3
+        const outer = b.team === 0 ? '#20d9ff' : '#ff496c'
+        const mid = b.team === 0 ? '#65fff1' : '#ff9b47'
+        // Flammes en marches d'escalier : silhouette volontairement pixel,
+        // animée sur trois images et orientée à l'opposé du déplacement.
         ctx.globalAlpha = 0.9
+        ctx.fillStyle = outer
+        ctx.beginPath()
+        ctx.moveTo(backwards * 8, -11)
+        ctx.lineTo(backwards * (20 + flicker * 3), -8)
+        ctx.lineTo(backwards * (15 + flicker * 5), -3)
+        ctx.lineTo(backwards * (29 - flicker * 2), 0)
+        ctx.lineTo(backwards * (16 + flicker * 3), 4)
+        ctx.lineTo(backwards * (22 + flicker * 2), 9)
+        ctx.lineTo(backwards * 8, 11)
+        ctx.closePath()
+        ctx.fill()
+        ctx.fillStyle = mid
+        ctx.fillRect(backwards * 16 - (backwards < 0 ? 8 : 0), -6, 8, 12)
         ctx.fillStyle = '#fff3a3'
-        for (let i = 0; i < 4; i++) {
-          const a = i * Math.PI * 0.5 + b.age * 0.2
-          ctx.fillRect(Math.round(bx + Math.cos(a) * 17) - 2, Math.round(by + Math.sin(a) * 17) - 2, 4, 4)
+        ctx.fillRect(backwards * 12 - (backwards < 0 ? 5 : 0), -3, 5, 6)
+        ctx.fillStyle = outer
+        ctx.fillRect(backwards * (22 + flicker * 4) - 2, -14 + flicker * 3, 4, 4)
+        ctx.fillRect(backwards * (26 - flicker * 3) - 2, 11 - flicker * 2, 4, 4)
+        ctx.restore()
+      } else if (m.koFreeze > 0) {
+        ctx.save()
+        ctx.fillStyle = b.team === 0 ? '#67e8f9' : '#fb7185'
+        for (let i = 0; i < 8; i++) {
+          const a = i * Math.PI * 0.25
+          const d = 15 + (i % 2) * 5
+          ctx.fillRect(Math.round(bx + Math.cos(a) * d) - 2, Math.round(by + Math.sin(a) * d) - 2, 5, 5)
         }
         ctx.restore()
       }

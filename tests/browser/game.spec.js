@@ -94,12 +94,19 @@ test('accueil : écran titre épuré puis menu console', async ({ page }, info) 
   await expect(page.locator('.console-menu-list button')).toHaveCount(4)
   await expect(page.getByText('CHOISISSEZ UN MODE')).toHaveCount(0)
   await expect(page.locator('.console-menu-list i')).toHaveCount(0)
+  expect(
+    await page.locator('.console-menu-list button').evaluateAll((buttons) =>
+      new Set(buttons.map((button) => getComputedStyle(button).borderColor)).size,
+    ),
+  ).toBe(4)
 })
 
 test('arcade : sélection aux flèches et lancement plein écran', async ({ page }, info) => {
   await page.goto('/?debug')
   await page.getByRole('button', { name: /^JOUER/ }).click()
   await page.getByRole('button', { name: /ARCADE/ }).click()
+  await expect(page.locator('.mode-ambient')).toBeVisible()
+  await expect(page.locator('.mode-setup > canvas.mode-backdrop')).toHaveCount(0)
   await expect(page.getByText('RED BATS', { exact: true })).toBeVisible()
   await expect(page.getByText('PARC DES RENARDS', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: /ADVERSAIRE, valeur suivante/ }).click()
@@ -143,6 +150,7 @@ test('arcade : sélection aux flèches et lancement plein écran', async ({ page
     match.emitHud()
   })
   await expect(page.locator('.score-team.right')).toContainText('OUT')
+  await expect(page.locator('.score-team.left .score-name b')).toHaveText('1')
 })
 
 test('réglages : dialogue sans défilement, retour et sauvegarde', async ({ page }) => {
@@ -185,6 +193,12 @@ test('coupe : premier match accessible, suivants verrouillés et commandes visib
   await expect(page.locator('.story-versus .dialogue-portrait')).toHaveCount(2)
   await expect(page.locator('.story-dialog').getByRole('button', { name: 'RETOUR' })).toBeVisible()
   await expect(page.locator('.speech-box.riko')).toBeVisible()
+  expect(
+    await page.locator('.speech-box.riko').evaluate((el) => {
+      const style = getComputedStyle(el)
+      return [style.outlineWidth, style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth]
+    }),
+  ).toEqual(['0px', '4px', '4px', '4px', '4px'])
   expect(
     await page.locator('.speech-box.riko').evaluate((el) => el.scrollHeight <= el.clientHeight + 1),
   ).toBe(true)
@@ -284,6 +298,7 @@ test('fin : le terrain reste visible avant la fiche de résultat', async ({ page
   await expect(page.locator('.result-versus img')).toHaveCount(2)
   await expect(page.getByText('VICTOIRE', { exact: true })).toHaveCount(1)
   await expect(page.getByText('STRIKE OUTS', { exact: true })).toBeVisible()
+  await expect(page.locator('.result-score strong')).toContainText('0–0')
   expect(
     await page.locator('.result-card').evaluate((card) => {
       const bounds = card.getBoundingClientRect()
@@ -315,7 +330,7 @@ test('entraînement : équipe sélectionnée, vies restaurées et retour menu', 
   await page.getByRole('button', { name: /ENTRAÎNEMENT/ }).click()
   await page.getByRole('button', { name: /ÉQUIPE, valeur suivante/ }).click()
   await expect(page.getByText('RED BATS', { exact: true })).toHaveCount(2)
-  await page.getByRole('button', { name: /ENTRAÎNEMENT !/ }).click()
+  await page.getByRole('button', { name: /COMMENCER/ }).click()
   await expect(action(page)).toBeEnabled()
   await expect(page.locator('.score-team.left img')).toHaveAttribute('alt', 'Red Bats')
   await expectMatchFits(page)
