@@ -482,8 +482,13 @@ function specialBanner(ctx, callout, width, height) {
   ctx.font = '400 7px "Press Start 2P", monospace'
   ctx.fillStyle = accent
   ctx.fillText(callout.kicker, width / 2, y + 20)
-  const size = Math.max(12, Math.min(22, cardW / Math.max(12, callout.name.length * 0.72)))
-  ctx.font = `400 ${size}px "Press Start 2P", monospace`
+  let size = 22
+  const maxTextWidth = cardW - 34
+  do {
+    ctx.font = `400 ${size}px "Press Start 2P", monospace`
+    if (ctx.measureText(callout.name).width <= maxTextWidth) break
+    size--
+  } while (size > 10)
   ctx.lineWidth = Math.max(3, size / 6)
   ctx.strokeStyle = '#111827'
   ctx.strokeText(callout.name, width / 2, y + cardH - 15)

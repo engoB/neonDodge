@@ -52,3 +52,40 @@ function stadium(arena, ctx, camX, w, top, bottom) {
 export const SCENES = Object.fromEntries(
   Object.keys(BALLPARKS).map((key) => [key, { bg: (...args) => stadium(key, ...args) }]),
 )
+
+// Les écrans de menu sont verticaux alors que les stades sont carrés. Les
+// étirer sur toute la hauteur grossissait leurs pixels et donnait un fond
+// flou. Cette composition conserve l'image à sa définition utile, puis étend
+// le décor avec des aplats pixelisés légers.
+export function drawBackdrop(arena, ctx, width, height) {
+  const park = BALLPARKS[arena]
+  const image = getSpriteAsset(`stadium-${arena}`)
+  ctx.save()
+  ctx.imageSmoothingEnabled = false
+  const sky = ctx.createLinearGradient(0, 0, 0, height)
+  sky.addColorStop(0, park.sky[0])
+  sky.addColorStop(0.56, park.sky[1])
+  sky.addColorStop(1, '#071725')
+  ctx.fillStyle = sky
+  ctx.fillRect(0, 0, width, height)
+
+  if (image) {
+    const sceneTop = Math.round(height * 0.055)
+    const sceneHeight = Math.min(Math.round(width * 1.02), Math.round(height * 0.62))
+    ctx.drawImage(image, 0, 0, image.width, image.height, 0, sceneTop, width, sceneHeight)
+    const fade = ctx.createLinearGradient(0, sceneTop + sceneHeight * 0.68, 0, sceneTop + sceneHeight)
+    fade.addColorStop(0, 'rgba(7,23,37,0)')
+    fade.addColorStop(1, 'rgba(7,23,37,0.82)')
+    ctx.fillStyle = fade
+    ctx.fillRect(0, sceneTop, width, sceneHeight)
+  }
+
+  const pixel = Math.max(4, Math.round(width / 120))
+  ctx.globalAlpha = 0.24
+  ctx.fillStyle = park.accent
+  for (let y = Math.round(height * 0.67); y < height; y += pixel * 5) {
+    for (let x = (y / pixel) % 2 ? 0 : pixel * 3; x < width; x += pixel * 8)
+      ctx.fillRect(x, y, pixel * 3, pixel)
+  }
+  ctx.restore()
+}

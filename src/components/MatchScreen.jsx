@@ -5,8 +5,17 @@ import { preloadSprites } from '../game/sprites.js'
 import { PLAYER_TEAM } from '../game/teams.js'
 import { teamEmblem } from '../game/art.js'
 import { unlockAudio, startMusic, stopMusic } from '../game/audio.js'
+import baseballIcon from '../../assets/sprites/baseball.png'
 
 const ARENA_MUSIC = { gym: 0, roof: 1, beach: 2, desert: 1, foundry: 2, neon: 3 }
+function ActionIcon({ type }) {
+  return (
+    <span className={`pixel-action-icon ${type}`} aria-hidden="true">
+      <img src={baseballIcon} alt="" />
+      <i />
+    </span>
+  )
+}
 function TeamBar({ team, players, side }) {
   return (
     <div className={`score-team ${side}`} style={{ '--team-accent': team.accent }}>
@@ -299,7 +308,7 @@ export default function MatchScreen({
                 : 'Réceptionner ou maintenir pour sauter'
             }
           >
-            <span className="pixel-action-icon shot" aria-hidden="true" />
+            <ActionIcon type="shot" />
           </button>
           <button
             className="pass-button"
@@ -311,7 +320,7 @@ export default function MatchScreen({
             }}
             aria-label="Passer la balle"
           >
-            <span className="pixel-action-icon pass" aria-hidden="true" />
+            <ActionIcon type="pass" />
           </button>
           <button
             className="jump-button"
@@ -323,7 +332,7 @@ export default function MatchScreen({
             }}
             aria-label="Faire un tir en saut"
           >
-            <span className="pixel-action-icon jump" aria-hidden="true" />
+            <ActionIcon type="jump" />
           </button>
         </div>
       )}

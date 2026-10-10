@@ -105,6 +105,8 @@ test('arcade : sélection aux flèches et lancement plein écran', async ({ page
   await page.getByRole('button', { name: /ADVERSAIRE, valeur suivante/ }).click()
   await expect(page.getByText('GOLD OWLS', { exact: true })).toBeVisible()
   await expect(page.getByText('PARC DES RENARDS', { exact: true })).toBeVisible()
+  const emblemBox = await page.locator('.emblem-versus .team-emblem').first().boundingBox()
+  expect(emblemBox.width).toBeGreaterThanOrEqual(90)
   const stadium = page.locator('.stadium-card canvas')
   await expect(stadium).toBeVisible()
   const digest = () =>
@@ -183,6 +185,9 @@ test('coupe : premier match accessible, suivants verrouillés et commandes visib
   await expect(page.locator('.story-versus .dialogue-portrait')).toHaveCount(2)
   await expect(page.locator('.story-dialog').getByRole('button', { name: 'RETOUR' })).toBeVisible()
   await expect(page.locator('.speech-box.riko')).toBeVisible()
+  expect(
+    await page.locator('.speech-box.riko').evaluate((el) => el.scrollHeight <= el.clientHeight + 1),
+  ).toBe(true)
   const portraitGeometry = await page.locator('.story-versus > div').evaluateAll((items) =>
     items.map((item) => {
       const rect = item.getBoundingClientRect()
@@ -192,6 +197,9 @@ test('coupe : premier match accessible, suivants verrouillés et commandes visib
   await screenshot(page, info, 'histoire-gauche')
   await page.getByRole('button', { name: /SUIVANT/ }).click()
   await expect(page.locator('.speech-box.rival')).toBeVisible()
+  expect(
+    await page.locator('.speech-box.rival').evaluate((el) => el.scrollHeight <= el.clientHeight + 1),
+  ).toBe(true)
   expect(
     await page.locator('.story-versus > div').evaluateAll((items) =>
       items.map((item) => {
@@ -208,6 +216,7 @@ test('coupe : premier match accessible, suivants verrouillés et commandes visib
     .click()
   await expect(action(page)).toBeEnabled()
   await expectMatchFits(page)
+  await expect(page.locator('.pixel-action-icon img')).toHaveCount(3)
   await screenshot(page, info, 'match')
 })
 
@@ -250,6 +259,12 @@ test('commandes directes : le tir sauté déclenche un super au sommet', async (
   await jump.click()
   await expect(jump).toBeDisabled({ timeout: 2500 })
   await expect.poll(() => page.evaluate(() => window.__match.ball.sup)).toBe(true)
+  await expect.poll(() => page.evaluate(() => !!window.__match.superBanner)).toBe(true)
+  const frozen = await page.evaluate(() => ({ x: window.__match.ball.x, t: window.__match.playFrames }))
+  await page.waitForTimeout(350)
+  expect(await page.evaluate(() => ({ x: window.__match.ball.x, t: window.__match.playFrames }))).toEqual(
+    frozen,
+  )
   await screenshot(page, info, 'super-saute')
 })
 

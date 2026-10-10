@@ -262,14 +262,22 @@ test('en portrait la caméra reste centrée sur le porteur, même au bord du ter
   assert.ok(Math.abs(m.camX - holder.x) <= 21, `porteur droit hors centre : ${m.camX}`)
 })
 
-test('le ralenti garde la boucle à 60 Hz sans recalculer le HUD à chaque image', () => {
+test("l'annonce signature fige entièrement le jeu puis rend la main", () => {
   const m = new Match({ rival: RIVALS[0] })
   m.state = 'play'
-  m.slowMo = 12
-  let emissions = 0
-  m.emitHud = () => emissions++
-  for (let i = 0; i < 8; i++) m.update()
-  assert.ok(emissions <= 4, `HUD recalculé ${emissions} fois pendant 8 images de ralenti`)
+  const thrower = m.players[0]
+  thrower.throwOpts = { target: m.players[10], sup: true }
+  m.release_ball(thrower)
+  const x = m.ball.x
+  const time = m.playFrames
+  for (let i = 0; i < 40; i++) m.update()
+  assert.equal(m.ball.x, x)
+  assert.equal(m.playFrames, time)
+  assert.ok(m.superBanner)
+  for (let i = 0; i < 50; i++) m.update()
+  assert.equal(m.superBanner, null)
+  m.update()
+  assert.notEqual(m.ball.x, x)
 })
 
 test('fin du match : plus de dégâts ni de temps de jeu, un seul résultat', () => {
@@ -328,6 +336,11 @@ test('le dernier KO continue sa chute, reste dans le terrain et cadre l’impact
   assert.equal(m.state, 'end')
   assert.ok(m.finisher)
   assert.ok(m.impactFocus)
+  const frozenX = target.x
+  const frozenEnd = m.endT
+  for (let i = 0; i < 60; i++) m.update()
+  assert.equal(target.x, frozenX, 'le KO reste figé pendant la frappe finale')
+  assert.equal(m.endT, frozenEnd, 'la fin de match attend la cinématique')
   for (let i = 0; i < 140; i++) m.update()
   assert.equal(target.ko, true)
   assert.equal(target.z, 0)
