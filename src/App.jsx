@@ -4,7 +4,7 @@ import { PLAYER_TEAM, RIVALS } from './game/teams.js'
 import { load, save, recordMatch } from './game/storage.js'
 import { setSound, setMusic, unlockAudio, sfx } from './game/audio.js'
 import { drawAthlete, preloadSprites } from './game/sprites.js'
-import { SCENES } from './game/scenery.js'
+import { drawBackdrop } from './game/scenery.js'
 import { storyStage, teamEmblem } from './game/art.js'
 import dialogueCaptains from '../assets/dialogue-captains-v2.webp'
 
@@ -97,21 +97,28 @@ export function Portrait({ kit, pose = 'idle', className = '', facing = 1, reduc
 function SceneBackground({ arena, className }) {
   const ref = useRef(null)
   useEffect(() => {
-    let active = true
+    let active = true,
+      observer
     const draw = () => {
       if (!active) return
       const canvas = ref.current
-      const width = 960,
-        height = 540
+      const dpr = Math.min(2, window.devicePixelRatio || 1)
+      const width = Math.max(360, Math.round(canvas.clientWidth * dpr)),
+        height = Math.max(640, Math.round(canvas.clientHeight * dpr))
       canvas.width = width
       canvas.height = height
-      SCENES[arena].bg(canvas.getContext('2d'), 240, width, 0, height, 0)
+      drawBackdrop(arena, canvas.getContext('2d'), width, height)
     }
     preloadSprites()
-      .then(draw)
+      .then(() => {
+        draw()
+        observer = new ResizeObserver(draw)
+        observer.observe(ref.current)
+      })
       .catch(() => {})
     return () => {
       active = false
+      observer?.disconnect()
     }
   }, [arena])
   return <canvas ref={ref} className={className} aria-hidden="true" />

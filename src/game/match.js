@@ -568,8 +568,8 @@ export class Match {
     this.burst(b.x, b.y, b.z, b.sup ? '#67e8f9' : '#fef3c7', b.sup ? 18 : 8)
     this.shake = Math.max(this.shake, b.sup ? 10 : 4)
     if (b.sup) {
-      this.slowMo = this.reducedMotion ? 10 : 38
-      this.impactFocus = { x: p.x, y: p.y, t: this.slowMo }
+      this.slowMo = 0
+      this.impactFocus = { x: p.x, y: p.y, t: 1 }
     }
     if (p.team === 0) {
       this.stats.taken += dmg
@@ -615,6 +615,19 @@ export class Match {
   update() {
     if (this.state === 'paused') return
     this.frame++
+    // Une annonce signature est un véritable arrêt arcade : aucun joueur,
+    // projectile, chrono ou effet de jeu n'avance derrière le panneau.
+    // La caméra peut néanmoins finir son cadrage sur l'impact.
+    if (this.superBanner) {
+      if (this.impactFocus) this.impactFocus.t = this.superBanner.t
+      this.updateCamera()
+      if (--this.superBanner.t <= 0) {
+        this.superBanner = null
+        if (this.slowMo <= 0) this.impactFocus = null
+      }
+      this.emitHud()
+      return
+    }
     if (this.state === 'intro') {
       this.introT--
       if (this.introT % 40 === 0 && this.introT > 0 && this.introT <= 120) sfx.tick()
@@ -668,8 +681,7 @@ export class Match {
       const f = this.ball.target ? this.framesToContact(this.ball.target) : null
       if (f !== null && f < 12) {
         this.ball.impactCue = true
-        this.slowMo = this.reducedMotion ? 0 : 30
-        this.impactFocus = { x: this.ball.target.x, y: this.ball.target.y, t: 30 }
+        this.impactFocus = { x: this.ball.target.x, y: this.ball.target.y, t: 1 }
       }
     }
     this.updateBall()
@@ -1164,9 +1176,8 @@ export class Match {
       t.t--
     }
     this.texts = this.texts.filter((t) => t.t > 0)
-    if (this.superBanner && --this.superBanner.t <= 0) this.superBanner = null
     if (this.finisher && --this.finisher.t <= 0) this.finisher = null
-    if (this.impactFocus && this.slowMo <= 0) this.impactFocus = null
+    if (this.impactFocus && this.slowMo <= 0 && !this.superBanner) this.impactFocus = null
     if (this.shake > 0) this.shake--
   }
 

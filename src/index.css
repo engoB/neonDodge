@@ -5074,43 +5074,54 @@ canvas.story-background {
 
 /* v9 — lisibilité arcade, sélecteurs fiables et composition histoire stable. */
 .team-emblem {
+  width: 88px;
+  height: 88px;
+}
+.emblem-versus .team-emblem {
+  width: 120px;
+  height: 120px;
+}
+.mode-setup .emblem-versus {
+  min-height: 124px;
+}
+.chapter-caption {
+  grid-template-columns: 80px minmax(0, 1fr) auto;
+}
+.chapter-caption .team-emblem {
   width: 76px;
   height: 76px;
 }
-.emblem-versus .team-emblem {
-  width: 100px;
-  height: 100px;
+.scoreboard {
+  min-height: 116px;
+  grid-template-columns: minmax(70px, 0.95fr) minmax(104px, 1.12fr) minmax(70px, 0.95fr);
 }
-.mode-setup .emblem-versus {
-  min-height: 108px;
+.score-name {
+  min-height: 68px;
 }
-.chapter-caption {
-  grid-template-columns: 68px minmax(0, 1fr) auto;
-}
-.chapter-caption .team-emblem {
+.score-name img {
   width: 64px;
   height: 64px;
 }
-.scoreboard {
-  min-height: 104px;
-  grid-template-columns: minmax(64px, 0.95fr) minmax(92px, 1.1fr) minmax(64px, 0.95fr);
+.score-name b {
+  width: 26px;
+  height: 26px;
+  font-size: 14px;
 }
-.score-name {
-  min-height: 57px;
+.arcade-score {
+  font-size: clamp(18px, 5.4vw, 24px);
 }
-.score-name img {
-  width: 54px;
-  height: 54px;
+.score-middle b {
+  font-size: clamp(26px, 7.5vw, 34px);
 }
 .match-hud .icon-button {
-  height: 104px;
+  height: 116px;
 }
 .result-versus {
-  grid-template-columns: 80px 1fr 80px;
+  grid-template-columns: 96px 1fr 96px;
 }
 .result-versus .team-emblem {
-  width: 76px;
-  height: 76px;
+  width: 92px;
+  height: 92px;
 }
 
 .stadium-card .stadium-thumb {
@@ -5154,7 +5165,7 @@ canvas.story-background {
 }
 
 .story-card {
-  grid-template-rows: 24px minmax(190px, 1fr) 132px 10px 54px;
+  grid-template-rows: 24px minmax(172px, 1fr) 150px 10px 54px;
   gap: 8px;
 }
 .story-cast {
@@ -5205,15 +5216,13 @@ canvas.story-background {
 .speech-box.riko,
 .speech-box.rival {
   box-sizing: border-box;
-  height: 132px;
-  min-height: 132px;
+  height: 150px;
+  min-height: 150px;
   overflow: hidden;
 }
 .speech-box p {
-  display: -webkit-box;
+  display: block;
   overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 4;
 }
 
 .match-deck {
@@ -5224,116 +5233,107 @@ canvas.story-background {
 .action-pad,
 .pass-button,
 .jump-button {
-  min-height: 84px;
+  min-height: 92px;
   border-width: 4px;
   border-radius: 17px;
   box-shadow: 0 6px 0 #02070d;
 }
 .pixel-action-icon {
   position: relative;
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  image-rendering: pixelated;
+}
+.pixel-action-icon img {
+  position: absolute;
+  z-index: 2;
   display: block;
-  width: 54px;
-  height: 54px;
+  object-fit: contain;
   image-rendering: pixelated;
   filter: drop-shadow(4px 4px 0 #02070d);
 }
-.pixel-action-icon.shot {
-  border: 5px solid #07101a;
-  border-radius: 50%;
-  background: #fff3c2;
-  box-shadow: inset 0 0 0 4px #f5f0d9;
+.pixel-action-icon.shot img {
+  width: 62px;
+  height: 62px;
 }
-.pixel-action-icon.shot::before,
-.pixel-action-icon.shot::after {
-  content: '';
+.pixel-action-icon.shot i {
+  display: none;
+}
+.pixel-action-icon.pass img {
+  left: 0;
+  width: 39px;
+  height: 39px;
+}
+.pixel-action-icon.pass i {
   position: absolute;
-  top: 8px;
-  width: 6px;
-  height: 29px;
-  border-block: 5px dashed #ff496c;
+  z-index: 1;
+  right: 0;
+  width: 39px;
+  height: 24px;
+  background: var(--pixel-paper);
+  clip-path: polygon(0 28%, 59% 28%, 59% 0, 100% 50%, 59% 100%, 59% 72%, 0 72%);
+  filter: drop-shadow(4px 4px 0 #02070d);
 }
-.pixel-action-icon.shot::before {
-  left: 8px;
-  transform: rotate(-24deg);
+.pixel-action-icon.jump img {
+  top: 0;
+  right: 0;
+  width: 38px;
+  height: 38px;
 }
-.pixel-action-icon.shot::after {
-  right: 8px;
-  transform: rotate(24deg);
-}
-.pixel-action-icon.pass::before,
-.pixel-action-icon.pass::after {
-  content: '';
+.pixel-action-icon.jump i {
   position: absolute;
-  left: 6px;
-  width: 42px;
-  height: 12px;
-  background: #fff3c2;
-  clip-path: polygon(0 30%, 66% 30%, 66% 0, 100% 50%, 66% 100%, 66% 70%, 0 70%);
-}
-.pixel-action-icon.pass::before {
-  top: 7px;
-}
-.pixel-action-icon.pass::after {
-  bottom: 7px;
-  transform: scaleX(-1);
-}
-.pixel-action-icon.jump::before {
-  content: '';
-  position: absolute;
-  right: 5px;
-  bottom: 7px;
-  width: 44px;
-  height: 44px;
-  background: #07101a;
-  clip-path: polygon(0 72%, 16% 88%, 62% 42%, 44% 24%, 100% 8%, 84% 64%, 66% 46%, 20% 92%);
-}
-.pixel-action-icon.jump::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 14px;
-  height: 14px;
-  border: 3px solid #07101a;
-  border-radius: 50%;
-  background: #fff3c2;
+  bottom: 9px;
+  left: 3px;
+  width: 48px;
+  height: 18px;
+  background: var(--pixel-ink);
+  clip-path: polygon(0 33%, 62% 33%, 62% 0, 100% 50%, 62% 100%, 62% 67%, 0 67%);
+  transform: rotate(-46deg);
+  filter: drop-shadow(3px 3px 0 var(--pixel-paper));
 }
 
 @media (max-height: 700px) and (orientation: portrait) {
   .emblem-versus .team-emblem {
-    width: 76px;
-    height: 76px;
+    width: 92px;
+    height: 92px;
   }
   .mode-setup .emblem-versus {
-    min-height: 80px;
+    min-height: 94px;
   }
   .scoreboard,
   .match-hud .icon-button {
-    min-height: 88px;
-    height: 88px;
+    min-height: 100px;
+    height: 100px;
   }
   .score-name img {
-    width: 48px;
-    height: 48px;
+    width: 54px;
+    height: 54px;
   }
   .action-pad,
   .pass-button,
   .jump-button {
-    min-height: 70px;
+    min-height: 78px;
   }
   .pixel-action-icon {
-    width: 46px;
-    height: 46px;
+    width: 54px;
+    height: 54px;
   }
   .story-card {
-    grid-template-rows: 20px minmax(150px, 1fr) 108px 8px 46px;
+    grid-template-rows: 20px minmax(135px, 1fr) 122px 8px 46px;
     gap: 5px;
   }
   .speech-box,
   .speech-box.riko,
   .speech-box.rival {
-    height: 108px;
-    min-height: 108px;
+    height: 122px;
+    min-height: 122px;
+    padding: 11px 14px 9px;
+  }
+  .speech-box p {
+    font-size: clamp(8px, 2.55vw, 10px);
+    line-height: 1.45;
   }
   .story-cast b {
     font-size: 8px;
