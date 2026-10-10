@@ -142,7 +142,7 @@ test('arcade : sélection aux flèches et lancement plein écran', async ({ page
     match.hitPlayer(target, match.ball)
     match.emitHud()
   })
-  await expect(page.locator('.score-team.right')).toContainText('KO')
+  await expect(page.locator('.score-team.right')).toContainText('OUT')
 })
 
 test('réglages : dialogue sans défilement, retour et sauvegarde', async ({ page }) => {

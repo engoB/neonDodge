@@ -5404,6 +5404,12 @@ canvas.story-background {
   background: transparent;
   box-shadow: none;
 }
+.story-cast {
+  margin-right: -14px;
+  margin-left: -14px;
+  padding: 0 14px;
+  background: linear-gradient(180deg, #07172533, #071725d9 42%, #071725 100%);
+}
 .story-cast .dialogue-portrait {
   border: 0;
   border-radius: 0;
