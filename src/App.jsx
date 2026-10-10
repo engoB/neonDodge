@@ -516,10 +516,9 @@ function Results({ r, rival, playerTeam, isFinal, inTournament, onNext, onRetry,
         </span>
         <div className="result-versus">
           <TeamEmblem team={playerTeam} />
-          <b>{r.win ? 'VICTOIRE' : 'DÉFAITE'}</b>
+          <b id="result-title">{r.win ? 'VICTOIRE' : 'DÉFAITE'}</b>
           <TeamEmblem team={rival} />
         </div>
-        <h1 id="result-title">{r.win ? 'MATCH GAGNÉ !' : 'REVANCHE ?'}</h1>
         <p>
           <small>
             {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')} · {rival.name}
@@ -531,10 +530,10 @@ function Results({ r, rival, playerTeam, isFinal, inTournament, onNext, onRetry,
         </div>
         <dl className="result-stats">
           {[
-            ['KO', `${r.kos}/4`],
-            ['Réceptions', r.catches],
-            ['Parfaites', r.perfects],
-            ['Signatures', r.supers],
+            ['STRIKE OUTS', `${r.kos}/4`],
+            ['RATTRAPAGES', r.catches],
+            ['PARFAITS', r.perfects],
+            ['SUPER TIRS', r.supers],
           ].map(([k, v]) => (
             <div key={k}>
               <dt>{k}</dt>
@@ -554,7 +553,7 @@ function Results({ r, rival, playerTeam, isFinal, inTournament, onNext, onRetry,
           >
             {r.win ? 'REJOUER' : 'REVANCHE'}
           </button>
-          <button className="text-button" onClick={onMenu}>
+          <button className="button secondary" onClick={onMenu}>
             RETOUR AU CLUB
           </button>
         </div>

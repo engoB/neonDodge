@@ -25,5 +25,3 @@ export function teamEmblem(team) {
 export function storyStage(index) {
   return STAGES[index]
 }
-
-export const SUPER_IMPACT = new URL('../../assets/super-impact-v3.webp', import.meta.url).href
