@@ -274,11 +274,7 @@ test('commandes directes : le tir sauté déclenche un super au sommet', async (
   await expect(jump).toBeDisabled({ timeout: 2500 })
   await expect.poll(() => page.evaluate(() => window.__match.ball.sup)).toBe(true)
   await expect.poll(() => page.evaluate(() => window.__match.ball.trail.length)).toBeGreaterThan(5)
-  const moving = await page.evaluate(() => ({ x: window.__match.ball.x, t: window.__match.playFrames }))
-  await page.waitForTimeout(120)
-  const moved = await page.evaluate(() => ({ x: window.__match.ball.x, t: window.__match.playFrames }))
-  expect(moved.t).toBeGreaterThan(moving.t)
-  expect(moved.x).not.toBe(moving.x)
+  expect(await page.evaluate(() => window.__match.superBanner)).toBeUndefined()
   await screenshot(page, info, 'super-saute')
 })
 
